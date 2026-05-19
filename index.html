@@ -720,6 +720,26 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById('gsUrlInput')) {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
+
+  // --- AUTOMATIC PULL FROM GOOGLE SHEETS ---
+  if (googleScriptUrl) {
+    showToast('Syncing with Google Sheets...', 'ok');
+    
+    fetch(googleScriptUrl)
+      .then(response => response.json())
+      .then(sheetTxns => {
+        if (sheetTxns && sheetTxns.length > 0 && !sheetTxns.status) {
+          txns = sheetTxns;
+          save();
+          render();
+          showToast('App synced seamlessly!', 'ok');
+        }
+      })
+      .catch(err => {
+        console.error('Failed to automatically pull sheet data:', err);
+        showToast('Running in local offline mode', 'err');
+      });
+  }
 });
 
 if (!txns.length) {
