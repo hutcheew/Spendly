@@ -172,7 +172,6 @@ input[type="file"] { display: none; }
         <span id="monthLabel"></span>
         <button id="nextMonth">&#8250;</button>
       </div>
-      <button class="icon-btn" id="syncBtn" onclick="syncWithSheets()" title="Sync Google Sheets">&#8635;</button>
       <button class="icon-btn" onclick="openMenu()">&#9881;&#65039;</button>
     </div>
   </div>
@@ -266,10 +265,6 @@ input[type="file"] { display: none; }
   <div class="menu-sheet">
     <div class="handle"></div>
     <h2 style="margin-bottom:14px">Settings</h2>
-    <div class="fg" style="margin-bottom:18px">
-      <label>Google Apps Script Exec URL</label>
-      <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveScriptUrl()">
-    </div>
     <div class="menu-item" onclick="closeMenu();openOv('exportOv')">
       <div class="mi-icon">&#128228;</div><div><div class="mi-label">Export</div><div class="mi-desc">Save as CSV or JSON</div></div>
     </div>
@@ -281,9 +276,29 @@ input[type="file"] { display: none; }
       <div class="mi-icon">&#127991;&#65039;</div><div><div class="mi-label">Categories</div><div class="mi-desc">Add or remove custom categories</div></div>
     </div>
     <div class="menu-div"></div>
+    <div class="menu-item" onclick="closeMenu();openOv('sheetConfigOv')">
+      <div class="mi-icon">&#128196;</div><div><div class="mi-label">Google Sheets Link</div><div class="mi-desc">Connect or update spreadsheet sync</div></div>
+    </div>
+    <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();confirmClear()">
       <div class="mi-icon">&#128465;&#65039;</div><div><div class="mi-label" style="color:var(--expense)">Clear All</div><div class="mi-desc">Delete all data permanently</div></div>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="sheetConfigOv" onclick="closeOvOutside(event,'sheetConfigOv')">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Google Sheet Integration</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7">
+      Paste your deployed Apps Script Web App URL below to sync your transactions in real-time.
+    </p>
+    <div class="fg">
+      <label>Web App URL</label>
+      <input type="text" id="gsUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <button class="btn-primary inc-btn" onclick="saveSheetUrl()">Save Configuration</button>
+    <button class="btn-secondary" onclick="clearSheetUrl()" style="color:var(--expense); border-color:rgba(248,113,113,0.2); margin-top:10px;">Disconnect Sheet</button>
   </div>
 </div>
 
@@ -360,6 +375,7 @@ const COLORS = ['#f97316','#60a5fa','#f472b6','#a78bfa','#22d3ee','#4ade80','#fb
 
 let txns = JSON.parse(localStorage.getItem('sply_txns') || '[]');
 let customCats = JSON.parse(localStorage.getItem('sply_cats') || '[]');
+let googleScriptUrl = localStorage.getItem('sply_gs_url') || '';
 let curFilter = 'all', curView = 'overview', curType = 'expense';
 let selEmoji = EMOJIS[0], selColor = COLORS[0];
 let viewMonth = new Date(); viewMonth.setDate(1);
@@ -367,61 +383,6 @@ let viewMonth = new Date(); viewMonth.setDate(1);
 function save() {
   localStorage.setItem('sply_txns', JSON.stringify(txns));
   localStorage.setItem('sply_cats', JSON.stringify(customCats));
-}
-
-// Save Script URL from inputs
-function saveScriptUrl() {
-  const url = document.getElementById('scriptUrlInput').value.trim();
-  localStorage.setItem('sply_script_url', url);
-}
-
-function loadScriptUrl() {
-  const url = localStorage.getItem('sply_script_url') || '';
-  document.getElementById('scriptUrlInput').value = url;
-}
-
-// Sheets Synchronization Function
-async function syncWithSheets() {
-  const url = localStorage.getItem('sply_script_url');
-  if (!url) {
-    showToast('Please set your Apps Script URL in Settings first', 'err');
-    openMenu();
-    return;
-  }
-  
-  const btn = document.getElementById('syncBtn');
-  btn.style.transform = 'rotate(360deg)';
-  btn.style.transition = 'transform 1s ease';
-  showToast('Syncing with Google Sheets...', 'ok');
-
-  try {
-    // 1. Send all local data to update/add to your sheet matrix
-    const response = await fetch(url, {
-      method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ txns, customCats })
-    });
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      // 2. Overwrite local transactions array with cleansed clean entries returned from sheets
-      if (result.txns) {
-        txns = result.txns;
-        save();
-        render();
-      }
-      showToast('Sync complete! Sheets updated cleanly', 'ok');
-    } else {
-      showToast('Sync server rejected data: ' + result.message, 'err');
-    }
-  } catch (err) {
-    console.error(err);
-    showToast('Network error during Google sync', 'err');
-  } finally {
-    setTimeout(() => { btn.style.transform = 'none'; btn.style.transition = 'none'; }, 1000);
-  }
 }
 
 function catsFor(type) {
@@ -573,6 +534,26 @@ function openTxModal(type) {
   openOv('txModal');
 }
 
+function saveSheetUrl() {
+  const url = document.getElementById('gsUrlInput').value.trim();
+  if (url && !url.startsWith('https://script.google.com')) {
+    showToast('Invalid Apps Script URL', 'err');
+    return;
+  }
+  localStorage.setItem('sply_gs_url', url);
+  googleScriptUrl = url;
+  closeOv('sheetConfigOv');
+  showToast(url ? 'Google Sheet linked!' : 'Configuration updated', 'ok');
+}
+
+function clearSheetUrl() {
+  localStorage.removeItem('sply_gs_url');
+  googleScriptUrl = '';
+  document.getElementById('gsUrlInput').value = '';
+  closeOv('sheetConfigOv');
+  showToast('Sheet disconnected');
+}
+
 function submitTx() {
   const amount = parseFloat(document.getElementById('inAmt').value);
   const desc = document.getElementById('inDesc').value.trim();
@@ -581,14 +562,44 @@ function submitTx() {
   const cat = catEl ? catEl.dataset.cat : (curType==='income'?'other_inc':'other');
   if (!amount||amount<=0) { showToast('Enter a valid amount','err'); return; }
   if (!date) { showToast('Pick a date','err'); return; }
-  txns.push({id:Date.now().toString(),type:curType,amount,desc,cat,date});
+  
+  const newTx = {id:Date.now().toString(),type:curType,amount,desc,cat,date};
+  txns.push(newTx);
   save(); closeOv('txModal'); render();
   document.getElementById('inAmt').value='';
   document.getElementById('inDesc').value='';
   showToast('Added ' + (curType==='income'?'income':'expense'),'ok');
+
+  if (googleScriptUrl) {
+    fetch(googleScriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add", ...newTx, category: catById(cat).label })
+    })
+    .then(() => showToast('Synced to Google Sheets', 'ok'))
+    .catch(err => console.error('Sheet sync error:', err));
+  }
 }
 
-function deleteTx(id) { txns=txns.filter(t=>t.id!==id); save(); render(); }
+function deleteTx(id) { 
+  txns=txns.filter(t=>t.id!==id); 
+  save(); 
+  render(); 
+  showToast('Transaction removed');
+
+  if (googleScriptUrl) {
+    fetch(googleScriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id: id })
+    })
+    .then(() => showToast('Removed from Sheets', 'ok'))
+    .catch(err => console.error('Sheet delete error:', err));
+  }
+}
+
 function confirmClear() {
   if (confirm('Delete ALL transactions? Cannot be undone.')) { txns=[]; save(); render(); showToast('All data cleared'); }
 }
@@ -649,7 +660,7 @@ dz.addEventListener('dragleave',()=>dz.classList.remove('dg'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dg');const f=e.dataTransfer.files[0];if(f){const r=new FileReader();r.onload=ev=>processImport(ev.target.result,f.name);r.readAsText(f);}});
 
 function openCatMgr() {
-  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600">BUILT-IN</span></div>').join('');
+  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600">BUILT-IN</span></div>').map(html => html).join('');
   renderCustomList(); openOv('catOv');
 }
 function renderCustomList() {
@@ -705,8 +716,27 @@ function showToast(msg,type){
 document.getElementById('prevMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()+1);render();};
 
-// Initialization
-loadScriptUrl();
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById('gsUrlInput')) {
+    document.getElementById('gsUrlInput').value = googleScriptUrl;
+  }
+});
+
+if (!txns.length) {
+  const today=new Date(),m=String(today.getMonth()+1).padStart(2,'0'),y=today.getFullYear();
+  txns=[
+    {id:'i1',type:'income',amount:5800,desc:'Monthly salary',cat:'salary',date:y+'-'+m+'-01'},
+    {id:'i2',type:'income',amount:450,desc:'Freelance project',cat:'freelance',date:y+'-'+m+'-08'},
+    {id:'e1',type:'expense',amount:24.50,desc:'Woolworths groceries',cat:'food',date:y+'-'+m+'-02'},
+    {id:'e2',type:'expense',amount:8.20,desc:'Myki top-up',cat:'transport',date:y+'-'+m+'-03'},
+    {id:'e3',type:'expense',amount:89.99,desc:'Running shoes',cat:'shopping',date:y+'-'+m+'-04'},
+    {id:'e4',type:'expense',amount:45.00,desc:'Gym membership',cat:'health',date:y+'-'+m+'-05'},
+    {id:'e5',type:'expense',amount:15.00,desc:'Netflix',cat:'entertainment',date:y+'-'+m+'-06'},
+    {id:'e6',type:'expense',amount:180,desc:'Electricity bill',cat:'bills',date:y+'-'+m+'-07'},
+    {id:'e7',type:'expense',amount:38.50,desc:'Ramen dinner',cat:'food',date:y+'-'+m+'-09'},
+  ];
+  save();
+}
 render();
 </script>
 </body>
