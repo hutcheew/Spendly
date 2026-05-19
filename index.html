@@ -336,6 +336,7 @@ input[type="file"] { display: none; }
     <div class="sec-label" style="margin-bottom:9px">Custom</div>
     <div id="customList" style="margin-bottom:14px"></div>
     <button class="btn-primary inc-btn" onclick="openNewCat()">+ New Category</button>
+    <button class="btn-secondary" onclick="closeOv('catOv')" style="margin-top: 10px; background: var(--s2); color: var(--text);">← Back to Main Page</button>
   </div>
 </div>
 
@@ -497,231 +498,224 @@ function renderCharts() {
   const sorted = expData.slice().sort((a,b)=>b.val-a.val);
   const maxVal = sorted[0]?.val||1;
   document.getElementById('barChart').innerHTML = sorted.slice(0,8).map(d =>
-    '<div class="bar-row"><div class="bar-label">'+d.emoji+' '+d.label+'</div><div class="bar-track"><div class="bar-fill" style="width:'+((d.val/maxVal)*100)+'%;background:'+d.color+'"></div></div><div class="bar-val">$'+d.val.toFixed(0)+'</div></div>'
-  ).join('') || '<div class="empty" style="padding:20px 0"><p>No expense data yet.</p></div>';
+    '<div class="bar-row"><div class="bar-label">'+d.emoji+' '+d.label+'</div><div class="bar-track"><div class="bar-fill" style="width:'+(d.val/maxVal*100)+'%;background:'+d.color+'"></div></div><div class="bar-val">$'+d.val.toFixed(0)+'</div></div>'
+  ).join('');
 }
 
-function setFilter(f, el) {
-  curFilter = f;
-  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
+function switchView(v) {
+  curView = v;
+  ['overview','transactions','charts'].forEach(id => document.getElementById('view-'+id).style.display = id===v?'block':'none');
+  const tabs = document.querySelectorAll('.tab');
+  tabs[0].className = 'tab ' + (v==='overview'?'active':'');
+  tabs[1].className = 'tab ' + (v==='transactions'?'active':'');
+  tabs[2].className = 'tab ' + (v==='charts'?'active':'');
+  if (v==='charts') renderCharts();
+}
+
+function setFilter(catId, el) {
+  curFilter = catId;
+  document.querySelectorAll('.cat-chip').forEach(c => c.className = 'cat-chip');
+  el.className = 'cat-chip active';
   renderLists();
+}
+
+function openOv(id) { document.getElementById(id).classList.add('open'); }
+function closeOv(id) { document.getElementById(id).classList.remove('open'); }
+function closeOvOutside(e, id) { if(e.target.id === id) closeOv(id); }
+
+function openMenu() { document.getElementById('menuOv').classList.add('open'); }
+function closeMenu() { document.getElementById('menuOv').classList.remove('remove'); document.getElementById('menuOv').classList.remove('open'); }
+
+function openTxModal(type) {
+  curType = type || 'expense';
+  document.getElementById('inAmt').value = '';
+  document.getElementById('inDesc').value = '';
+  document.getElementById('inDate').value = new Date().toISOString().slice(0,10);
+  setType(curType);
+  openOv('txModal');
 }
 
 function setType(type) {
   curType = type;
-  document.getElementById('typeExp').className = 'type-btn exp' + (type==='expense'?' active':'');
-  document.getElementById('typeInc').className = 'type-btn inc' + (type==='income'?' active':'');
-  document.getElementById('txSubmitBtn').className = 'btn-primary ' + (type==='expense'?'exp-btn':'inc-btn');
-  document.getElementById('txSubmitBtn').textContent = type==='expense' ? 'Add Expense' : 'Add Income';
-  renderTxCatGrid();
+  document.getElementById('typeExp').className = 'type-btn exp ' + (type==='expense'?'active':'');
+  document.getElementById('typeInc').className = 'type-btn inc ' + (type==='income'?'active':'');
+  const subBtn = document.getElementById('txSubmitBtn');
+  subBtn.className = 'btn-primary ' + (type==='expense'?'exp-btn':'inc-btn');
+  subBtn.textContent = type==='expense' ? 'Add Expense' : 'Add Income';
+  document.getElementById('txModalTitle').textContent = type==='expense' ? 'Add Expense' : 'Add Income';
+  
+  const cats = catsFor(type);
+  let h = '';
+  cats.forEach((c,i) => {
+    h += '<div class="cat-opt ' + (i===0?'selected':'') + '" data-id="' + c.id + '" onclick="selectTxCat(\'' + c.id + '\',this)">' +
+      '<span class="ce">' + c.emoji + '</span>' + c.label + '</div>';
+  });
+  document.getElementById('txCatGrid').innerHTML = h;
 }
 
-function renderTxCatGrid() {
-  document.getElementById('txCatGrid').innerHTML = catsFor(curType).map((c,i) =>
-    '<div class="cat-opt ' + (i===0?'selected':'') + '" data-cat="'+c.id+'" onclick="selCatOpt(this)"><span class="ce">'+c.emoji+'</span>'+c.label+'</div>'
-  ).join('');
-}
-
-function selCatOpt(el) {
-  document.querySelectorAll('#txCatGrid .cat-opt').forEach(o=>o.classList.remove('selected'));
+function selectTxCat(id, el) {
+  document.querySelectorAll('.cat-opt').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
 }
 
-function openTxModal(type) {
-  curType = type; setType(type);
-  document.getElementById('inDate').valueAsDate = new Date();
-  openOv('txModal');
+function showToast(msg, cls) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show ' + (cls||'');
+  clearTimeout(window.tTM); window.tTM = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function submitTx() {
+  const amt = parseFloat(document.getElementById('inAmt').value);
+  const desc = document.getElementById('inDesc').value.trim();
+  const date = document.getElementById('inDate').value;
+  const selOpt = document.querySelector('.cat-opt.selected');
+  if (!amt || !date || !selOpt) { showToast('Please enter amount and date','err'); return; }
+  
+  const cat = selOpt.getAttribute('data-id');
+  const item = { id: String(Date.now()), type: curType, amount: amt, cat: cat, desc: desc, date: date };
+  
+  txns.push(item); save(); render(); closeOv('txModal'); showToast('Transaction added!');
+  
+  if (googleScriptUrl) {
+    fetch(googleScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'add', ...item })
+    }).catch(e => console.error(e));
+  }
+}
+
+function deleteTx(id) {
+  txns = txns.filter(t => t.id !== id); save(); render(); showToast('Transaction deleted');
+  if (googleScriptUrl) {
+    fetch(googleScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id: id })
+    }).catch(e => console.error(e));
+  }
+}
+
+function openCatMgr() {
+  const bi = document.getElementById('builtinList');
+  bi.innerHTML = [...BUILTIN.expense, ...BUILTIN.income].map(c => 
+    '<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span class="tx-badge '+(BUILTIN.income.includes(c)?'inc':'exp')+'" style="font-size:8px">'+(BUILTIN.income.includes(c)?'inc':'exp')+'</span></div>'
+  ).join('');
+  renderCustomCatList();
+  openOv('catOv');
+}
+
+function renderCustomCatList() {
+  const cl = document.getElementById('customList');
+  cl.innerHTML = customCats.length ? customCats.map(c => 
+    '<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span class="tx-badge" style="font-size:8px;background:var(--s3)">'+c.type+'</span><button class="cd" onclick="deleteCustomCat(\''+c.id+'\')">&#x2715;</button></div>'
+  ).join('') : '<div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0;">No custom categories yet.</div>';
+}
+
+function openNewCat() {
+  document.getElementById('ncName').value = '';
+  let h = ''; EMOJIS.forEach((e,i)=> h += '<div class="ep '+(i===0?'selected':'')+'" onclick="selEp(\''+e+'\',this)">'+e+'</div>');
+  document.getElementById('epicker').innerHTML = h; selEmoji = EMOJIS[0];
+  let ch = ''; COLORS.forEach((c,i)=> ch += '<div class="cp '+(i===0?'selected':'')+'" style="background:'+c+'" onclick="selCp(\''+c+'\',this)"></div>');
+  document.getElementById('cpicker').innerHTML = ch; selColor = COLORS[0];
+  closeOv('catOv'); openOv('newCatOv');
+}
+function selEp(e,el) { document.querySelectorAll('.ep').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); selEmoji = e; }
+function selCp(c,el) { document.querySelectorAll('.cp').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); selColor = c; }
+
+function saveNewCat() {
+  const name = document.getElementById('ncName').value.trim();
+  const type = document.getElementById('ncType').value;
+  if (!name) { alert('Enter a category name'); return; }
+  const id = 'cc_' + name.toLowerCase().replace(/[^a-z0-9]/g,'') + '_' + Date.now();
+  customCats.push({ id: id, emoji: selEmoji, label: name, color: selColor, type: type });
+  save(); closeOv('newCatOv'); openCatMgr(); showToast('Category created!'); render();
+}
+
+function deleteCustomCat(id) {
+  if (txns.some(t => t.cat === id)) { alert('Cannot delete category. It is being used by existing transactions.'); return; }
+  customCats = customCats.filter(c => c.id !== id); save(); renderCustomCatList(); render(); showToast('Category removed');
 }
 
 function saveSheetUrl() {
   const url = document.getElementById('gsUrlInput').value.trim();
-  if (url && !url.startsWith('https://script.google.com')) {
-    showToast('Invalid Apps Script URL', 'err');
-    return;
-  }
-  localStorage.setItem('sply_gs_url', url);
-  googleScriptUrl = url;
+  if (url && !url.startsWith('https://script.google.com')) { showToast('Invalid Google Apps Script URL','err'); return; }
+  googleScriptUrl = url; localStorage.setItem('sply_gs_url', url);
+  showToast(url ? 'Google Sheet linked successfully!' : 'Link removed');
   closeOv('sheetConfigOv');
-  showToast(url ? 'Google Sheet linked!' : 'Configuration updated', 'ok');
+  if (url) location.reload();
 }
+function clearSheetUrl() { document.getElementById('gsUrlInput').value = ''; saveSheetUrl(); }
 
-function clearSheetUrl() {
-  localStorage.removeItem('sply_gs_url');
-  googleScriptUrl = '';
-  document.getElementById('gsUrlInput').value = '';
-  closeOv('sheetConfigOv');
-  showToast('Sheet disconnected');
-}
+function confirmClear() { if (confirm('Are you absolutely sure you want to wipe ALL data permanently? This cannot be undone.')) { localStorage.clear(); txns=[]; customCats=[]; googleScriptUrl=''; render(); showToast('All data erased','err'); } }
 
-function submitTx() {
-  const amount = parseFloat(document.getElementById('inAmt').value);
-  const desc = document.getElementById('inDesc').value.trim();
-  const date = document.getElementById('inDate').value;
-  const catEl = document.querySelector('#txCatGrid .cat-opt.selected');
-  const cat = catEl ? catEl.dataset.cat : (curType==='income'?'other_inc':'other');
-  if (!amount||amount<=0) { showToast('Enter a valid amount','err'); return; }
-  if (!date) { showToast('Pick a date','err'); return; }
-  
-  const newTx = {id:Date.now().toString(),type:curType,amount,desc,cat,date};
-  txns.push(newTx);
-  save(); closeOv('txModal'); render();
-  document.getElementById('inAmt').value='';
-  document.getElementById('inDesc').value='';
-  showToast('Added ' + (curType==='income'?'income':'expense'),'ok');
-
-  if (googleScriptUrl) {
-    fetch(googleScriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "add", ...newTx, category: catById(cat).label })
-    })
-    .then(() => showToast('Synced to Google Sheets', 'ok'))
-    .catch(err => console.error('Sheet sync error:', err));
-  }
-}
-
-function deleteTx(id) { 
-  txns=txns.filter(t=>t.id!==id); 
-  save(); 
-  render(); 
-  showToast('Transaction removed');
-
-  if (googleScriptUrl) {
-    fetch(googleScriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", id: id })
-    })
-    .then(() => showToast('Removed from Sheets', 'ok'))
-    .catch(err => console.error('Sheet delete error:', err));
-  }
-}
-
-function confirmClear() {
-  if (confirm('Delete ALL transactions? Cannot be undone.')) { txns=[]; save(); render(); showToast('All data cleared'); }
-}
-
-function doExport(format) {
+function doExport(type) {
   const scope = document.getElementById('exportScope').value;
-  const data = scope==='month' ? monthTx() : txns;
-  if (format==='csv') {
-    const rows=[['date','amount','type','category','description']];
-    data.forEach(t=>{ const c=catById(t.cat); rows.push([t.date,t.amount.toFixed(2),t.type,c.label,'"'+(t.desc||'').replace(/"/g,'""')+'"']); });
-    dl('spendly-export.csv',rows.map(r=>r.join(',')).join('\n'),'text/csv');
+  const list = scope==='month' ? monthTx() : txns;
+  if (type === 'json') {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ txns: txns, cats: customCats }));
+    const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "spendly_backup_"+scope+".json"); dl.click();
   } else {
-    dl('spendly-export.json',JSON.stringify({txns:data,customCats,exportedAt:new Date().toISOString()},null,2),'application/json');
+    let csv = 'date,amount,type,category,description,id\n';
+    list.forEach(t => csv += `"${t.date}","${t.amount}","${t.type}","${t.cat}","${t.desc.replace(/"/g,'""')}","${t.id}"\n`);
+    const dl = document.createElement('a'); dl.setAttribute("href", 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)); dl.setAttribute("download", "spendly_export_"+scope+".csv"); dl.click();
   }
-  showToast('Downloaded','ok');
+  closeOv('exportOv');
 }
-function dl(name,content,mime) { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:mime})); a.download=name; a.click(); }
 
 function handleFile(e) {
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=ev=>processImport(ev.target.result,f.name); r.readAsText(f); e.target.value='';
-}
-function processImport(text,filename) {
-  const mode=document.getElementById('importMode').value;
-  let imported=[],impCats=[];
-  try {
-    if (filename.endsWith('.json')) {
-      const p=JSON.parse(text); imported=(p.txns||p.expenses||[]).map(t=>({...t,type:t.type||'expense'})); impCats=p.customCats||[];
-    } else {
-      const lines=text.trim().split('\n');
-      const h=lines[0].toLowerCase().split(',').map(s=>s.trim().replace(/"/g,''));
-      const di=h.indexOf('date'),ai=h.indexOf('amount'),ti=h.indexOf('type'),ci=h.indexOf('category'),ni=h.indexOf('description');
-      for(let i=1;i<lines.length;i++){
-        const cols=parseCSV(lines[i]); if(cols.length<2) continue;
-        const type=(ti>=0&&cols[ti].trim()==='income')?'income':'expense';
-        const rawCat=ci>=0?cols[ci].toLowerCase().trim():'other';
-        const matched=allCatsList().find(c=>c.label.toLowerCase()===rawCat||c.id===rawCat);
-        imported.push({id:'imp_'+Date.now()+'_'+i,type,date:di>=0?cols[di].trim():new Date().toISOString().slice(0,10),amount:parseFloat(ai>=0?cols[ai]:0),cat:matched?matched.id:(type==='income'?'other_inc':'other'),desc:ni>=0?cols[ni].replace(/^"|"$/g,''):'',});
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = function(evt) {
+    try {
+      const mode = document.getElementById('importMode').value;
+      if (file.name.endsWith('.json')) {
+        const d = JSON.parse(evt.target.result);
+        if (d.cats) { d.cats.forEach(nc => { if(!customCats.some(c=>c.id===nc.id)) customCats.push(nc); }); }
+        importTxnsArray(d.txns || [], mode);
+      } else {
+        const lines = evt.target.result.split('\n').map(l=>l.trim()).filter(l=>l);
+        if(lines.length<=1) return;
+        const headers = lines[0].toLowerCase().split(',').map(h=>h.replace(/"/g,'').trim());
+        const parsed = [];
+        for(let i=1; i<lines.length; i++) {
+          const m = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
+          const row = m.map(v => v.replace(/^"|"$/g, '').trim());
+          if (row.length < 4) continue;
+          const item = {
+            date: row[headers.indexOf('date')] || new Date().toISOString().slice(0,10),
+            amount: parseFloat(row[headers.indexOf('amount')]) || 0,
+            type: (row[headers.indexOf('type')] || 'expense').toLowerCase(),
+            cat: (row[headers.indexOf('category')] || 'other').toLowerCase(),
+            desc: row[headers.indexOf('description')] || '',
+            id: row[headers.indexOf('id')] || String(Date.now() + i)
+          };
+          parsed.push(item);
+        }
+        importTxnsArray(parsed, mode);
       }
-    }
-  } catch(err) { showToast('Could not parse file','err'); return; }
-  if (!imported.length) { showToast('No records found','err'); return; }
-  impCats.forEach(ic=>{ if(!customCats.find(c=>c.id===ic.id)) customCats.push(ic); });
-  if (mode==='replace') { txns=imported; }
-  else if (mode==='merge') { const ids=new Set(txns.map(t=>t.id)); txns.push(...imported.filter(t=>!ids.has(t.id))); }
-  else { imported.forEach(t=>{t.id=Date.now()+'_'+Math.random();}); txns.push(...imported); }
-  save(); render(); closeOv('importOv'); showToast('Imported '+imported.length+' records','ok');
-}
-function parseCSV(line) {
-  const r=[]; let cur=''; let inQ=false;
-  for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){r.push(cur);cur='';}else{cur+=ch;} }
-  r.push(cur); return r;
+    } catch(err) { alert('Error parsing file: ' + err); }
+  };
+  r.readAsText(file);
 }
 
-const dz=document.getElementById('dropZone');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dg');});
-dz.addEventListener('dragleave',()=>dz.classList.remove('dg'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dg');const f=e.dataTransfer.files[0];if(f){const r=new FileReader();r.onload=ev=>processImport(ev.target.result,f.name);r.readAsText(f);}});
-
-function openCatMgr() {
-  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600">BUILT-IN</span></div>').map(html => html).join('');
-  renderCustomList(); openOv('catOv');
-}
-function renderCustomList() {
-  document.getElementById('customList').innerHTML=customCats.length
-    ? customCats.map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn" style="color:'+c.color+'">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:8px">'+c.type+'</span><button class="cd" onclick="delCat(\''+c.id+'\')">&#x2715;</button></div>').join('')
-    : '<div style="font-size:12px;color:var(--muted);padding:8px 0">No custom categories yet.</div>';
-}
-function delCat(id) {
-  if(!confirm('Delete category? Transactions move to Other.')) return;
-  txns.forEach(t=>{if(t.cat===id)t.cat=t.type==='income'?'other_inc':'other';});
-  customCats=customCats.filter(c=>c.id!==id);
-  save(); render(); renderCustomList(); showToast('Category deleted');
-}
-function openNewCat() {
-  closeOv('catOv'); selEmoji=EMOJIS[0]; selColor=COLORS[0];
-  document.getElementById('epicker').innerHTML=EMOJIS.map((e,i)=>'<div class="ep '+(i===0?'selected':'')+'" onclick="pickEmoji(this,\''+e+'\')">'+e+'</div>').join('');
-  document.getElementById('cpicker').innerHTML=COLORS.map((c,i)=>'<div class="cp '+(i===0?'selected':'')+'" style="background:'+c+'" onclick="pickColor(this,\''+c+'\')"></div>').join('');
-  document.getElementById('ncName').value='';
-  openOv('newCatOv');
-}
-function pickEmoji(el,e){selEmoji=e;document.querySelectorAll('.ep').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
-function pickColor(el,c){selColor=c;document.querySelectorAll('.cp').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
-function saveNewCat() {
-  const name=document.getElementById('ncName').value.trim();
-  if(!name){showToast('Enter a name','err');return;}
-  const type=document.getElementById('ncType').value;
-  const id='cc_'+name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
-  customCats.push({id,emoji:selEmoji,label:name,color:selColor,type});
-  save(); render(); closeOv('newCatOv'); openCatMgr(); showToast('"'+name+'" added','ok');
+function importTxnsArray(arr, mode) {
+  if (mode === 'replace') txns = arr;
+  else if (mode === 'append') txns = [...txns, ...arr];
+  else { arr.forEach(nt => { if(!txns.some(t=>t.id===nt.id)) txns.push(nt); }); }
+  save(); render(); closeOv('importOv'); showToast('Data imported successfully!');
 }
 
-function openOv(id){document.getElementById(id).classList.add('open');}
-function closeOv(id){document.getElementById(id).classList.remove('open');}
-function closeOvOutside(e,id){if(e.target===document.getElementById(id))closeOv(id);}
-function openMenu(){document.getElementById('menuOv').classList.add('open');}
-function closeMenu(){document.getElementById('menuOv').classList.remove('open');}
+document.getElementById('prevMonth').onclick = () => { viewMonth.setMonth(viewMonth.getMonth()-1); render(); };
+document.getElementById('nextMonth').onclick = () => { viewMonth.setMonth(viewMonth.getMonth()+1); render(); };
 
-function switchView(v) {
-  curView=v;
-  ['overview','transactions','charts'].forEach(n=>{document.getElementById('view-'+n).style.display=n===v?'block':'none';});
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','transactions','charts'][i]===v));
-  if(v==='charts') renderCharts();
-}
-
-let tt;
-function showToast(msg,type){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast'+(type?' '+type:'');
-  requestAnimationFrame(()=>t.classList.add('show'));
-  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2800);
-}
-
-document.getElementById('prevMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()-1);render();};
-document.getElementById('nextMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()+1);render();};
-
+// --- AUTOMATIC GOOGLE SHEETS SYNC ON OPEN ---
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById('gsUrlInput')) {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
 
-  // --- AUTOMATIC PULL FROM GOOGLE SHEETS ---
   if (googleScriptUrl) {
     showToast('Syncing with Google Sheets...', 'ok');
     
@@ -742,21 +736,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-if (!txns.length) {
-  const today=new Date(),m=String(today.getMonth()+1).padStart(2,'0'),y=today.getFullYear();
-  txns=[
-    {id:'i1',type:'income',amount:5800,desc:'Monthly salary',cat:'salary',date:y+'-'+m+'-01'},
-    {id:'i2',type:'income',amount:450,desc:'Freelance project',cat:'freelance',date:y+'-'+m+'-08'},
-    {id:'e1',type:'expense',amount:24.50,desc:'Woolworths groceries',cat:'food',date:y+'-'+m+'-02'},
-    {id:'e2',type:'expense',amount:8.20,desc:'Myki top-up',cat:'transport',date:y+'-'+m+'-03'},
-    {id:'e3',type:'expense',amount:89.99,desc:'Running shoes',cat:'shopping',date:y+'-'+m+'-04'},
-    {id:'e4',type:'expense',amount:45.00,desc:'Gym membership',cat:'health',date:y+'-'+m+'-05'},
-    {id:'e5',type:'expense',amount:15.00,desc:'Netflix',cat:'entertainment',date:y+'-'+m+'-06'},
-    {id:'e6',type:'expense',amount:180,desc:'Electricity bill',cat:'bills',date:y+'-'+m+'-07'},
-    {id:'e7',type:'expense',amount:38.50,desc:'Ramen dinner',cat:'food',date:y+'-'+m+'-09'},
-  ];
-  save();
-}
 render();
 </script>
 </body>
