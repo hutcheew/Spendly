@@ -77,6 +77,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk'
 .charts-section { padding: 14px 18px 0; }
 .pie-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; }
 .pie-wrap { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
+.pie-wrap svg { transform: rotate(-90deg); border-radius: 50%; }
 .pie-legend { flex: 1; display: flex; flex-direction: column; gap: 7px; }
 .leg-row { display: flex; align-items: center; gap: 8px; }
 .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -369,7 +370,7 @@ let curFilter = 'all', curView = 'overview', curType = 'expense';
 let selEmoji = EMOJIS[0], selColor = COLORS[0];
 let viewMonth = new Date(); viewMonth.setDate(1);
 
-// Initialize Cloud Config Input Element value
+// Hydrate Input Element
 document.getElementById('cfgScriptUrl').value = localStorage.getItem('sply_script_url') || '';
 
 function save() {
@@ -454,12 +455,12 @@ function renderPie(svgId, legendId, data) {
   const legend = document.getElementById(legendId);
   const total = data.reduce((s,d)=>s+d.val,0);
   if (!total) {
-    svg.innerHTML = '<circle cx="70" cy="70" r="54" fill="none" stroke="#2a2a3d" stroke-width="22"/><text x="70" y="75" text-anchor="middle" fill="#6b6b8a" font-size="11" font-family="sans-serif">No data</text>';
+    svg.innerHTML = '<circle cx="70" cy="70" r="54" fill="none" stroke="#2a2a3d" stroke-width="22"/><text x="70" y="75" text-anchor="middle" fill="#6b6b8a" font-size="11" font-family="sans-serif" transform="rotate(90 70 70)">No data</text>';
     legend.innerHTML = '';
     return;
   }
   const cx=70,cy=70,r=54,ri=30;
-  let angle = -Math.PI/2, paths = '';
+  let angle = 0, paths = '';
   const sorted = data.slice().sort((a,b)=>b.val-a.val);
   sorted.forEach(d => {
     if (!d.val) return;
@@ -473,8 +474,8 @@ function renderPie(svgId, legendId, data) {
     angle += slice;
   });
   const top = sorted[0];
-  paths += '<text x="70" y="65" text-anchor="middle" font-size="16" font-family="sans-serif">'+top.emoji+'</text>';
-  paths += '<text x="70" y="80" text-anchor="middle" fill="#6b6b8a" font-size="9" font-family="sans-serif">'+Math.round(top.val/total*100)+'%</text>';
+  paths += '<text x="70" y="66" text-anchor="middle" font-size="16" font-family="sans-serif" transform="rotate(90 70 70)">'+top.emoji+'</text>';
+  paths += '<text x="70" y="81" text-anchor="middle" fill="#6b6b8a" font-size="9" font-family="sans-serif" transform="rotate(90 70 70)">'+Math.round(top.val/total*100)+'%</text>';
   svg.innerHTML = paths;
   legend.innerHTML = sorted.slice(0,6).map(d =>
     '<div class="leg-row"><div class="leg-dot" style="background:'+d.color+'"></div><div class="leg-name">'+d.emoji+' '+d.label+'</div><div class="leg-val">$'+d.val.toFixed(0)+'</div></div>'
@@ -543,7 +544,6 @@ function submitTx() {
   document.getElementById('inDesc').value='';
   showToast('Added ' + (curType==='income'?'income':'expense'),'ok');
 
-  // Trigger non-blocking cloud push automation
   autoPushCloud();
 }
 
@@ -569,7 +569,7 @@ function confirmClear() {
 }
 
 // -----------------------------------------------------------------
-//              BIDIRECTIONAL CLOUD ENGINE FUNCTIONS
+//         UPDATED CORS-PROOF BIDIRECTIONAL CLOUD SYNC ENGINE
 // -----------------------------------------------------------------
 function getScriptUrl() {
   return localStorage.getItem('sply_script_url') || '';
@@ -577,18 +577,18 @@ function getScriptUrl() {
 
 async function autoPushCloud() {
   const url = getScriptUrl();
-  if (!url) return; // Silent if backend script route is unconfigured
+  if (!url) return; 
   try {
+    // Explicit 'text/plain;charset=utf-8' forces compliance with simple request guidelines
     await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'push', txns: txns, deletedIds: deletedTxIds })
     });
     deletedTxIds = [];
     localStorage.setItem('sply_deleted_ids', JSON.stringify(deletedTxIds));
   } catch(e) {
-    console.warn('Background auto push paused:', e);
+    console.warn('Background sync tracking paused:', e);
   }
 }
 
@@ -603,27 +603,25 @@ async function syncWithCloud() {
   showToast('Syncing Cloud Engine...', 'ok');
   
   try {
-    // 1. Perform Push Operation for local shifts
+    // 1. Fire local delta push changes to sheet database safely using plain text format
     await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'push', txns: txns, deletedIds: deletedTxIds })
     });
     
-    // 2. Perform Pull Operation for cloud state data
+    // 2. Fetch standard string tracking arrays out of spreadsheet execution
     const pullResponse = await fetch(`${url}?action=pull`);
     const remote = await pullResponse.json();
     
     if (remote && remote.ok && Array.isArray(remote.txns)) {
-      // Map local cache state array data structures
-      const mergedMap = new Map(txns.map(t => [String(t.id), t]));
+      const mergedMap = new Map();
       
-      // Merge unique objects returned from sheet execution
+      // Load current state arrays as primary data dictionary arrays
       remote.txns.forEach(rt => {
         mergedMap.set(String(rt.id), {
           id: String(rt.id),
-          date: rt.date, // Retained intact via string assignment parsing logic
+          date: rt.date, // Retained perfectly intact as text string arrays
           type: rt.type,
           amount: Number(rt.amount),
           cat: rt.cat,
@@ -631,18 +629,18 @@ async function syncWithCloud() {
         });
       });
 
-      // Clear sync ledger tracking flags out of storage cache logs
+      // Clear structural tracking indicators and assign variables back down
       deletedTxIds = [];
       txns = Array.from(mergedMap.values());
       save();
       render();
-      showToast('Devices fully synchronized!', 'ok');
+      showToast('Devices synced perfectly!', 'ok');
     } else {
-      showToast('Sync error: Bad response structure', 'err');
+      showToast('Sync payload error: Check sheets layout', 'err');
     }
   } catch(err) {
-    console.error('Bidirectional engine fault:', err);
-    showToast('Sync failed: Check network connection', 'err');
+    console.error('Bidirectional engine execution fault:', err);
+    showToast('Sync failed: Request blocked or network down', 'err');
   }
 }
 // -----------------------------------------------------------------
