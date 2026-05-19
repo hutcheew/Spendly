@@ -172,6 +172,7 @@ input[type="file"] { display: none; }
         <span id="monthLabel"></span>
         <button id="nextMonth">&#8250;</button>
       </div>
+      <button class="icon-btn" id="syncBtn" onclick="syncWithSheets()" title="Sync Google Sheets">&#8635;</button>
       <button class="icon-btn" onclick="openMenu()">&#9881;&#65039;</button>
     </div>
   </div>
@@ -265,6 +266,10 @@ input[type="file"] { display: none; }
   <div class="menu-sheet">
     <div class="handle"></div>
     <h2 style="margin-bottom:14px">Settings</h2>
+    <div class="fg" style="margin-bottom:18px">
+      <label>Google Apps Script Exec URL</label>
+      <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveScriptUrl()">
+    </div>
     <div class="menu-item" onclick="closeMenu();openOv('exportOv')">
       <div class="mi-icon">&#128228;</div><div><div class="mi-label">Export</div><div class="mi-desc">Save as CSV or JSON</div></div>
     </div>
@@ -362,6 +367,61 @@ let viewMonth = new Date(); viewMonth.setDate(1);
 function save() {
   localStorage.setItem('sply_txns', JSON.stringify(txns));
   localStorage.setItem('sply_cats', JSON.stringify(customCats));
+}
+
+// Save Script URL from inputs
+function saveScriptUrl() {
+  const url = document.getElementById('scriptUrlInput').value.trim();
+  localStorage.setItem('sply_script_url', url);
+}
+
+function loadScriptUrl() {
+  const url = localStorage.getItem('sply_script_url') || '';
+  document.getElementById('scriptUrlInput').value = url;
+}
+
+// Sheets Synchronization Function
+async function syncWithSheets() {
+  const url = localStorage.getItem('sply_script_url');
+  if (!url) {
+    showToast('Please set your Apps Script URL in Settings first', 'err');
+    openMenu();
+    return;
+  }
+  
+  const btn = document.getElementById('syncBtn');
+  btn.style.transform = 'rotate(360deg)';
+  btn.style.transition = 'transform 1s ease';
+  showToast('Syncing with Google Sheets...', 'ok');
+
+  try {
+    // 1. Send all local data to update/add to your sheet matrix
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ txns, customCats })
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      // 2. Overwrite local transactions array with cleansed clean entries returned from sheets
+      if (result.txns) {
+        txns = result.txns;
+        save();
+        render();
+      }
+      showToast('Sync complete! Sheets updated cleanly', 'ok');
+    } else {
+      showToast('Sync server rejected data: ' + result.message, 'err');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Network error during Google sync', 'err');
+  } finally {
+    setTimeout(() => { btn.style.transform = 'none'; btn.style.transition = 'none'; }, 1000);
+  }
 }
 
 function catsFor(type) {
@@ -645,7 +705,8 @@ function showToast(msg,type){
 document.getElementById('prevMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()+1);render();};
 
-// Demo entries completely removed to keep local storage clean.
+// Initialization
+loadScriptUrl();
 render();
 </script>
 </body>
