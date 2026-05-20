@@ -154,7 +154,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk'
 .btn-secondary { width: 100%; background: var(--s2); color: var(--text); border: 1px solid var(--border); border-radius: 13px; padding: 13px; font-family: 'Cabinet Grotesk', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 9px; transition: all .15s; }
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
-.menu-overlay { position: fixed; inset: 0; z-index: 300; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.menu-overlay { position: fixed; inset: 0; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .menu-overlay.open { opacity: 1; pointer-events: all; }
 .menu-back { position: absolute; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(3px); }
 .menu-sheet { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%) translateY(18px); width: 100%; max-width: 430px; background: var(--s1); border-radius: 22px 22px 0 0; padding: 22px 18px 38px; border-top: 1px solid var(--border); transition: transform .3s ease; max-height: 85vh; overflow-y: auto; }
