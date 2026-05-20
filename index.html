@@ -62,7 +62,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk'
 
 .tx-list { display: flex; flex-direction: column; gap: 7px; }
 
-/* SWIPE TO DELETE INTERACTIVE WRAPPERS */
 .tx-container { position: relative; border-radius: 14px; overflow: hidden; background: #ea580c; max-height: 120px; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin 0.4s ease, opacity 0.3s ease; }
 .tx-container.collapse { max-height: 0 !important; margin-bottom: 0 !important; opacity: 0 !important; padding: 0 !important; border: none !important; }
 .swipe-delete-underlay { position: absolute; inset: 0; background: linear-gradient(90deg, #dc2626, #ef4444); display: flex; align-items: center; justify-content: flex-end; padding-right: 24px; color: white; font-size: 18px; font-weight: bold; pointer-events: none; }
@@ -90,11 +89,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk'
 .empty .ei { font-size: 36px; margin-bottom: 10px; }
 .empty p { font-size: 12px; line-height: 1.7; }
 
-/* LOADING SKELETON ANIMATIONS */
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 .skeleton-row { background: linear-gradient(90deg, var(--s1) 25%, var(--s2) 50%, var(--s1) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite linear; border-radius: 14px; height: 64px; margin-bottom: 7px; width: 100%; border: 1px solid var(--border); }
 
-/* ANALYTICS & SMART BUDGETS LAYOUTS */
 .charts-section { padding: 14px 18px 0; }
 .analytics-panel { background: var(--s1); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
 .chart-container { width: 100%; height: 130px; margin: 10px 0 5px; position: relative; }
@@ -314,7 +311,7 @@ input[type="file"] { display: none; }
   <div class="menu-sheet">
     <div class="handle"></div>
     <h2 style="margin-bottom:14px">Settings</h2>
-    <div class="menu-item" onclick="closeMenu();openOv('budgetOv')">
+    <div class="menu-item" onclick="closeMenu(); openBudgetOv();">
       <div class="mi-icon">&#127919;</div><div><div class="mi-label">Monthly Budgets</div><div class="mi-desc">Set limits for specific expense categories</div></div>
     </div>
     <div class="menu-div"></div>
@@ -343,7 +340,7 @@ input[type="file"] { display: none; }
   <div class="sheet">
     <div class="handle"></div>
     <h2>Set Category Budgets</h2>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Define monthly spending ceilings. Leave at 0 or blank to remove the budget rule.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Define monthly spending ceilings. Leave blank or 0 to clear.</p>
     <div id="budgetInputsContainer" style="max-height: 45vh; overflow-y: auto; margin-bottom: 14px; padding-right:4px;"></div>
     <button class="btn-primary inc-btn" onclick="saveBudgets()">Save Budgets</button>
   </div>
@@ -353,9 +350,7 @@ input[type="file"] { display: none; }
   <div class="sheet">
     <div class="handle"></div>
     <h2>Google Sheet Integration</h2>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7">
-      Paste your deployed Apps Script Web App URL below to sync your transactions in real-time.
-    </p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7">Paste your deployed Apps Script Web App URL below to sync your transactions in real-time.</p>
     <div class="fg">
       <label>Web App URL</label>
       <input type="text" id="gsUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
@@ -444,7 +439,6 @@ let curFilter = 'all', curView = 'overview', curType = 'expense';
 let selEmoji = EMOJIS[0], selColor = COLORS[0];
 let viewMonth = new Date(); viewMonth.setDate(1);
 
-// --- INDEXEDDB STORAGE LAYER ---
 let db;
 function initDB() {
   return new Promise((resolve, reject) => {
@@ -492,10 +486,9 @@ function setDBValue(storeName, key, val) {
   });
 }
 
-// --- SYNC QUEUE SYSTEM ---
 async function pushToSyncQueue(payload) {
   const tx = db.transaction("sync_queue", "readwrite");
-  tx.objectStore("sync_queue").add(payload);
+  tx.objectStore("sync_queue").add({ payload });
   if (navigator.onLine) { flushSyncQueue(); }
 }
 
@@ -570,7 +563,6 @@ function render() {
   document.getElementById('netAmount').textContent = (net>=0?'+':'-') + fmt(net);
   document.getElementById('netAmount').className = 'net-amount ' + (net>=0?'pos':'neg');
   
-  // Savings Rate Metric Engine
   const savingsRate = income > 0 ? Math.max(0, ((income - expense) / income) * 100) : 0;
   document.getElementById('savingsRateBadge').textContent = `Savings: ${savingsRate.toFixed(0)}%`;
 
@@ -594,7 +586,6 @@ function renderCatScroll() {
   document.getElementById('catScroll').innerHTML = h;
 }
 
-// --- TOUCH GESTURE INTERACTIVE SWIPE LOGIC ---
 let startX = 0;
 let currentX = 0;
 let isSwiping = false;
@@ -656,7 +647,7 @@ function initTouchEvents(rowEl, txId) {
 }
 
 function triggerSwipeDeleteAnimation(rowEl, txId) {
-  const container = rowEl.closest('.tx-container');
+  const container = document.getElementById(`container_${txId}`);
   rowEl.style.transition = 'transform 0.2s ease';
   rowEl.style.transform = 'translateX(-100%)';
   setTimeout(() => {
@@ -760,25 +751,21 @@ function renderPie(svgId, legendId, data) {
   ).join('');
 }
 
-// --- NATIVE SVG TREND LINE GRAPH & MOM ENGINE ---
 function renderTrendLineChart(currentMonthTx) {
   const svg = document.getElementById('trendLineSvg');
   if (!svg) return;
   svg.innerHTML = '';
 
-  // Calculate maximum days in current view context window
   const year = viewMonth.getFullYear();
   const month = viewMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Aggregate expenditure array mapped to days
   let dailyTotals = Array(daysInMonth).fill(0);
   currentMonthTx.filter(t => t.type === 'expense').forEach(t => {
     const day = parseInt(t.date.split('-')[2]);
     if (day >= 1 && day <= daysInMonth) dailyTotals[day - 1] += t.amount;
   });
 
-  // Turn into cumulative metrics
   let cumulativeSpending = [];
   let currentSum = 0;
   for (let i = 0; i < daysInMonth; i++) {
@@ -792,7 +779,6 @@ function renderTrendLineChart(currentMonthTx) {
   const paddingX = 15;
   const paddingY = 15;
 
-  // Generate path coordinate strings
   let points = [];
   for (let i = 0; i < daysInMonth; i++) {
     const x = paddingX + (i / (daysInMonth - 1)) * (width - paddingX * 2);
@@ -800,7 +786,6 @@ function renderTrendLineChart(currentMonthTx) {
     points.push(`${x},${y}`);
   }
 
-  // Draw smooth gradient background polygon path under curve 
   let areaPoints = [`${paddingX},${height - paddingY}`, ...points, `${width - paddingX},${height - paddingY}`].join(' ');
   
   let content = `
@@ -816,7 +801,6 @@ function renderTrendLineChart(currentMonthTx) {
     
     <polygon points="${areaPoints}" fill="url(#chartGrad)" />
     <polyline points="${points.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    
     <circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="5" fill="#fff" stroke="var(--accent)" stroke-width="2" />
   `;
   svg.innerHTML = content;
@@ -824,15 +808,13 @@ function renderTrendLineChart(currentMonthTx) {
 
 function calculateMoMMetrics() {
   const currentExpenses = monthTx().filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
-  
-  // Find previous calendar month metrics window
   const prevMonthDate = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
   const pKey = prevMonthDate.getFullYear() + '-' + String(prevMonthDate.getMonth() + 1).padStart(2,'0');
   const prevExpenses = txns.filter(t => mKey(t.date) === pKey && t.type === 'expense').reduce((s,t) => s + t.amount, 0);
 
   const indicator = document.getElementById('momIndicator');
   if (prevExpenses === 0) {
-    indicator.textContent = "Baseline structural tracking active";
+    indicator.textContent = "Baseline tracking active";
     indicator.className = "sec-sub-label";
     return;
   }
@@ -847,7 +829,6 @@ function calculateMoMMetrics() {
   }
 }
 
-// --- INTEGRATED METRIC CHARTS & BUDGET CEILING PROGRESS BARS ---
 function renderCharts() {
   const mt = monthTx();
   calculateMoMMetrics();
@@ -866,7 +847,6 @@ function renderCharts() {
   renderPie('expPie','expLegend', expData.length ? expData : [{emoji:'📦',label:'No data',color:'#2a2a3d',val:1}]);
   renderPie('incPie','incLegend', incData.length ? incData : [{emoji:'📦',label:'No data',color:'#2a2a3d',val:1}]);
   
-  // Render Budgets Progress List Engine
   const allExpenseCats = catsFor('expense');
   let barsHtml = '';
 
@@ -874,7 +854,6 @@ function renderCharts() {
     const spent = mt.filter(t => t.type === 'expense' && t.cat === c.id).reduce((s,t) => s + t.amount, 0);
     const budgetLimit = budgets[c.id] || 0;
     
-    // Skip categories with no usage and no explicit budget constraint
     if (spent === 0 && budgetLimit === 0) return;
 
     let pct = budgetLimit > 0 ? (spent / budgetLimit) * 100 : 0;
@@ -904,7 +883,6 @@ function renderCharts() {
   document.getElementById('barChart').innerHTML = barsHtml || '<div class="empty" style="padding:20px 0"><p>No dynamic progress metrics tracked.</p></div>';
 }
 
-// --- REAL-TIME BUDGET SURGE WATCHER ENGINE ---
 function checkBudgetThresholdAlerts(categoryRowId, currentType) {
   if (currentType !== 'expense') return;
   const budgetLimit = budgets[categoryRowId] || 0;
@@ -966,7 +944,6 @@ function openTxModal(type) {
 
 function openBudgetOv() {
   let h = '';
-  // Explicitly pull expense categories regardless of active state
   const expenseCategories = [...BUILTIN.expense, ...customCats.filter(c => c.type === 'expense' || c.type === 'both')];
   
   expenseCategories.forEach(c => {
@@ -1035,14 +1012,14 @@ async function submitTx() {
       await save(); render(); closeOv('txModal');
       showToast('Transaction updated', 'ok');
       checkBudgetThresholdAlerts(cat, curType);
-      await pushToSyncQueue({ payload: { action: "edit", id, type: curType, amount, desc, category: catById(cat).label, date } });
+      await pushToSyncQueue({ action: "edit", id, type: curType, amount, desc, category: catById(cat).label, date });
     }
   } else {
     const newTx = {id:Date.now().toString(),type:curType,amount,desc,cat,date};
     txns.push(newTx);
     await save(); closeOv('txModal'); render();
     checkBudgetThresholdAlerts(cat, curType);
-    await pushToSyncQueue({ payload: { action: "add", ...newTx, category: catById(cat).label } });
+    await pushToSyncQueue({ action: "add", ...newTx, category: catById(cat).label });
   }
   
   document.getElementById('inAmt').value='';
@@ -1053,7 +1030,7 @@ async function submitTx() {
 async function deleteTx(id) { 
   txns=txns.filter(t=>t.id!==id); 
   await save(); render(); showToast('Transaction removed');
-  await pushToSyncQueue({ payload: { action: "delete", id: id } });
+  await pushToSyncQueue({ action: "delete", id: id });
 }
 
 async function confirmClear() {
@@ -1074,9 +1051,9 @@ function doExport(format) {
 }
 function dl(name,content,mime) { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:mime})); a.download=name; a.click(); }
 
-function handleFile(e) {
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=ev=>processImport(ev.target.result,f.name); r.readAsText(f); e.target.value='';
+function handleFile(event) {
+  const f=event.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=ev=>processImport(ev.target.result,f.name); r.readAsText(f); event.target.value='';
 }
 async function processImport(text,filename) {
   const mode=document.getElementById('importMode').value;
@@ -1156,12 +1133,10 @@ function closeMenu(){document.getElementById('menuOv').classList.remove('open');
 
 function switchView(v) {
   curView = v;
-  // Hide all view screens except the chosen one
   ['overview', 'transactions', 'charts'].forEach(n => {
     document.getElementById('view-' + n).style.display = n === v ? 'block' : 'none';
   });
   
-  // FIXED: Added .classList so class toggling works flawlessly
   document.querySelectorAll('.tab').forEach((t, i) => {
     const viewName = ['overview', 'transactions', 'charts'][i];
     t.classList.toggle('active', viewName === v);
