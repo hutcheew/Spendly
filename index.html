@@ -1155,10 +1155,19 @@ function openMenu(){document.getElementById('menuOv').classList.add('open');}
 function closeMenu(){document.getElementById('menuOv').classList.remove('open');}
 
 function switchView(v) {
-  curView=v;
-  ['overview','transactions','charts'].forEach(n=>{document.getElementById('view-'+n).style.display=n===v?'block':'none';});
-  document.querySelectorAll('.tab').forEach((t,i)=>t.toggle('active',['overview','transactions','charts'][i]===v));
-  if(v==='charts') renderCharts();
+  curView = v;
+  // Hide all view screens except the chosen one
+  ['overview', 'transactions', 'charts'].forEach(n => {
+    document.getElementById('view-' + n).style.display = n === v ? 'block' : 'none';
+  });
+  
+  // FIXED: Added .classList so class toggling works flawlessly
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const viewName = ['overview', 'transactions', 'charts'][i];
+    t.classList.toggle('active', viewName === v);
+  });
+  
+  if (v === 'charts') renderCharts();
 }
 
 let tt;
