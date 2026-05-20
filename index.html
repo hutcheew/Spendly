@@ -74,6 +74,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk'
 .empty .ei { font-size: 36px; margin-bottom: 10px; }
 .empty p { font-size: 12px; line-height: 1.7; }
 
+/* LOADING SKELETON ANIMATIONS */
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.skeleton-row { background: linear-gradient(90deg, var(--s1) 25%, var(--s2) 50%, var(--s1) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite linear; border-radius: 14px; height: 64px; margin-bottom: 7px; width: 100%; border: 1px solid var(--border); }
+
 .charts-section { padding: 14px 18px 0; }
 .pie-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; }
 .pie-wrap { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
@@ -375,16 +379,104 @@ const BUILTIN = {
 const EMOJIS = ['☕','🍺','🍕','✈️','🏨','📚','🎵','🐾','🏠','💰','🏋️','🧴','🌿','🖥️','👶','🚗','⚽','🎨','🏖️','🍷','💇','🧹','📱','🔧','🎓','🏥'];
 const COLORS = ['#f97316','#60a5fa','#f472b6','#a78bfa','#22d3ee','#4ade80','#fbbf24','#34d399','#f87171','#818cf8','#a3e635','#fb923c','#38bdf8','#e879f9','#86efac','#c084fc'];
 
-let txns = JSON.parse(localStorage.getItem('sply_txns') || '[]');
-let customCats = JSON.parse(localStorage.getItem('sply_cats') || '[]');
+let txns = [];
+let customCats = [];
 let googleScriptUrl = localStorage.getItem('sply_gs_url') || '';
 let curFilter = 'all', curView = 'overview', curType = 'expense';
 let selEmoji = EMOJIS[0], selColor = COLORS[0];
 let viewMonth = new Date(); viewMonth.setDate(1);
 
-function save() {
-  localStorage.setItem('sply_txns', JSON.stringify(txns));
-  localStorage.setItem('sply_cats', JSON.stringify(customCats));
+// --- BULLETPROOF INDEXEDDB STORAGE LAYER ---
+let db;
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("SpendlyDatabase", 2);
+    request.onupgradeneeded = (e) => {
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains("state")) {
+        database.createObjectStore("state");
+      }
+      if (!database.objectStoreNames.contains("sync_queue")) {
+        database.createObjectStore("sync_queue", { keyPath: "id", autoIncrement: true });
+      }
+    };
+    request.onsuccess = (e) => { db = e.target.result; resolve(); };
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function loadStateFromDB() {
+  txns = await getDBValue("state", "transactions") || [];
+  customCats = await getDBValue("state", "custom_categories") || [];
+}
+
+async function save() {
+  await setDBValue("state", "transactions", txns);
+  await setDBValue("state", "custom_categories", customCats);
+}
+
+function getDBValue(storeName, key) {
+  return new Promise((resolve) => {
+    const tx = db.transaction(storeName, "readonly");
+    const store = tx.objectStore(storeName);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+function setDBValue(storeName, key, val) {
+  return new Promise((resolve) => {
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    store.put(val, key);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+// --- OPTIMISTIC OFFLINE QUEUE SYSTEM ---
+async function pushToSyncQueue(payload) {
+  const tx = db.transaction("sync_queue", "readwrite");
+  tx.objectStore("sync_queue").add(payload);
+  if (navigator.onLine) { flushSyncQueue(); }
+}
+
+async function flushSyncQueue() {
+  if (!googleScriptUrl || !navigator.onLine) return;
+  
+  const tx = db.transaction("sync_queue", "readonly");
+  const store = tx.objectStore("sync_queue");
+  const req = store.getAll();
+  
+  req.onsuccess = async () => {
+    const items = req.result;
+    if (!items || items.length === 0) return;
+    
+    for (const task of items) {
+      try {
+        const response = await fetch(googleScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(task.payload)
+        });
+        if (response.ok) {
+          const deleteTx = db.transaction("sync_queue", "readwrite");
+          deleteTx.objectStore("sync_queue").delete(task.id);
+        }
+      } catch (err) {
+        console.warn("Queue item deferred:", err);
+        break; // Network error, pause processing queue
+      }
+    }
+  };
+}
+
+window.addEventListener('online', flushSyncQueue);
+
+// --- CLEAN LOCAL TIMEZONE PICKER ---
+function getLocalISODate(dateObj = new Date()) {
+  const offset = dateObj.getTimezoneOffset() * 60000;
+  return (new Date(dateObj.getTime() - offset)).toISOString().split('T')[0];
 }
 
 function catsFor(type) {
@@ -449,6 +541,12 @@ function txCard(t, delay) {
     '<div class="tx-right"><div class="tx-amount ' + (isInc?'inc':'exp') + '">' + (isInc?'+':'-') + fmt(t.amount) + '</div>' +
     '<span class="tx-badge ' + (isInc?'inc':'exp') + '">' + (isInc?'income':'expense') + '</span></div>' +
     '<button class="del-btn" onclick="handleDeleteClick(event, \'' + t.id + '\')">&#x2715;</button></div>';
+}
+
+function showSkeletons() {
+  const skeletonHtml = Array(4).fill('<div class="skeleton-row"></div>').join('');
+  document.getElementById('overviewList').innerHTML = skeletonHtml;
+  document.getElementById('txList').innerHTML = skeletonHtml;
 }
 
 function renderLists() {
@@ -549,7 +647,7 @@ function openTxModal(type) {
   window.selectedCatIdTmp = null;
   curType = type; 
   setType(type);
-  document.getElementById('inDate').valueAsDate = new Date();
+  document.getElementById('inDate').value = getLocalISODate();
   openOv('txModal');
 }
 
@@ -587,8 +685,6 @@ function saveSheetUrl() {
   googleScriptUrl = url;
   closeOv('sheetConfigOv');
   showToast(url ? 'Google Sheet linked!' : 'Configuration updated', 'ok');
-  
-  // Instantly trigger sync upon saving fresh configuration link
   if (googleScriptUrl) { location.reload(); }
 }
 
@@ -600,7 +696,7 @@ function clearSheetUrl() {
   showToast('Sheet disconnected');
 }
 
-function submitTx() {
+async function submitTx() {
   const id = document.getElementById('inId').value;
   const amount = parseFloat(document.getElementById('inAmt').value);
   const desc = document.getElementById('inDesc').value.trim();
@@ -615,36 +711,22 @@ function submitTx() {
     const index = txns.findIndex(t => t.id === id);
     if (index !== -1) {
       txns[index] = { id, type: curType, amount, desc, cat, date };
-      save(); render(); closeOv('txModal');
+      await save(); render(); closeOv('txModal');
       showToast('Transaction updated', 'ok');
       
-      if (googleScriptUrl) {
-        fetch(googleScriptUrl, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "edit", id, type: curType, amount, desc, category: catById(cat).label, date })
-        })
-        .then(() => showToast('Synced change to Sheet', 'ok'))
-        .catch(err => console.error('Sheet edit error:', err));
-      }
+      await pushToSyncQueue({
+        payload: { action: "edit", id, type: curType, amount, desc, category: catById(cat).label, date }
+      });
     }
   } else {
     const newTx = {id:Date.now().toString(),type:curType,amount,desc,cat,date};
     txns.push(newTx);
-    save(); closeOv('txModal'); render();
+    await save(); closeOv('txModal'); render();
     showToast('Added ' + (curType==='income'?'income':'expense'),'ok');
 
-    if (googleScriptUrl) {
-      fetch(googleScriptUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", ...newTx, category: catById(cat).label })
-      })
-      .then(() => showToast('Synced to Google Sheets', 'ok'))
-      .catch(err => console.error('Sheet sync error:', err));
-    }
+    await pushToSyncQueue({
+      payload: { action: "add", ...newTx, category: catById(cat).label }
+    });
   }
   
   document.getElementById('inAmt').value='';
@@ -652,26 +734,19 @@ function submitTx() {
   document.getElementById('inId').value='';
 }
 
-function deleteTx(id) { 
+async function deleteTx(id) { 
   txns=txns.filter(t=>t.id!==id); 
-  save(); 
+  await save(); 
   render(); 
   showToast('Transaction removed');
 
-  if (googleScriptUrl) {
-    fetch(googleScriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", id: id })
-    })
-    .then(() => showToast('Removed from Sheets', 'ok'))
-    .catch(err => console.error('Sheet delete error:', err));
-  }
+  await pushToSyncQueue({
+    payload: { action: "delete", id: id }
+  });
 }
 
-function confirmClear() {
-  if (confirm('Delete ALL transactions? Cannot be undone.')) { txns=[]; save(); render(); showToast('All data cleared'); }
+async function confirmClear() {
+  if (confirm('Delete ALL transactions? Cannot be undone.')) { txns=[]; await save(); render(); showToast('All data cleared'); }
 }
 
 function doExport(format) {
@@ -692,7 +767,7 @@ function handleFile(e) {
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader(); r.onload=ev=>processImport(ev.target.result,f.name); r.readAsText(f); e.target.value='';
 }
-function processImport(text,filename) {
+async function processImport(text,filename) {
   const mode=document.getElementById('importMode').value;
   let imported=[],impCats=[];
   try {
@@ -716,7 +791,7 @@ function processImport(text,filename) {
   if (mode==='replace') { txns=imported; }
   else if (mode==='merge') { const ids=new Set(txns.map(t=>t.id)); txns.push(...imported.filter(t=>!ids.has(t.id))); }
   else { imported.forEach(t=>{t.id=Date.now()+'_'+Math.random();}); txns.push(...imported); }
-  save(); render(); closeOv('importOv'); showToast('Imported '+imported.length+' records','ok');
+  await save(); render(); closeOv('importOv'); showToast('Imported '+imported.length+' records','ok');
 }
 function parseCSV(line) {
   const r=[]; let cur=''; let inQ=false;
@@ -738,11 +813,11 @@ function renderCustomList() {
     ? customCats.map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn" style="color:'+c.color+'">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600;margin-right:8px">'+c.type+'</span><button class="cd" onclick="delCat(\''+c.id+'\')">&#x2715;</button></div>').join('')
     : '<div style="font-size:12px;color:var(--muted);padding:8px 0">No custom categories yet.</div>';
 }
-function delCat(id) {
+async function delCat(id) {
   if(!confirm('Delete category? Transactions move to Other.')) return;
   txns.forEach(t=>{if(t.cat===id)t.cat=t.type==='income'?'other_inc':'other';});
   customCats=customCats.filter(c=>c.id!==id);
-  save(); render(); renderCustomList(); showToast('Category deleted');
+  await save(); render(); renderCustomList(); showToast('Category deleted');
 }
 function openNewCat() {
   closeOv('catOv'); selEmoji=EMOJIS[0]; selColor=COLORS[0];
@@ -753,13 +828,13 @@ function openNewCat() {
 }
 function pickEmoji(el,e){selEmoji=e;document.querySelectorAll('.ep').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
 function pickColor(el,c){selColor=c;document.querySelectorAll('.cp').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
-function saveNewCat() {
+async function saveNewCat() {
   const name=document.getElementById('ncName').value.trim();
   if(!name){showToast('Enter a name','err');return;}
   const type=document.getElementById('ncType').value;
   const id='cc_'+name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
   customCats.push({id,emoji:selEmoji,label:name,color:selColor,type});
-  save(); render(); closeOv('newCatOv'); openCatMgr(); showToast('"'+name+'" added','ok');
+  await save(); render(); closeOv('newCatOv'); openCatMgr(); showToast('"'+name+'" added','ok');
 }
 
 function openOv(id){document.getElementById(id).classList.add('open');}
@@ -787,35 +862,42 @@ function showToast(msg,type){
 document.getElementById('prevMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()+1);render();};
 
-// --- AUTOMATIC SYNC ENTRY ENGINE ---
-document.addEventListener("DOMContentLoaded", () => {
+// --- INITIALIZE & SYNC ENGINE ---
+document.addEventListener("DOMContentLoaded", async () => {
   if (document.getElementById('gsUrlInput')) {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
 
+  try {
+    await initDB();
+    await loadStateFromDB();
+    render(); // Instantly show whatever database contains so user is never locked out
+  } catch(e) {
+    console.error("Database storage failed, falling back safely", e);
+  }
+
   if (googleScriptUrl) {
-    showToast('Syncing with Google Sheets...', 'ok');
+    showSkeletons();
     
     fetch(googleScriptUrl)
       .then(response => {
         if (!response.ok) throw new Error('Network fault');
         return response.json();
       })
-      .then(sheetTxns => {
+      .then(async (sheetTxns) => {
         if (sheetTxns && Array.isArray(sheetTxns)) {
           txns = sheetTxns;
-          save();
+          await save();
           render();
           showToast('App synced seamlessly!', 'ok');
+          flushSyncQueue(); // Flush any pending updates caught offline
         }
       })
       .catch(err => {
-        console.error('Local backup used:', err);
+        console.error('Offline strategy activated:', err);
         showToast('Running in local offline mode', 'err');
-        render();
+        render(); // Fallback cleanly to your indexed data
       });
-  } else {
-    render();
   }
 });
 </script>
