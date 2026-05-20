@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Spendly</title>
 <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -12,7 +12,7 @@
   --income: #4ade80; --expense: #f87171; --accent: #818cf8; --accent2: #c084fc;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk', sans-serif; max-width: 430px; margin: 0 auto; min-height: 100vh; padding-bottom: 120px; }
+body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk', sans-serif; max-width: 430px; margin: 0 auto; min-height: 100vh; padding-bottom: 120px; overflow-x: hidden; }
 
 .header { padding: 20px 18px 12px; position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--border); }
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -54,22 +54,31 @@ body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk'
 .list-section { padding: 14px 18px 0; }
 .sec-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; }
 .tx-list { display: flex; flex-direction: column; gap: 7px; }
-.tx-item { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 11px; animation: rise .3s ease both; cursor: pointer; transition: background-color 0.15s; }
-.tx-item:hover { background: var(--s2); }
+
+/* SWIPE TO DELETE INTERACTIVE WRAPPERS */
+.tx-container { position: relative; border-radius: 14px; overflow: hidden; background: #ea580c; max-height: 120px; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin 0.4s ease, opacity 0.3s ease; }
+.tx-container.collapse { max-height: 0 !important; margin-bottom: 0 !important; opacity: 0 !important; padding: 0 !important; border: none !important; }
+.swipe-delete-underlay { position: absolute; inset: 0; background: linear-gradient(90deg, #dc2626, #ef4444); display: flex; align-items: center; justify-content: flex-end; padding-right: 24px; color: white; font-size: 18px; font-weight: bold; pointer-events: none; }
+.swipe-action-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-right: 8px; opacity: 0.8; font-family: 'Clash Display', sans-serif; }
+
+.tx-item { position: relative; z-index: 2; background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 11px; animation: rise .3s ease both; cursor: pointer; transform: translateX(0); }
+.tx-item.swiping { transition: none; }
+.tx-item.snap-back { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); transform: translateX(0) !important; }
+.tx-item.snap-open { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); transform: translateX(-80px) !important; }
+
 @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 .tx-icon { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-.tx-info { flex: 1; min-width: 0; }
+.tx-info { flex: 1; min-width: 0; user-select: none; }
 .tx-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.tx-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.tx-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; user-select: none; }
 .tx-amount { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 15px; }
 .tx-amount.inc { color: var(--income); }
 .tx-amount.exp { color: var(--expense); }
 .tx-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 2px 6px; border-radius: 99px; }
 .tx-badge.inc { background: rgba(74,222,128,.12); color: var(--income); }
 .tx-badge.exp { background: rgba(248,113,113,.12); color: var(--expense); }
-.del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 3px 6px; transition: color .15s; z-index: 10; }
-.del-btn:hover { color: var(--expense); }
+
 .empty { text-align: center; padding: 36px 20px; color: var(--muted); }
 .empty .ei { font-size: 36px; margin-bottom: 10px; }
 .empty p { font-size: 12px; line-height: 1.7; }
@@ -386,7 +395,7 @@ let curFilter = 'all', curView = 'overview', curType = 'expense';
 let selEmoji = EMOJIS[0], selColor = COLORS[0];
 let viewMonth = new Date(); viewMonth.setDate(1);
 
-// --- BULLETPROOF INDEXEDDB STORAGE LAYER ---
+// --- INDEXEDDB STORAGE LAYER ---
 let db;
 function initDB() {
   return new Promise((resolve, reject) => {
@@ -434,7 +443,7 @@ function setDBValue(storeName, key, val) {
   });
 }
 
-// --- OPTIMISTIC OFFLINE QUEUE SYSTEM ---
+// --- SYNC QUEUE SYSTEM ---
 async function pushToSyncQueue(payload) {
   const tx = db.transaction("sync_queue", "readwrite");
   tx.objectStore("sync_queue").add(payload);
@@ -443,7 +452,6 @@ async function pushToSyncQueue(payload) {
 
 async function flushSyncQueue() {
   if (!googleScriptUrl || !navigator.onLine) return;
-  
   const tx = db.transaction("sync_queue", "readonly");
   const store = tx.objectStore("sync_queue");
   const req = store.getAll();
@@ -451,7 +459,6 @@ async function flushSyncQueue() {
   req.onsuccess = async () => {
     const items = req.result;
     if (!items || items.length === 0) return;
-    
     for (const task of items) {
       try {
         const response = await fetch(googleScriptUrl, {
@@ -465,7 +472,7 @@ async function flushSyncQueue() {
         }
       } catch (err) {
         console.warn("Queue item deferred:", err);
-        break; // Network error, pause processing queue
+        break;
       }
     }
   };
@@ -473,7 +480,6 @@ async function flushSyncQueue() {
 
 window.addEventListener('online', flushSyncQueue);
 
-// --- CLEAN LOCAL TIMEZONE PICKER ---
 function getLocalISODate(dateObj = new Date()) {
   const offset = dateObj.getTimezoneOffset() * 60000;
   return (new Date(dateObj.getTime() - offset)).toISOString().split('T')[0];
@@ -531,16 +537,125 @@ function renderCatScroll() {
   document.getElementById('catScroll').innerHTML = h;
 }
 
+// --- TOUCH GESTURE INTERACTIVE SWIPE LOGIC ---
+let startX = 0;
+let currentX = 0;
+let isSwiping = false;
+let activeRow = null;
+
+function initTouchEvents(rowEl, txId) {
+  rowEl.addEventListener('touchstart', (e) => {
+    // Reset any other row that might be open
+    document.querySelectorAll('.tx-item').forEach(el => {
+      if (el !== rowEl && el.classList.contains('snap-open')) {
+        el.className = 'tx-item snap-back';
+      }
+    });
+
+    startX = e.touches[0].clientX;
+    isSwiping = true;
+    rowEl.classList.remove('snap-back', 'snap-open');
+    rowEl.classList.add('swiping');
+    activeRow = rowEl;
+  }, { passive: true });
+
+  rowEl.addEventListener('touchmove', (e) => {
+    if (!isSwiping) return;
+    currentX = e.touches[0].clientX;
+    let diff = currentX - startX;
+
+    // Only allow swiping to the left boundary
+    if (diff > 0) diff = 0;
+    if (diff < -240) diff = -240; // Hard max stop
+
+    rowEl.style.transform = `translateX(${diff}px)`;
+    
+    // Update label text if they pass the auto-threshold threshold
+    const container = rowEl.closest('.tx-container');
+    if (container) {
+      const label = container.querySelector('.swipe-action-label');
+      if (diff < -180) {
+        label.textContent = "Release to Delete";
+        label.style.color = "#fff";
+      } else {
+        label.textContent = "Swipe to Delete";
+        label.style.color = "rgba(255,255,255,0.6)";
+      }
+    }
+  }, { passive: true });
+
+  rowEl.addEventListener('touchend', (e) => {
+    if (!isSwiping) return;
+    isSwiping = false;
+    rowEl.classList.remove('swiping');
+    
+    let finalDiff = currentX - startX;
+    if (currentX === 0) finalDiff = 0; // Tapped instead of swiping
+
+    // Reset coordinates tracker
+    startX = 0;
+    currentX = 0;
+
+    if (finalDiff < -180) {
+      // Automatic swipe-to-delete drop threshold met
+      triggerSwipeDeleteAnimation(rowEl, txId);
+    } else if (finalDiff < -50) {
+      // Stay locked open revealing the action button layout
+      rowEl.style.transform = '';
+      rowEl.classList.add('snap-open');
+    } else {
+      // Snap baseline structure back into alignment
+      rowEl.style.transform = '';
+      rowEl.classList.add('snap-back');
+    }
+  });
+}
+
+function triggerSwipeDeleteAnimation(rowEl, txId) {
+  const container = rowEl.closest('.tx-container');
+  rowEl.style.transition = 'transform 0.2s ease';
+  rowEl.style.transform = 'translateX(-100%)';
+  
+  setTimeout(() => {
+    if (container) {
+      container.classList.add('collapse');
+      setTimeout(() => {
+        deleteTx(txId);
+      }, 350);
+    }
+  }, 150);
+}
+
 function txCard(t, delay) {
   const c = catById(t.cat);
   const isInc = t.type === 'income';
-  return '<div class="tx-item" style="animation-delay:' + delay + 'ms" onclick="handleCardClick(event, \''+t.id+'\')">' +
-    '<div class="tx-icon" style="background:' + c.color + '20;color:' + c.color + '">' + c.emoji + '</div>' +
-    '<div class="tx-info"><div class="tx-name">' + escH(t.desc||c.label) + '</div>' +
-    '<div class="tx-meta">' + c.label + ' &middot; ' + new Date(t.date+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}) + '</div></div>' +
-    '<div class="tx-right"><div class="tx-amount ' + (isInc?'inc':'exp') + '">' + (isInc?'+':'-') + fmt(t.amount) + '</div>' +
-    '<span class="tx-badge ' + (isInc?'inc':'exp') + '">' + (isInc?'income':'expense') + '</span></div>' +
-    '<button class="del-btn" onclick="handleDeleteClick(event, \'' + t.id + '\')">&#x2715;</button></div>';
+  
+  return `<div class="tx-container" id="container_${t.id}">
+    <div class="swipe-delete-underlay">
+      <span class="swipe-action-label">Swipe to Delete</span>
+      <span>&#128465;&#65039;</span>
+    </div>
+    <div class="tx-item" id="row_${t.id}" style="animation-delay:${delay}ms" onclick="handleCardClick(event, '${t.id}')">
+      <div class="tx-icon" style="background:${c.color}20;color:${c.color}">${c.emoji}</div>
+      <div class="tx-info">
+        <div class="tx-name">${escH(t.desc || c.label)}</div>
+        <div class="tx-meta">${c.label} &middot; ${new Date(t.date + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amount ${isInc ? 'inc' : 'exp'}">${isInc ? '+' : '-'}${fmt(t.amount)}</div>
+        <span class="tx-badge ${isInc ? 'inc' : 'exp'}">${isInc ? 'income' : 'expense'}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachTouchListeners() {
+  txns.forEach(t => {
+    const row = document.getElementById(`row_${t.id}`);
+    if (row) {
+      initTouchEvents(row, t.id);
+    }
+  });
 }
 
 function showSkeletons() {
@@ -552,8 +667,36 @@ function showSkeletons() {
 function renderLists() {
   const list = filteredTx().slice().reverse();
   const empty = '<div class="empty"><div class="ei">&#128202;</div><p>No transactions yet.<br>Tap <strong>+ Income</strong> or <strong>- Expense</strong> below.</p></div>';
+  
   document.getElementById('overviewList').innerHTML = list.length ? list.slice(0,8).map((t,i)=>txCard(t,i*30)).join('') : empty;
   document.getElementById('txList').innerHTML = list.length ? list.map((t,i)=>txCard(t,i*25)).join('') : empty;
+  
+  // Wire up continuous active listener tracking bounds
+  attachTouchListeners();
+}
+
+function handleCardClick(e, id) {
+  const row = document.getElementById(`row_${id}`);
+  if (row && (row.classList.contains('snap-open') || row.classList.contains('swiping'))) {
+    // If it's swiped open, a normal click snaps it back instead of editing
+    row.className = 'tx-item snap-back';
+    return;
+  }
+
+  const target = txns.find(t => t.id === id);
+  if (!target) return;
+  
+  document.getElementById('txModalTitle').textContent = 'Edit Transaction';
+  document.getElementById('inId').value = target.id;
+  document.getElementById('inAmt').value = target.amount;
+  document.getElementById('inDesc').value = target.desc;
+  document.getElementById('inDate').value = target.date;
+  
+  window.selectedCatIdTmp = target.cat;
+  curType = target.type;
+  setType(target.type);
+  
+  openOv('txModal');
 }
 
 function renderPie(svgId, legendId, data) {
@@ -649,30 +792,6 @@ function openTxModal(type) {
   setType(type);
   document.getElementById('inDate').value = getLocalISODate();
   openOv('txModal');
-}
-
-function handleCardClick(e, id) {
-  const target = txns.find(t => t.id === id);
-  if (!target) return;
-  
-  document.getElementById('txModalTitle').textContent = 'Edit Transaction';
-  document.getElementById('inId').value = target.id;
-  document.getElementById('inAmt').value = target.amount;
-  document.getElementById('inDesc').value = target.desc;
-  document.getElementById('inDate').value = target.date;
-  
-  window.selectedCatIdTmp = target.cat;
-  curType = target.type;
-  setType(target.type);
-  
-  openOv('txModal');
-}
-
-function handleDeleteClick(e, id) {
-  e.stopPropagation();
-  if(confirm('Delete this transaction?')) {
-    deleteTx(id);
-  }
 }
 
 function saveSheetUrl() {
@@ -871,14 +990,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await initDB();
     await loadStateFromDB();
-    render(); // Instantly show whatever database contains so user is never locked out
+    render();
   } catch(e) {
-    console.error("Database storage failed, falling back safely", e);
+    console.error("Database storage failed", e);
   }
 
   if (googleScriptUrl) {
     showSkeletons();
-    
     fetch(googleScriptUrl)
       .then(response => {
         if (!response.ok) throw new Error('Network fault');
@@ -890,13 +1008,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           await save();
           render();
           showToast('App synced seamlessly!', 'ok');
-          flushSyncQueue(); // Flush any pending updates caught offline
+          flushSyncQueue();
         }
       })
       .catch(err => {
-        console.error('Offline strategy activated:', err);
+        console.error('Offline mode fallback:', err);
         showToast('Running in local offline mode', 'err');
-        render(); // Fallback cleanly to your indexed data
+        render();
       });
   }
 });
