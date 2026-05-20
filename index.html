@@ -249,7 +249,8 @@ input[type="file"] { display: none; }
   <div class="sheet">
     <div class="handle"></div>
     <h2 id="txModalTitle">Add Transaction</h2>
-    <input type="hidden" id="inId"> <div class="type-toggle">
+    <input type="hidden" id="inId">
+    <div class="type-toggle">
       <button class="type-btn exp active" id="typeExp" onclick="setType('expense')">&#8722; Expense</button>
       <button class="type-btn inc" id="typeInc" onclick="setType('income')">&#43; Income</button>
     </div>
@@ -570,7 +571,7 @@ function handleCardClick(e, id) {
 }
 
 function handleDeleteClick(e, id) {
-  e.stopPropagation(); // Prevents click from opening edit window
+  e.stopPropagation();
   if(confirm('Delete this transaction?')) {
     deleteTx(id);
   }
@@ -586,6 +587,9 @@ function saveSheetUrl() {
   googleScriptUrl = url;
   closeOv('sheetConfigOv');
   showToast(url ? 'Google Sheet linked!' : 'Configuration updated', 'ok');
+  
+  // Instantly trigger sync upon saving fresh configuration link
+  if (googleScriptUrl) { location.reload(); }
 }
 
 function clearSheetUrl() {
@@ -608,7 +612,6 @@ function submitTx() {
   if (!date) { showToast('Pick a date','err'); return; }
   
   if (id) {
-    // EDIT MODE
     const index = txns.findIndex(t => t.id === id);
     if (index !== -1) {
       txns[index] = { id, type: curType, amount, desc, cat, date };
@@ -627,7 +630,6 @@ function submitTx() {
       }
     }
   } else {
-    // ADD MODE
     const newTx = {id:Date.now().toString(),type:curType,amount,desc,cat,date};
     txns.push(newTx);
     save(); closeOv('txModal'); render();
@@ -728,7 +730,7 @@ dz.addEventListener('dragleave',()=>dz.classList.remove('dg'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dg');const f=e.dataTransfer.files[0];if(f){const r=new FileReader();r.onload=ev=>processImport(ev.target.result,f.name);r.readAsText(f);}});
 
 function openCatMgr() {
-  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600">BUILT-IN</span></div>').map(html => html).join('');
+  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span style="font-size:10px;color:var(--muted);font-weight:600">BUILT-IN</span></div>').join('');
   renderCustomList(); openOv('catOv');
 }
 function renderCustomList() {
@@ -785,17 +787,12 @@ function showToast(msg,type){
 document.getElementById('prevMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{viewMonth.setMonth(viewMonth.getMonth()+1);render();};
 
+// --- AUTOMATIC SYNC ENTRY ENGINE ---
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById('gsUrlInput')) {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (document.getElementById('gsUrlInput')) {
-    document.getElementById('gsUrlInput').value = googleScriptUrl;
-  }
-
-  // --- AUTOMATIC SYNC FROM GOOGLE SHEETS ---
   if (googleScriptUrl) {
     showToast('Syncing with Google Sheets...', 'ok');
     
@@ -817,10 +814,10 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast('Running in local offline mode', 'err');
         render();
       });
+  } else {
+    render();
   }
 });
-
-render();
 </script>
 </body>
 </html>
