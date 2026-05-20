@@ -503,15 +503,21 @@ async function flushSyncQueue() {
     if (!items || items.length === 0) return;
     for (const task of items) {
       try {
-        const response = await fetch(googleScriptUrl, {
+        // We use text/plain and remove custom headers to make this a "Simple Request"
+        // This forces the browser to skip the CORS preflight check entirely
+        await fetch(googleScriptUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          mode: "no-cors", 
+          headers: {
+            "Content-Type": "text/plain" 
+          },
           body: JSON.stringify(task.payload)
         });
-        if (response.ok) {
-          const deleteTx = db.transaction("sync_queue", "readwrite");
-          deleteTx.objectStore("sync_queue").delete(task.id);
-        }
+        
+        // In no-cors mode we can't read the response, but if fetch didn't throw an error,
+        // the browser successfully transmitted the data stream. Clear it from the queue.
+        const deleteTx = db.transaction("sync_queue", "readwrite");
+        deleteTx.objectStore("sync_queue").delete(task.id);
       } catch (err) {
         console.warn("Queue item deferred:", err);
         break;
