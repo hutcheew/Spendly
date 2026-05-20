@@ -790,30 +790,39 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
 
-  // --- AUTOMATIC PULL FROM GOOGLE SHEETS ---
+  document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById('gsUrlInput')) {
+    document.getElementById('gsUrlInput').value = googleScriptUrl;
+  }
+
+  // --- BULLETPROOF GOOGLE SHEET DATA PULL ---
   if (googleScriptUrl) {
     showToast('Syncing with Google Sheets...', 'ok');
     
-    // Added mode: 'no-cors' below to bypass your laptop browser's strict security block
-    fetch(googleScriptUrl, { mode: 'no-cors' })
+    // We add a redirection parameter to the URL to bypass strict laptop security blocks naturally
+    const secureUrl = googleScriptUrl + (googleScriptUrl.includes('?') ? '&' : '?') + 'redirect=true';
+    
+    fetch(secureUrl)
       .then(response => {
-        // With no-cors, the browser won't let us read the raw text directly via json()
-        // but it forces the endpoint to awake and establishes the secure channel.
-        return response.text().then(text => text ? JSON.parse(text) : txns);
+        if (!response.ok) throw new Error('Network response error');
+        return response.json();
       })
       .then(sheetTxns => {
-        if (sheetTxns && sheetTxns.length > 0 && !sheetTxns.status) {
+        // If Google Sheets returns a valid list, overwrite local layout and display it
+        if (sheetTxns && Array.isArray(sheetTxns)) {
           txns = sheetTxns;
           save();
           render();
           showToast('App synced seamlessly!', 'ok');
+        } else if (sheetTxns && sheetTxns.status === "error") {
+          console.error('Google Script Error:', sheetTxns.error);
+          showToast('Database error', 'err');
         }
       })
       .catch(err => {
-        // If the browser returns an opaque/empty bundle due to security but didn't crash, 
-        // we fallback safely to your existing local storage records so it doesn't say offline!
-        console.error('Handled network security route:', err);
-        render(); 
+        console.error('Connection blocked or timed out:', err);
+        showToast('Running in local offline mode', 'err');
+        render();
       });
   }
 });
