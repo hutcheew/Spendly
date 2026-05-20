@@ -966,7 +966,10 @@ function openTxModal(type) {
 
 function openBudgetOv() {
   let h = '';
-  catsFor('expense').forEach(c => {
+  // Explicitly pull expense categories regardless of active state
+  const expenseCategories = [...BUILTIN.expense, ...customCats.filter(c => c.type === 'expense' || c.type === 'both')];
+  
+  expenseCategories.forEach(c => {
     const currentBudgetVal = budgets[c.id] || '';
     h += `
       <div class="budget-config-row">
@@ -975,7 +978,8 @@ function openBudgetOv() {
       </div>
     `;
   });
-  document.getElementById('budgetInputsContainer').innerHTML = h;
+  
+  document.getElementById('budgetInputsContainer').innerHTML = h || '<div class="empty" style="padding:20px 0"><p>No expense categories found.</p></div>';
   openOv('budgetOv');
 }
 
