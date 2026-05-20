@@ -790,37 +790,30 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById('gsUrlInput')) {
     document.getElementById('gsUrlInput').value = googleScriptUrl;
   }
 
-  // --- BULLETPROOF GOOGLE SHEET DATA PULL ---
+  // --- AUTOMATIC SYNC FROM GOOGLE SHEETS ---
   if (googleScriptUrl) {
     showToast('Syncing with Google Sheets...', 'ok');
     
-    // We add a redirection parameter to the URL to bypass strict laptop security blocks naturally
-    const secureUrl = googleScriptUrl + (googleScriptUrl.includes('?') ? '&' : '?') + 'redirect=true';
-    
-    fetch(secureUrl)
+    fetch(googleScriptUrl)
       .then(response => {
-        if (!response.ok) throw new Error('Network response error');
+        if (!response.ok) throw new Error('Network fault');
         return response.json();
       })
       .then(sheetTxns => {
-        // If Google Sheets returns a valid list, overwrite local layout and display it
         if (sheetTxns && Array.isArray(sheetTxns)) {
           txns = sheetTxns;
           save();
           render();
           showToast('App synced seamlessly!', 'ok');
-        } else if (sheetTxns && sheetTxns.status === "error") {
-          console.error('Google Script Error:', sheetTxns.error);
-          showToast('Database error', 'err');
         }
       })
       .catch(err => {
-        console.error('Connection blocked or timed out:', err);
+        console.error('Local backup used:', err);
         showToast('Running in local offline mode', 'err');
         render();
       });
