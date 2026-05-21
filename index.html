@@ -428,7 +428,7 @@ input[type="file"]{display:none;}
 <div id="view-budget" style="display:none">
   <div class="budget-sec">
     <div id="budgetList"></div>
-    <button class="btn-primary acc-btn" style="margin-top:4px" onclick="openNewBudget()">+ Set Budget Goal</button>
+    <button class="btn-primary acc-btn" style="margin-top:4px" id="newBudgetBtn">+ Set Budget Goal</button>
   </div>
 </div>
 
@@ -642,7 +642,7 @@ input[type="file"]{display:none;}
     <div class="handle"></div><h2>New budget goal</h2>
     <div class="fg"><label>Category</label><select id="budgetCatSel"></select></div>
     <div class="fg"><label>Monthly limit (AUD)</label><input type="number" id="budgetAmount" placeholder="e.g. 500" min="1" step="1" inputmode="decimal"></div>
-    <button class="btn-primary acc-btn" onclick="saveBudgetGoal()">Save goal</button>
+    <button class="btn-primary acc-btn" id="saveBudgetBtn">Save goal</button>
   </div>
 </div>
 
@@ -944,13 +944,26 @@ function openNewBudget() {
 }
 
 function saveBudgetGoal() {
-  const cat=document.getElementById('budgetCatSel').value;
-  const limit=parseFloat(document.getElementById('budgetAmount').value);
-  if(!cat||!limit||limit<=0){showToast('Fill in all fields','err');return;}
-  budgets=budgets.filter(b=>b.cat!==cat);
-  budgets.push({cat,limit});
-  save();renderBudgetView();renderBudgetAlerts();closeOv('newBudgetOv');
-  showToast('Budget goal saved','ok');
+  const sel = document.getElementById('budgetCatSel');
+  const amtInput = document.getElementById('budgetAmount');
+  const cat = sel ? sel.value : '';
+  const limit = parseFloat(amtInput ? amtInput.value : '0');
+
+  // Debug: repopulate if selector somehow empty
+  if (!cat && sel) {
+    sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>').join('');
+    showToast('Please select a category','err'); return;
+  }
+  if (!cat) { showToast('No category found — try again','err'); return; }
+  if (!limit || limit <= 0) { showToast('Enter a limit amount','err'); return; }
+
+  budgets = budgets.filter(b => b.cat !== cat);
+  budgets.push({ cat, limit });
+  save();
+  renderBudgetView();
+  renderBudgetAlerts();
+  closeOv('newBudgetOv');
+  showToast('Budget goal saved ✓', 'ok');
 }
 function deleteBudget(cat){budgets=budgets.filter(b=>b.cat!==cat);save();renderBudgetView();renderBudgetAlerts();}
 
@@ -1532,6 +1545,12 @@ if(!txns.length){
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const nb = document.getElementById('newBudgetBtn');
+  if (nb) nb.addEventListener('click', openNewBudget);
+  const sb = document.getElementById('saveBudgetBtn');
+  if (sb) sb.addEventListener('click', saveBudgetGoal);
+});
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
 </script>
