@@ -456,7 +456,7 @@ input[type="file"]{display:none;}
     <div class="fg"><label>Category</label><div class="cat-grid" id="txCatGrid"></div></div>
     <div class="fg"><label>Date</label><input type="date" id="inDate"></div>
     <button class="btn-primary exp-btn" id="txSubmitBtn" onclick="submitTx()">Add expense</button>
-    <button class="btn-danger" id="txDeleteBtn" style="display:none" onclick="deleteFromEdit()">&#128465; Delete transaction</button>
+    <button class="btn-danger" id="txDeleteBtn" style="display:none">&#128465; Delete transaction</button>
   </div>
 </div>
 
@@ -554,7 +554,7 @@ input[type="file"]{display:none;}
       <div class="fg"><label>Import as</label>
         <select id="bankTxType"><option value="expense">Expense (debit)</option><option value="income">Income (credit)</option><option value="auto">Auto-detect debit/credit</option></select>
       </div>
-      <button class="btn-primary acc-btn" onclick="confirmBankImport()">Import <span id="bankImportCount">0</span> transactions</button>
+      <button class="btn-primary acc-btn" id="confirmBankBtn">Import <span id="bankImportCount">0</span> transactions</button>
     </div>
   </div>
 </div>
@@ -913,26 +913,32 @@ function renderPie(svgId,legendId,data) {
 // ── BUDGET GOALS VIEW ─────────────────────────────────────────────────
 function renderBudgetView() {
   const mt=monthTx();
+  const list=document.getElementById('budgetList');
   if(!budgets.length){
-    document.getElementById('budgetList').innerHTML='<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.<br>Tap the button below to set limits.</p></div>';
+    list.innerHTML='<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.<br>Tap the button below to set limits.</p></div>';
     return;
   }
-  document.getElementById('budgetList').innerHTML=budgets.map(b=>{
+  list.innerHTML=budgets.map(b=>{
     const c=catById(b.cat);
     const spent=mt.filter(t=>t.type==='expense'&&t.cat===b.cat).reduce((s,t)=>s+t.amount,0);
     const pct=Math.min(b.limit>0?spent/b.limit*100:0,100);
     const color=pct>=100?'var(--expense)':pct>=80?'var(--warn)':c.color;
-    return `<div class="budget-card">
-      <div class="budget-header">
-        <div class="budget-icon">${c.emoji}</div>
-        <div class="budget-title">${c.label}</div>
-        <div class="budget-pct" style="color:${color}">${Math.round(pct)}%</div>
-        <button style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px" onclick="deleteBudget('${b.cat}')">&#x2715;</button>
-      </div>
-      <div class="budget-track"><div class="budget-fill" style="width:${pct}%;background:${color}"></div></div>
-      <div class="budget-amounts"><span>${fmt(spent)} spent</span><span>${fmt(b.limit)} limit</span></div>
-    </div>`;
+    return '<div class="budget-card">'+
+      '<div class="budget-header">'+
+      '<div class="budget-icon">'+c.emoji+'</div>'+
+      '<div class="budget-title">'+c.label+'</div>'+
+      '<div class="budget-pct" style="color:'+color+'">'+Math.round(pct)+'%</div>'+
+      '<button class="del-budget-btn" data-cat="'+b.cat+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>'+
+      '</div>'+
+      '<div class="budget-track"><div class="budget-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+      '<div class="budget-amounts"><span>'+fmt(spent)+' spent</span><span>'+fmt(b.limit)+' limit</span></div>'+
+      '</div>';
   }).join('');
+
+  // Attach delete listeners after rendering
+  list.querySelectorAll('.del-budget-btn').forEach(btn=>{
+    btn.addEventListener('click',function(){deleteBudget(this.dataset.cat);});
+  });
 }
 
 function openNewBudget() {
@@ -1208,7 +1214,19 @@ async function pullFromSheets(){
   try{
     const res=await callGAS(gasUrl,{action:'pull'});
     if(res.ok){
-      txns=res.txns.map(t=>({...t,amount:Number(t.amount),date:normDate(t.date)}));
+      txns=res.txns.map(t=>{
+        // Normalise category — map sheet label back to ID
+        const allC = allCats();
+        let cat = t.cat || 'other';
+        // Try exact ID match first
+        const byId = allC.find(c=>c.id===cat);
+        if(!byId){
+          // Try label match (case-insensitive)
+          const byLabel = allC.find(c=>c.label.toLowerCase()===cat.toLowerCase());
+          cat = byLabel ? byLabel.id : (t.type==='income'?'other_inc':'other');
+        }
+        return {...t, amount:Number(t.amount), date:normDate(t.date), cat};
+      });
       deletedIds=[];save();render();closeOv('sheetsOv');
       showToast('&#10003; Pulled '+txns.length+' transactions','ok');
     }else{showToast('Pull failed: '+(res.error||'unknown'),'err');}
@@ -1450,9 +1468,13 @@ function openCatMgr(){
   renderCustomList();openOv('catOv');
 }
 function renderCustomList(){
-  document.getElementById('customList').innerHTML=customCats.length
-    ?customCats.map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn" style="color:'+c.color+'">'+c.label+'</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-right:8px;text-transform:uppercase;letter-spacing:1px">'+c.type+'</span><button class="cd" onclick="delCat(\''+c.id+'\')">&#x2715;</button></div>').join('')
+  const el=document.getElementById('customList');
+  el.innerHTML=customCats.length
+    ?customCats.map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn" style="color:'+c.color+'">'+c.label+'</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-right:8px;text-transform:uppercase;letter-spacing:1px">'+c.type+'</span><button class="cd del-cat-btn" data-id="'+c.id+'">&#x2715;</button></div>').join('')
     :'<div style="font-size:12px;color:var(--text3);padding:8px 0">No custom categories yet.</div>';
+  el.querySelectorAll('.del-cat-btn').forEach(btn=>{
+    btn.addEventListener('click',function(){delCat(this.dataset.id);});
+  });
 }
 function delCat(id){if(!confirm('Delete category? Transactions move to Other.'))return;txns.forEach(t=>{if(t.cat===id)t.cat=t.type==='income'?'other_inc':'other';});customCats=customCats.filter(c=>c.id!==id);save();render();renderCustomList();showToast('Category deleted');}
 function openNewCat(){
@@ -1550,6 +1572,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (nb) nb.addEventListener('click', openNewBudget);
   const sb = document.getElementById('saveBudgetBtn');
   if (sb) sb.addEventListener('click', saveBudgetGoal);
+  const txDel = document.getElementById('txDeleteBtn');
+  if (txDel) txDel.addEventListener('click', deleteFromEdit);
+  const bankConfirm = document.getElementById('confirmBankBtn');
+  if (bankConfirm) bankConfirm.addEventListener('click', confirmBankImport);
 });
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
