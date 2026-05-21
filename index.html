@@ -691,39 +691,47 @@ function setupSwipeGestures(element, id) {
   });
 }
 
-function buildTxDomNode(t) {
-  const cat = categories[t.cat] || { emoji: '❓', label: 'Other', color: '#6060a0' };
+function submitTx() {
+  const amtInput = document.getElementById('inAmt').value;
+  const descInput = document.getElementById('inDesc').value.trim();
+  const dateInput = document.getElementById('inDate').value;
+  const editId = document.getElementById('editId').value;
   
-  const container = document.createElement('div');
-  container.className = 'tx-container';
+  const amount = parseFloat(amtInput);
   
-  const delBg = document.createElement('div');
-  delBg.className = 'tx-delete-bg';
-  delBg.innerHTML = '&#128465;&#65039;';
-  container.appendChild(delBg);
+  // Strict Validation
+  if(isNaN(amount) || amount <= 0) { 
+    showToast('Please enter a valid numeric amount', 'err'); 
+    return; 
+  }
+  if(!selectedCategory) { 
+    showToast('Please select a category', 'err'); 
+    return; 
+  }
+  if(!dateInput) { 
+    showToast('Please select a valid date', 'err'); 
+    return; 
+  }
   
-  const item = document.createElement('div');
-  item.className = 'tx-item';
+  if(editId) {
+    const idx = txns.findIndex(t => t.id === editId);
+    if(idx !== -1) {
+      txns[idx] = { id: editId, type: currentTxType, amount, desc: descInput, cat: selectedCategory, date: dateInput };
+      showToast('Record updated', 'ok');
+    }
+  } else {
+    const newTx = { id: 'tx-' + Date.now(), type: currentTxType, amount, desc: descInput, cat: selectedCategory, date: dateInput };
+    txns.unshift(newTx);
+    showToast('Transaction saved', 'ok');
+  }
   
-  item.innerHTML = `
-    <div class="tx-icon" style="background:${cat.color}15;color:${cat.color}">${cat.emoji}</div>
-    <div class="tx-body">
-      <div class="tx-name">${t.desc || cat.label}</div>
-      <div class="tx-meta">${new Date(t.date).toLocaleDateString('en-AU', {day:'numeric',month:'short'})} &bull; ${cat.label}</div>
-    </div>
-    <div class="tx-right">
-      <div class="tx-amt ${t.type === 'income' ? 'inc' : 'exp'}">${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</div>
-    </div>
-  `;
+  persistTxns();
+  closeOv('txModal');
+  render();
   
-  item.addEventListener('click', (e) => {
-    if(currentSwipeOffset < -10) return;
-    openTxModal(t.type, t.id);
-  });
-  
-  setupSwipeGestures(item, t.id);
-  container.appendChild(item);
-  return container;
+  if(localStorage.getItem('spendly_sheet_url')) {
+    doSync();
+  }
 }
 
 function doSync() {
