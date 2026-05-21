@@ -1,71 +1,88 @@
-<script>
-// --- CORE DATA MODEL ---
-let txns = [];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spendly Pro</title>
+    <style>
+        body { background: #070710; color: #fff; font-family: sans-serif; padding: 20px; }
+        .tx-item { background: #161628; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .inc { color: #22d3a0; }
+        .exp { color: #f25c7a; }
+        input { background: #1e1e35; color: white; border: 1px solid #2d2d50; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 8px; }
+        button { background: #7c6aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-// 1. Data Sanitizer: The "Iron Curtain"
-// This ensures data is always usable before the app sees it.
-function syncDataFromStorage() {
-    try {
-        const raw = localStorage.getItem('spendly_txns');
-        const parsed = raw ? JSON.parse(raw) : [];
-        
-        // Filter: Keep only objects that have a valid number for 'amount'
-        txns = Array.isArray(parsed) ? parsed.filter(t => t && typeof t.amount === 'number') : [];
-    } catch (e) {
-        console.error("Critical storage error. Resetting...");
-        txns = [];
-    }
-}
-
-// 2. Safe Rendering Logic
-function renderList(listId, dataArray) {
-    const list = document.getElementById(listId);
-    if (!list) return;
-    list.innerHTML = '';
+    <h2>Spendly Pro</h2>
+    <input type="number" id="inAmt" placeholder="Amount">
+    <input type="text" id="inDesc" placeholder="Description">
+    <button onclick="saveTx()">Save Transaction</button>
     
-    dataArray.forEach(t => {
-        // Double-verification before display
-        const amt = typeof t.amount === 'number' ? t.amount : 0;
-        
-        const div = document.createElement('div');
-        div.className = 'tx-item';
-        div.innerHTML = `
-            <div class="tx-body">
-                <div class="tx-name">${t.desc || 'Untitled'}</div>
-            </div>
-            <div class="tx-right">
-                <div class="tx-amt ${t.type}">${t.type === 'income' ? '+' : '-'}$${amt.toFixed(2)}</div>
-            </div>
-        `;
-        list.appendChild(div);
-    });
-}
+    <div id="txList" style="margin-top:20px;"></div>
 
-// 3. Robust Data Submission
-function addTx(type, amount, desc) {
-    const safeAmount = parseFloat(amount);
-    if (isNaN(safeAmount)) return;
-    
-    const newTx = {
-        id: Date.now(),
-        type: type,
-        amount: safeAmount,
-        desc: desc || 'Transaction',
-        date: new Date().toISOString()
-    };
-    
-    txns.unshift(newTx);
-    localStorage.setItem('spendly_txns', JSON.stringify(txns));
-    syncDataFromStorage(); // Refresh memory
-    renderAll();
-}
+    <script>
+        let txns = [];
 
-// Global refresh
-function renderAll() {
-    renderList('txList', txns);
-}
+        // 1. Load and Repair
+        function init() {
+            const raw = localStorage.getItem('spendly_txns');
+            try {
+                txns = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(txns)) txns = [];
+            } catch (e) {
+                txns = [];
+            }
+            render();
+        }
 
-// Initialize
-syncDataFromStorage();
-renderAll();
-</script>
+        // 2. Safe Render
+        function render() {
+            const list = document.getElementById('txList');
+            list.innerHTML = '';
+            txns.forEach(t => {
+                const amount = Number(t.amount) || 0;
+                const div = document.createElement('div');
+                div.className = 'tx-item';
+                div.innerHTML = `<div>${t.desc || 'No Name'}</div>
+                                 <div class="${t.type}">${amount.toFixed(2)}</div>`;
+                list.appendChild(div);
+            });
+            console.log("Rendered", txns.length, "transactions");
+        }
+
+        // 3. Save and Sync
+        function saveTx() {
+            const amount = parseFloat(document.getElementById('inAmt').value);
+            const desc = document.getElementById('inDesc').value;
+            
+            if(isNaN(amount)) return alert("Invalid Amount");
+
+            const newTx = { id: Date.now(), amount, desc, type: 'exp', date: new Date().toISOString() };
+            txns.unshift(newTx);
+            localStorage.setItem('spendly_txns', JSON.stringify(txns));
+            
+            render();
+            attemptSync(newTx); // Try to send to Sheet
+        }
+
+        function attemptSync(txn) {
+            const url = localStorage.getItem('spendly_sheet_url');
+            if(!url) {
+                console.log("No Sync URL set. Skipping sync.");
+                return;
+            }
+            
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(txn)
+            }).then(() => console.log("Sync request sent"))
+              .catch(err => console.error("Sync failed:", err));
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
