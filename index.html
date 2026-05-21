@@ -970,12 +970,36 @@ async function doSync() {
   updateSyncStatusText('Synchronizing...', 'syncing');
   
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transactions: txns })
-    });
+    const response = await function doSync() {
+  const url = localStorage.getItem('spendly_sheets_url');
+  if(!url) return;
+
+  const dot = document.getElementById('syncDot');
+  const dot2 = document.getElementById('syncDot2');
+  [dot, dot2].forEach(d => { if(d) { d.className='sync-dot syncing'; } });
+  document.getElementById('syncSub').innerText = 'Pushing batch stream packets...';
+
+  // FIXED FETCH WITH STANDARD CORS HANDLING
+  fetch(url, {
+    method: 'POST',
+    mode: 'cors', // Changed from 'no-cors' to 'cors'
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8' // Google Apps Script handles plain text text streams best without triggering pre-flight prechecks
+    },
+    body: JSON.stringify({ action: 'sync', txns: txns, deleted: deletedTxIds })
+  })
+  .then(response => {
+    [dot, dot2].forEach(d => { if(d) { d.className='sync-dot on'; } });
+    document.getElementById('syncSub').innerText = 'Spreadsheet array mirror update complete';
+    showToast('Data layer orchestration pipeline complete', 'ok');
+  })
+  .catch(err => {
+    console.error(err);
+    [dot, dot2].forEach(d => { if(d) { d.className='sync-dot err'; } });
+    document.getElementById('syncSub').innerText = 'Transmission interruption error state detected';
+    showToast('Network synchronization transport level fault failure', 'err');
+  });
+}
     
     // Fetch latest dataset updates downstream from the target Google Sheet matrix
     const pullResp = await fetch(`${url}?timestamp=${Date.now()}`);
