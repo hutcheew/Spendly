@@ -428,7 +428,7 @@ input[type="file"]{display:none;}
 <div id="view-budget" style="display:none">
   <div class="budget-sec">
     <div id="budgetList"></div>
-    <button class="btn-primary acc-btn" style="margin-top:4px" onclick="openOv('newBudgetOv')">+ Set Budget Goal</button>
+    <button class="btn-primary acc-btn" style="margin-top:4px" onclick="openNewBudget()">+ Set Budget Goal</button>
   </div>
 </div>
 
@@ -933,6 +933,14 @@ function renderBudgetView() {
       <div class="budget-amounts"><span>${fmt(spent)} spent</span><span>${fmt(b.limit)} limit</span></div>
     </div>`;
   }).join('');
+}
+
+function openNewBudget() {
+  // Always populate selector fresh when opening
+  const sel = document.getElementById('budgetCatSel');
+  sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>').join('');
+  document.getElementById('budgetAmount').value = '';
+  _openOv('newBudgetOv');
 }
 
 function saveBudgetGoal() {
