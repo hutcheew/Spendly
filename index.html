@@ -1110,8 +1110,8 @@ function handleRequest(e) {
   } catch(err) { return json({ ok: false, error: 'Parse error: ' + err.message }); }
   try {
     if (action === 'ping') return json({ ok: true, sheet: getSheet().getName(), ts: new Date().toISOString() });
-    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); return json({ ok: true, ...stats }); }
-    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets() }); }
+    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); return json({ ok: true, ...stats }); }
+    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats() }); }
     return json({ ok: false, error: 'Unknown action: ' + action });
   } catch(err) { return json({ ok: false, error: err.message }); }
 }
@@ -1191,6 +1191,30 @@ function readBudgets() {
     .map(r=>({ cat: String(r[0]), limit: Number(r[1]) }));
 }
 
+function writeCustomCats(cats) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('Spendly_Categories');
+  if (!sh) {
+    sh = ss.insertSheet('Spendly_Categories');
+    sh.appendRow(['id','emoji','label','color','type']);
+    sh.getRange(1,1,1,5).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+  const last = sh.getLastRow();
+  if (last > 1) sh.deleteRows(2, last - 1);
+  if (cats.length) {
+    sh.getRange(2,1,cats.length,5).setValues(cats.map(c=>[c.id||'',c.emoji||'📦',c.label||'',c.color||'#6b7280',c.type||'both']));
+  }
+}
+
+function readCustomCats() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Spendly_Categories');
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2,1,sh.getLastRow()-1,5).getValues()
+    .filter(r => r[0])
+    .map(r => ({ id:String(r[0]), emoji:r[1]||'📦', label:String(r[2]), color:r[3]||'#6b7280', type:r[4]||'both' }));
+}
+
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }`;
 
 function updateSyncUI() {
@@ -1258,7 +1282,7 @@ async function doSync(silent=false){
 }
 
 async function pushToSheets(){
-  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets});
+  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats});
   if(!res.ok) throw new Error(res.error||'Push failed');
   deletedIds=[];lastSync=new Date().toISOString();saveSyncCfg();save();updateSyncUI();
   if(document.getElementById('sheetsConnected').style.display!=='none')
@@ -1273,21 +1297,34 @@ async function pullFromSheets(){
     const res=await callGAS(gasUrl,{action:'pull'});
     if(!res||!res.ok){showToast('Pull failed: '+(res&&res.error?res.error:'no response'),'err');setSyncAnim(false);return;}
 
-    // Safely map transactions
+    // STEP 1: Apply custom categories FIRST so transaction mapping can use them
+    try {
+      if(res.customCats && Array.isArray(res.customCats)){
+        res.customCats.forEach(function(rc){
+          if(rc && rc.id && !customCats.find(function(c){ return c.id === rc.id; })){
+            customCats.push({id:String(rc.id),emoji:rc.emoji||'📦',label:String(rc.label||'Custom'),color:rc.color||'#6b7280',type:rc.type||'both'});
+          }
+        });
+      }
+    } catch(e){ console.warn('Custom cats sync skipped:',e); }
+
+    // STEP 2: Map transactions — now allCats() includes the custom ones from step 1
     const rawTxns = Array.isArray(res.txns) ? res.txns : [];
     const allC = allCats();
-    txns = rawTxns.map(t=>{
+    txns = rawTxns.map(function(t){
       try {
         let cat = String(t.cat||'other');
-        if(!allC.find(c=>c.id===cat)){
-          const byLabel=allC.find(c=>c.label.toLowerCase()===cat.toLowerCase());
-          cat=byLabel?byLabel.id:(t.type==='income'?'other_inc':'other');
+        // Try exact ID match (will now find custom cat IDs too)
+        if(!allC.find(function(c){ return c.id===cat; })){
+          // Try label match
+          const byLabel = allC.find(function(c){ return c.label.toLowerCase()===cat.toLowerCase(); });
+          cat = byLabel ? byLabel.id : (t.type==='income'?'other_inc':'other');
         }
-        return {id:String(t.id||Date.now()),type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat,date:normDate(t.date)};
+        return {id:String(t.id||Date.now()),type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat:cat,date:normDate(t.date)};
       } catch(e){ return null; }
     }).filter(Boolean);
 
-    // Safely apply budgets
+    // STEP 3: Apply budgets
     try {
       if(res.budgets && Array.isArray(res.budgets) && res.budgets.length){
         budgets = res.budgets.map(function(b){ return {cat:String(b.cat||''),limit:Number(b.limit)||0}; }).filter(function(b){ return b.cat && b.limit > 0; });
@@ -1560,7 +1597,7 @@ function saveNewCat(){
   const name=document.getElementById('ncName').value.trim();
   if(!name){showToast('Enter a name','err');return;}
   const type=document.getElementById('ncType').value;
-  const id='cc_'+name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
+  const id=name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
   customCats.push({id,emoji:selEmoji,label:name,color:selColor,type});
   save();render();closeOv('newCatOv');openCatMgr();showToast('"'+name+'" added','ok');
 }
