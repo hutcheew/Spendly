@@ -1192,6 +1192,7 @@ function readBudgets() {
 }
 
 function writeCustomCats(cats) {
+  if (!cats || !cats.length) return;
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sh = ss.getSheetByName('Spendly_Categories');
   if (!sh) {
@@ -1199,10 +1200,27 @@ function writeCustomCats(cats) {
     sh.appendRow(['id','emoji','label','color','type']);
     sh.getRange(1,1,1,5).setFontWeight('bold').setBackground('#f3f3f3');
   }
+  // Read existing IDs so we don't duplicate
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
-  if (cats.length) {
-    sh.getRange(2,1,cats.length,5).setValues(cats.map(c=>[c.id||'',c.emoji||'📦',c.label||'',c.color||'#6b7280',c.type||'both']));
+  const existingIds = {};
+  if (last > 1) {
+    sh.getRange(2,1,last-1,1).getValues().forEach(function(r,i){
+      if (r[0]) existingIds[String(r[0])] = i + 2;
+    });
+  }
+  const newRows = [];
+  cats.forEach(function(c) {
+    if (!c.id) return;
+    const row = [String(c.id), c.emoji||'📦', c.label||'', c.color||'#6b7280', c.type||'both'];
+    if (existingIds[String(c.id)]) {
+      // Update existing row
+      sh.getRange(existingIds[String(c.id)], 1, 1, 5).setValues([row]);
+    } else {
+      newRows.push(row);
+    }
+  });
+  if (newRows.length) {
+    sh.getRange(sh.getLastRow() + 1, 1, newRows.length, 5).setValues(newRows);
   }
 }
 
@@ -1298,13 +1316,15 @@ async function pullFromSheets(){
     if(!res||!res.ok){showToast('Pull failed: '+(res&&res.error?res.error:'no response'),'err');setSyncAnim(false);return;}
 
     // STEP 1: Apply custom categories FIRST so transaction mapping can use them
+    // Fully replace local custom cats with the merged sheet version
     try {
-      if(res.customCats && Array.isArray(res.customCats)){
-        res.customCats.forEach(function(rc){
-          if(rc && rc.id && !customCats.find(function(c){ return c.id === rc.id; })){
-            customCats.push({id:String(rc.id),emoji:rc.emoji||'📦',label:String(rc.label||'Custom'),color:rc.color||'#6b7280',type:rc.type||'both'});
-          }
-        });
+      if(res.customCats && Array.isArray(res.customCats) && res.customCats.length){
+        // Start with sheet cats, then add any local ones not in sheet
+        var sheetCatIds = res.customCats.map(function(c){ return c.id; });
+        var localOnly = customCats.filter(function(c){ return !sheetCatIds.includes(c.id); });
+        customCats = res.customCats.map(function(rc){
+          return {id:String(rc.id),emoji:rc.emoji||'📦',label:String(rc.label||'Custom'),color:rc.color||'#6b7280',type:rc.type||'both'};
+        }).concat(localOnly);
       }
     } catch(e){ console.warn('Custom cats sync skipped:',e); }
 
@@ -1335,6 +1355,8 @@ async function pullFromSheets(){
 
     deletedIds=[];save();render();closeOv('sheetsOv');
     showToast('Pulled '+txns.length+' transactions','ok');
+    // Push merged cats back so sheet has the complete combined list
+    if(gasUrl) setTimeout(function(){ pushToSheets(); }, 500);
   }catch(e){
     console.error('Pull error:',e);
     showToast('Pull failed: '+e.message,'err');
