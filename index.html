@@ -1076,8 +1076,8 @@ function handleRequest(e) {
   } catch(err) { return json({ ok: false, error: 'Parse error: ' + err.message }); }
   try {
     if (action === 'ping') return json({ ok: true, sheet: getSheet().getName(), ts: new Date().toISOString() });
-    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); return json({ ok: true, ...stats }); }
-    if (action === 'pull') { return json({ ok: true, txns: readAll() }); }
+    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); return json({ ok: true, ...stats }); }
+    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets() }); }
     return json({ ok: false, error: 'Unknown action: ' + action });
   } catch(err) { return json({ ok: false, error: err.message }); }
 }
@@ -1131,6 +1131,30 @@ function readAll() {
     if (d instanceof Date) { d = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
     return { id: String(r[0]), date: String(d), type: r[2], amount: Number(r[3]), cat: r[4], desc: r[5] };
   });
+}
+
+function writeBudgets(budgets) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('Spendly_Budgets');
+  if (!sh) {
+    sh = ss.insertSheet('Spendly_Budgets');
+    sh.appendRow(['cat', 'limit']);
+    sh.getRange(1,1,1,2).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+  const last = sh.getLastRow();
+  if (last > 1) sh.deleteRows(2, last - 1);
+  if (budgets.length) {
+    sh.getRange(2,1,budgets.length,2).setValues(budgets.map(b=>[b.cat, b.limit]));
+  }
+}
+
+function readBudgets() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Spendly_Budgets');
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2,1,sh.getLastRow()-1,2).getValues()
+    .filter(r=>r[0])
+    .map(r=>({ cat: String(r[0]), limit: Number(r[1]) }));
 }
 
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }`;
@@ -1200,7 +1224,7 @@ async function doSync(silent=false){
 }
 
 async function pushToSheets(){
-  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds});
+  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets});
   if(!res.ok) throw new Error(res.error||'Push failed');
   deletedIds=[];lastSync=new Date().toISOString();saveSyncCfg();save();updateSyncUI();
   if(document.getElementById('sheetsConnected').style.display!=='none')
@@ -1215,18 +1239,19 @@ async function pullFromSheets(){
     const res=await callGAS(gasUrl,{action:'pull'});
     if(res.ok){
       txns=res.txns.map(t=>{
-        // Normalise category — map sheet label back to ID
         const allC = allCats();
         let cat = t.cat || 'other';
-        // Try exact ID match first
         const byId = allC.find(c=>c.id===cat);
         if(!byId){
-          // Try label match (case-insensitive)
           const byLabel = allC.find(c=>c.label.toLowerCase()===cat.toLowerCase());
           cat = byLabel ? byLabel.id : (t.type==='income'?'other_inc':'other');
         }
         return {...t, amount:Number(t.amount), date:normDate(t.date), cat};
       });
+      // Pull budgets if included in response
+      if(res.budgets && Array.isArray(res.budgets) && res.budgets.length) {
+        budgets = res.budgets;
+      }
       deletedIds=[];save();render();closeOv('sheetsOv');
       showToast('&#10003; Pulled '+txns.length+' transactions','ok');
     }else{showToast('Pull failed: '+(res.error||'unknown'),'err');}
