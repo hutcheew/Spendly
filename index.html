@@ -912,32 +912,44 @@ function renderPie(svgId,legendId,data) {
 
 // ── BUDGET GOALS VIEW ─────────────────────────────────────────────────
 function renderBudgetView() {
-  const mt=monthTx();
-  const list=document.getElementById('budgetList');
-  if(!budgets.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.<br>Tap the button below to set limits.</p></div>';
+  const list = document.getElementById('budgetList');
+  if (!list) return;
+  const mt = monthTx();
+
+  if (!budgets || !budgets.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.<br>Tap the button below to set limits.</p></div>';
     return;
   }
-  list.innerHTML=budgets.map(b=>{
-    const c=catById(b.cat);
-    const spent=mt.filter(t=>t.type==='expense'&&t.cat===b.cat).reduce((s,t)=>s+t.amount,0);
-    const pct=Math.min(b.limit>0?spent/b.limit*100:0,100);
-    const color=pct>=100?'var(--expense)':pct>=80?'var(--warn)':c.color;
-    return '<div class="budget-card">'+
-      '<div class="budget-header">'+
-      '<div class="budget-icon">'+c.emoji+'</div>'+
-      '<div class="budget-title">'+c.label+'</div>'+
-      '<div class="budget-pct" style="color:'+color+'">'+Math.round(pct)+'%</div>'+
-      '<button class="del-budget-btn" data-cat="'+b.cat+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>'+
-      '</div>'+
-      '<div class="budget-track"><div class="budget-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
-      '<div class="budget-amounts"><span>'+fmt(spent)+' spent</span><span>'+fmt(b.limit)+' limit</span></div>'+
-      '</div>';
-  }).join('');
 
-  // Attach delete listeners after rendering
-  list.querySelectorAll('.del-budget-btn').forEach(btn=>{
-    btn.addEventListener('click',function(){deleteBudget(this.dataset.cat);});
+  // Build HTML safely without template literals
+  var html = '';
+  for (var i = 0; i < budgets.length; i++) {
+    var b = budgets[i];
+    if (!b || !b.cat) continue;
+    try {
+      var c = catById(b.cat);
+      var spent = 0;
+      for (var j = 0; j < mt.length; j++) {
+        if (mt[j].type === 'expense' && mt[j].cat === b.cat) spent += Number(mt[j].amount) || 0;
+      }
+      var pct = b.limit > 0 ? Math.min(spent / b.limit * 100, 100) : 0;
+      var color = pct >= 100 ? 'var(--expense)' : pct >= 80 ? 'var(--warn)' : c.color;
+      html += '<div class="budget-card">';
+      html += '<div class="budget-header">';
+      html += '<div class="budget-icon">' + c.emoji + '</div>';
+      html += '<div class="budget-title">' + escH(c.label) + '</div>';
+      html += '<div class="budget-pct" style="color:' + color + '">' + Math.round(pct) + '%</div>';
+      html += '<button class="del-budget-btn" data-cat="' + escH(b.cat) + '" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
+      html += '</div>';
+      html += '<div class="budget-track"><div class="budget-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+      html += '<div class="budget-amounts"><span>' + fmt(spent) + ' spent</span><span>' + fmt(b.limit) + ' limit</span></div>';
+      html += '</div>';
+    } catch(e) { console.warn('Budget render error for',b.cat,e); }
+  }
+  list.innerHTML = html || '<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.</p></div>';
+
+  list.querySelectorAll('.del-budget-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ deleteBudget(this.dataset.cat); });
   });
 }
 
@@ -1237,25 +1249,35 @@ async function pullFromSheets(){
   showToast('Pulling from Sheets...','info');setSyncAnim(true);
   try{
     const res=await callGAS(gasUrl,{action:'pull'});
-    if(res.ok){
-      txns=res.txns.map(t=>{
-        const allC = allCats();
-        let cat = t.cat || 'other';
-        const byId = allC.find(c=>c.id===cat);
-        if(!byId){
-          const byLabel = allC.find(c=>c.label.toLowerCase()===cat.toLowerCase());
-          cat = byLabel ? byLabel.id : (t.type==='income'?'other_inc':'other');
+    if(!res||!res.ok){showToast('Pull failed: '+(res&&res.error?res.error:'no response'),'err');setSyncAnim(false);return;}
+
+    // Safely map transactions
+    const rawTxns = Array.isArray(res.txns) ? res.txns : [];
+    const allC = allCats();
+    txns = rawTxns.map(t=>{
+      try {
+        let cat = String(t.cat||'other');
+        if(!allC.find(c=>c.id===cat)){
+          const byLabel=allC.find(c=>c.label.toLowerCase()===cat.toLowerCase());
+          cat=byLabel?byLabel.id:(t.type==='income'?'other_inc':'other');
         }
-        return {...t, amount:Number(t.amount), date:normDate(t.date), cat};
-      });
-      // Pull budgets if included in response
-      if(res.budgets && Array.isArray(res.budgets) && res.budgets.length) {
-        budgets = res.budgets;
+        return {id:String(t.id||Date.now()),type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat,date:normDate(t.date)};
+      } catch(e){ return null; }
+    }).filter(Boolean);
+
+    // Safely apply budgets
+    try {
+      if(Array.isArray(res.budgets) && res.budgets.length){
+        budgets=res.budgets.map(b=>({cat:String(b.cat||''),limit:Number(b.limit)||0})).filter(b=>b.cat&&b.limit>0);
       }
-      deletedIds=[];save();render();closeOv('sheetsOv');
-      showToast('&#10003; Pulled '+txns.length+' transactions','ok');
-    }else{showToast('Pull failed: '+(res.error||'unknown'),'err');}
-  }catch(e){showToast('Pull failed: '+e.message,'err');}
+    } catch(e){ console.warn('Budget sync skipped:',e); }
+
+    deletedIds=[];save();render();closeOv('sheetsOv');
+    showToast('Pulled '+txns.length+' transactions','ok');
+  }catch(e){
+    console.error('Pull error:',e);
+    showToast('Pull failed: '+e.message,'err');
+  }
   setSyncAnim(false);
 }
 
