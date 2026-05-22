@@ -80,6 +80,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 /* ── TX LIST ── */
 .list-sec{padding:14px 18px 0;}
 .sec-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;}
+.sec-lbl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sort-btn{background:var(--s3);border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:4px 10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
+.sort-btn:hover{border-color:var(--accent);color:var(--accent);}
 .tx-list{display:flex;flex-direction:column;gap:6px;}
 .tx-item{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:slideIn .3s ease both;}
 .tx-item:hover,.tx-item:active{background:var(--s3);border-color:var(--border2);}
@@ -367,7 +370,10 @@ input[type="file"]{display:none;}
 <!-- TRANSACTIONS -->
 <div id="view-transactions" style="display:none">
   <div class="list-sec">
-    <div class="sec-lbl" id="txSecLabel">All transactions</div>
+    <div class="sec-lbl-row">
+      <div class="sec-lbl" style="margin-bottom:0" id="txSecLabel">All transactions</div>
+      <button class="sort-btn" id="sortToggleBtn">&#8597; Newest</button>
+    </div>
     <div class="tx-list" id="txList"></div>
   </div>
 </div>
@@ -690,7 +696,7 @@ let lastSync   = localStorage.getItem('sply_last_sync')|| '';
 let autoSync   = localStorage.getItem('sply_auto_sync')|| 'off';
 let apiKey     = localStorage.getItem('sply_api_key')  || '';
 
-let curFilter='all', curView='overview', curType='expense';
+let curFilter='all', curView='overview', curType='expense', curSort='newest';
 let selEmoji=EMOJIS[0], selColor=COLORS[0];
 let viewMonth=new Date(); viewMonth.setDate(1);
 let selectedBank='cba', bankParsed=[], scannedTxData=null;
@@ -806,10 +812,26 @@ function txCard(t,delay) {
 }
 
 function renderLists() {
-  const list=filteredTx().slice().reverse();
+  const raw = filteredTx().slice();
+  // Sort by date
+  raw.sort(function(a, b) {
+    const da = parseDate(a.date), db = parseDate(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return curSort === 'oldest' ? da - db : db - da;
+  });
   const empty='<div class="empty"><div class="empty-icon">&#128202;</div><p>No transactions yet.<br>Tap <strong>&#43; Income</strong> or <strong>&#8722; Expense</strong> below.</p></div>';
-  document.getElementById('overviewList').innerHTML=list.length?list.slice(0,10).map((t,i)=>txCard(t,i*25)).join(''):empty;
-  document.getElementById('txList').innerHTML=list.length?list.map((t,i)=>txCard(t,i*20)).join(''):empty;
+  // Overview always shows newest first
+  const overviewList = filteredTx().slice().sort(function(a,b){
+    const da=parseDate(a.date),db=parseDate(b.date);
+    if(!da&&!db)return 0; if(!da)return 1; if(!db)return-1; return db-da;
+  });
+  document.getElementById('overviewList').innerHTML=overviewList.length?overviewList.slice(0,10).map(function(t,i){return txCard(t,i*25);}).join(''):empty;
+  document.getElementById('txList').innerHTML=raw.length?raw.map(function(t,i){return txCard(t,i*20);}).join(''):empty;
+  // Update sort button label
+  var btn = document.getElementById('sortToggleBtn');
+  if (btn) btn.innerHTML = '&#8597; ' + (curSort === 'oldest' ? 'Oldest' : 'Newest');
 }
 
 // ── BUDGET ALERTS ─────────────────────────────────────────────────────
@@ -1616,6 +1638,11 @@ if(!txns.length){
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────
+function toggleSort() {
+  curSort = curSort === 'newest' ? 'oldest' : 'newest';
+  renderLists();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const nb = document.getElementById('newBudgetBtn');
   if (nb) nb.addEventListener('click', openNewBudget);
@@ -1625,6 +1652,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (txDel) txDel.addEventListener('click', deleteFromEdit);
   const bankConfirm = document.getElementById('confirmBankBtn');
   if (bankConfirm) bankConfirm.addEventListener('click', confirmBankImport);
+  const sortBtn = document.getElementById('sortToggleBtn');
+  if (sortBtn) sortBtn.addEventListener('click', toggleSort);
 });
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
