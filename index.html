@@ -683,7 +683,7 @@ const BANK_FORMATS = {
 let txns       = JSON.parse(localStorage.getItem('sply_txns')    || '[]');
 let customCats = JSON.parse(localStorage.getItem('sply_cats')    || '[]');
 let deletedIds = JSON.parse(localStorage.getItem('sply_deleted') || '[]');
-let budgets    = JSON.parse(localStorage.getItem('sply_budgets') || '[]');
+let budgets = (function(){ try { var b = JSON.parse(localStorage.getItem('sply_budgets') || '[]'); return Array.isArray(b) ? b : []; } catch(e){ return []; } })();
 let offlineQ   = JSON.parse(localStorage.getItem('sply_offline') || '[]');
 let gasUrl     = localStorage.getItem('sply_gas_url')  || '';
 let lastSync   = localStorage.getItem('sply_last_sync')|| '';
@@ -701,7 +701,7 @@ function save() {
   localStorage.setItem('sply_txns',    JSON.stringify(txns));
   localStorage.setItem('sply_cats',    JSON.stringify(customCats));
   localStorage.setItem('sply_deleted', JSON.stringify(deletedIds));
-  localStorage.setItem('sply_budgets', JSON.stringify(budgets));
+  localStorage.setItem('sply_budgets', JSON.stringify(Array.isArray(budgets) ? budgets : []));
   localStorage.setItem('sply_offline', JSON.stringify(offlineQ));
 }
 function saveSyncCfg() {
@@ -815,7 +815,7 @@ function renderLists() {
 // ── BUDGET ALERTS ─────────────────────────────────────────────────────
 function renderBudgetAlerts() {
   const mt=monthTx();
-  const alerts=budgets.map(b=>{
+  const safeBudgets = Array.isArray(budgets) ? budgets : []; const alerts=safeBudgets.map(b=>{
     const spent=mt.filter(t=>t.type==='expense'&&t.cat===b.cat).reduce((s,t)=>s+t.amount,0);
     const pct=b.limit>0?spent/b.limit*100:0;
     const c=catById(b.cat);
@@ -975,7 +975,7 @@ function saveBudgetGoal() {
   if (!cat) { showToast('No category found — try again','err'); return; }
   if (!limit || limit <= 0) { showToast('Enter a limit amount','err'); return; }
 
-  budgets = budgets.filter(b => b.cat !== cat);
+  if(!Array.isArray(budgets)) budgets = []; budgets = budgets.filter(b => b.cat !== cat);
   budgets.push({ cat, limit });
   save();
   renderBudgetView();
@@ -983,7 +983,7 @@ function saveBudgetGoal() {
   closeOv('newBudgetOv');
   showToast('Budget goal saved ✓', 'ok');
 }
-function deleteBudget(cat){budgets=budgets.filter(b=>b.cat!==cat);save();renderBudgetView();renderBudgetAlerts();}
+function deleteBudget(cat){budgets=(Array.isArray(budgets)?budgets:[]).filter(b=>b.cat!==cat);save();renderBudgetView();renderBudgetAlerts();}
 
 // ── TX ACTIONS ────────────────────────────────────────────────────────
 function setFilter(f,el){curFilter=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderLists();}
@@ -1267,10 +1267,12 @@ async function pullFromSheets(){
 
     // Safely apply budgets
     try {
-      if(Array.isArray(res.budgets) && res.budgets.length){
-        budgets=res.budgets.map(b=>({cat:String(b.cat||''),limit:Number(b.limit)||0})).filter(b=>b.cat&&b.limit>0);
+      if(res.budgets && Array.isArray(res.budgets) && res.budgets.length){
+        budgets = res.budgets.map(function(b){ return {cat:String(b.cat||''),limit:Number(b.limit)||0}; }).filter(function(b){ return b.cat && b.limit > 0; });
+      } else {
+        budgets = Array.isArray(budgets) ? budgets : [];
       }
-    } catch(e){ console.warn('Budget sync skipped:',e); }
+    } catch(e){ console.warn('Budget sync skipped:',e); budgets = Array.isArray(budgets) ? budgets : []; }
 
     deletedIds=[];save();render();closeOv('sheetsOv');
     showToast('Pulled '+txns.length+' transactions','ok');
