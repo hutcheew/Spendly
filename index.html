@@ -275,6 +275,27 @@ input[type="file"]{display:none;}
 .scan-field span:last-child{font-weight:600;}
 
 /* Toast */
+/* ── PORTFOLIO STYLES ── */
+.holding-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
+.holding-card:hover{background:var(--s3);border-color:var(--border2);}
+.holding-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.holding-ticker{font-family:"Instrument Serif",serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;}
+.holding-name{font-size:11px;color:var(--text3);margin-top:1px;}
+.holding-value{font-family:"Instrument Serif",serif;font-size:20px;font-weight:700;text-align:right;}
+.holding-gl{font-size:11px;text-align:right;margin-top:2px;}
+.holding-gl.pos{color:var(--income);}
+.holding-gl.neg{color:var(--expense);}
+.holding-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:8px;}
+.holding-bar{height:4px;background:var(--s4);border-radius:99px;overflow:hidden;margin-top:8px;}
+.holding-bar-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+.div-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;}
+.div-left{display:flex;align-items:center;gap:10px;}
+.div-ticker{font-size:12px;font-weight:700;background:var(--s3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;}
+.div-info{font-size:11px;color:var(--text3);}
+.div-amount{font-family:"Instrument Serif",serif;font-size:17px;color:var(--income);}
+.ticker-chip{background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.ticker-chip:hover{border-color:var(--accent);color:var(--accent);}
+
 /* ── YNAB STYLES ── */
 .ynab-section{padding:14px 18px 0;}
 .ynab-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:8px;}
@@ -367,6 +388,7 @@ input[type="file"]{display:none;}
     <button class="tab" onclick="switchView('transactions')">Transactions</button>
     <button class="tab" onclick="switchView('analytics')">Analytics</button>
     <button class="tab" onclick="switchView('budget')">Budget</button>
+    <button class="tab" onclick="switchView('portfolio')">&#128200; ETF</button>
   </div>
 </div>
 
@@ -566,6 +588,107 @@ input[type="file"]{display:none;}
     <div class="fg"><label>Minimum monthly payment</label><input type="number" id="debtMinPayment" placeholder="e.g. 150" min="0" step="0.01" inputmode="decimal"></div>
     <div class="fg"><label>Interest rate (% p.a.)</label><input type="number" id="debtInterest" placeholder="e.g. 19.99" min="0" step="0.01" inputmode="decimal"></div>
     <button class="btn-primary exp-btn" id="saveDebtBtn">Add debt</button>
+  </div>
+</div>
+
+<!-- PORTFOLIO VIEW -->
+<div id="view-portfolio" style="display:none">
+
+  <!-- Hero total -->
+  <div style="margin:14px 18px 0;background:linear-gradient(145deg,var(--s2),var(--s3));border:1px solid var(--border);border-radius:var(--card-r);padding:20px;position:relative;overflow:hidden;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 90% 10%,rgba(34,211,160,.08),transparent);pointer-events:none;"></div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:6px;">Total Portfolio Value</div>
+    <div style="font-family:'Instrument Serif',serif;font-size:44px;letter-spacing:-2px;line-height:1;" id="portfolioTotal">$0.00</div>
+    <div style="font-size:12px;margin-top:6px;" id="portfolioGainLoss"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <div style="flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:4px;">Cost Basis</div>
+        <div style="font-size:16px;font-weight:600;" id="portfolioCost">$0.00</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:4px;">Total Return</div>
+        <div style="font-size:16px;font-weight:600;" id="portfolioReturn">0%</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:4px;">Dividends</div>
+        <div style="font-size:16px;font-weight:600;color:var(--income);" id="portfolioDivTotal">$0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Allocation pie -->
+  <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:12px;">Asset Allocation</div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <svg id="allocPie" width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0"></svg>
+      <div id="allocLegend" style="flex:1;display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </div>
+
+  <!-- Monthly contributions -->
+  <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;">Monthly Contributions</div>
+    <div style="height:52px;display:flex;align-items:flex-end;gap:4px;" id="contribSparkline"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;" id="contribLabels"></div>
+    <div style="margin-top:10px;display:flex;justify-content:space-between;font-size:12px;">
+      <span style="color:var(--text3);">This month</span>
+      <span style="font-weight:600;" id="contribThisMonth">$0.00</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px;">
+      <span style="color:var(--text3);">Total invested</span>
+      <span style="font-weight:600;" id="contribTotal">$0.00</span>
+    </div>
+  </div>
+
+  <!-- Holdings list -->
+  <div style="margin:10px 18px 0;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;">Holdings</div>
+    <div id="holdingsList"></div>
+    <button class="btn-primary acc-btn" style="margin-top:4px" id="addHoldingBtn">+ Add Holding</button>
+  </div>
+
+  <!-- Dividends list -->
+  <div style="margin:10px 18px 14px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;">Dividend History</div>
+    <div id="dividendsList"></div>
+    <button class="btn-secondary" id="addDividendBtn" style="margin-top:4px">+ Record Dividend</button>
+  </div>
+</div>
+
+<!-- ADD HOLDING MODAL -->
+<div class="overlay" id="holdingOv" onclick="closeOvOutside(event,'holdingOv')">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2 id="holdingModalTitle">Add Holding</h2>
+    <input type="hidden" id="holdingEditIdx">
+    <div class="fg">
+      <label>Ticker / ETF code</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;" id="tickerSuggestions"></div>
+      <input type="text" id="holdingTicker" placeholder="e.g. VGS, VAS, NDQ, EMKT" style="text-transform:uppercase">
+    </div>
+    <div class="fg"><label>Name</label><input type="text" id="holdingName" placeholder="e.g. Vanguard MSCI Index International ETF"></div>
+    <div class="fg"><label>Units held</label><input type="number" id="holdingUnits" placeholder="e.g. 100" min="0" step="0.001" inputmode="decimal"></div>
+    <div class="fg"><label>Average buy price (AUD)</label><input type="number" id="holdingAvgPrice" placeholder="e.g. 105.50" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Current price (AUD)</label><input type="number" id="holdingCurrentPrice" placeholder="e.g. 118.20" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg">
+      <label>Colour</label>
+      <div class="color-picker" id="holdingColorPicker"></div>
+    </div>
+    <button class="btn-primary acc-btn" id="saveHoldingBtn">Add Holding</button>
+    <button class="btn-danger" id="deleteHoldingBtn" style="display:none">Delete Holding</button>
+  </div>
+</div>
+
+<!-- ADD DIVIDEND MODAL -->
+<div class="overlay" id="dividendOv" onclick="closeOvOutside(event,'dividendOv')">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Record Dividend</h2>
+    <div class="fg"><label>ETF / Holding</label><select id="dividendTicker"></select></div>
+    <div class="fg"><label>Amount (AUD)</label><input type="number" id="dividendAmount" placeholder="e.g. 125.50" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Date received</label><input type="date" id="dividendDate"></div>
+    <div class="fg"><label>Notes (optional)</label><input type="text" id="dividendNotes" placeholder="e.g. Q1 distribution"></div>
+    <button class="btn-primary inc-btn" id="saveDividendBtn">Record Dividend</button>
   </div>
 </div>
 
@@ -828,7 +951,9 @@ let autoSync   = localStorage.getItem('sply_auto_sync')|| 'off';
 let apiKey     = localStorage.getItem('sply_api_key')  || '';
 
 let curFilter='all', curView='overview', curType='expense', curSort='newest';
-let allocations = (function(){ try { var a = JSON.parse(localStorage.getItem('sply_alloc') || '{}'); return a && typeof a === 'object' ? a : {}; } catch(e){ return {}; } })();
+let allocations  = (function(){ try { var a = JSON.parse(localStorage.getItem('sply_alloc') || '{}'); return a && typeof a === 'object' ? a : {}; } catch(e){ return {}; } })();
+let holdings     = (function(){ try { var h = JSON.parse(localStorage.getItem('sply_holdings') || '[]'); return Array.isArray(h) ? h : []; } catch(e){ return []; } })();
+let dividends    = (function(){ try { var d = JSON.parse(localStorage.getItem('sply_divs') || '[]'); return Array.isArray(d) ? d : []; } catch(e){ return []; } })();
 let savingsGoals = (function(){ try { var s = JSON.parse(localStorage.getItem('sply_goals') || '[]'); return Array.isArray(s) ? s : []; } catch(e){ return []; } })();
 let debts = (function(){ try { var d = JSON.parse(localStorage.getItem('sply_debts') || '[]'); return Array.isArray(d) ? d : []; } catch(e){ return []; } })();
 let selEmoji=EMOJIS[0], selColor=COLORS[0];
@@ -846,6 +971,8 @@ function save() {
   localStorage.setItem('sply_alloc',   JSON.stringify(allocations));
   localStorage.setItem('sply_goals',   JSON.stringify(Array.isArray(savingsGoals) ? savingsGoals : []));
   localStorage.setItem('sply_debts',   JSON.stringify(Array.isArray(debts) ? debts : []));
+  localStorage.setItem('sply_holdings',JSON.stringify(Array.isArray(holdings) ? holdings : []));
+  localStorage.setItem('sply_divs',    JSON.stringify(Array.isArray(dividends) ? dividends : []));
 }
 function saveSyncCfg() {
   localStorage.setItem('sply_gas_url',   gasUrl);
@@ -1785,14 +1912,15 @@ function closeMenu(){document.getElementById('menuOv').classList.remove('open');
 
 function switchView(v){
   curView=v;
-  ['overview','transactions','analytics','budget'].forEach(function(n){
+  ['overview','transactions','analytics','budget','portfolio'].forEach(function(n){
     var el=document.getElementById('view-'+n);
     if(el) el.style.display=n===v?'block':'none';
   });
   document.querySelectorAll('.tab').forEach(function(t,i){
-    t.classList.toggle('active',['overview','transactions','analytics','budget'][i]===v);
+    t.classList.toggle('active',['overview','transactions','analytics','budget','portfolio'][i]===v);
   });
   if(v==='analytics') renderAnalytics();
+  if(v==='portfolio') renderPortfolio();
   if(v==='budget'){
     var sel=document.getElementById('budgetCatSel');
     if(sel) sel.innerHTML=catsFor('expense').map(function(c){ return '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>'; }).join('');
@@ -1845,7 +1973,324 @@ if(!txns.length){
   budgets=[{cat:'food',limit:300},{cat:'dining',limit:150},{cat:'entertainment',limit:100}];
   savingsGoals=[{name:'Japan trip',target:3000,current:850,targetDate:'2026-12-01',emoji:'✈️'},{name:'Emergency fund',target:10000,current:4200,targetDate:'2027-06-01',emoji:'🏦'}];
   debts=[{name:'Credit card',balance:2400,original:5000,minPayment:150,interest:19.99}];
+  holdings=[
+    {ticker:'VGS', name:'Vanguard MSCI Index Intl ETF', units:50, avgPrice:105.20, currentPrice:118.40, color:'#818cf8'},
+    {ticker:'VAS', name:'Vanguard Australian Shares ETF', units:80, avgPrice:92.50, currentPrice:98.10, color:'#22d3a0'},
+    {ticker:'NDQ', name:'BetaShares NASDAQ 100 ETF', units:30, avgPrice:38.60, currentPrice:45.20, color:'#f97316'},
+    {ticker:'EMKT', name:'BetaShares Emerging Markets ETF', units:100, avgPrice:8.20, currentPrice:8.85, color:'#f472b6'},
+  ];
+  dividends=[
+    {ticker:'VGS', amount:124.50, date:'2026-03-15', notes:'Q1 distribution'},
+    {ticker:'VAS', amount:210.80, date:'2026-03-20', notes:'Q1 distribution'},
+  ];
   save();
+}
+
+
+// ── PORTFOLIO FUNCTIONS ───────────────────────────────────────────────
+
+const BETASHARES_ETFS = [
+  {ticker:'VGS', name:'Vanguard MSCI Index Intl ETF', color:'#818cf8'},
+  {ticker:'VAS', name:'Vanguard Australian Shares ETF', color:'#22d3a0'},
+  {ticker:'NDQ', name:'BetaShares NASDAQ 100 ETF', color:'#f97316'},
+  {ticker:'EMKT', name:'BetaShares Emerging Markets ETF', color:'#f472b6'},
+  {ticker:'A200', name:'BetaShares Australia 200 ETF', color:'#34d399'},
+  {ticker:'IVV', name:'iShares S&P500 ETF', color:'#60a5fa'},
+  {ticker:'VTS', name:'Vanguard US Total Market ETF', color:'#a78bfa'},
+  {ticker:'HACK', name:'BetaShares Global Cybersecurity ETF', color:'#fb923c'},
+];
+
+function renderPortfolio() {
+  var totalValue = 0, totalCost = 0, totalDivs = 0;
+
+  // Calculate totals
+  holdings.forEach(function(h) {
+    var value = (h.units || 0) * (h.currentPrice || 0);
+    var cost  = (h.units || 0) * (h.avgPrice || 0);
+    totalValue += value;
+    totalCost  += cost;
+  });
+  dividends.forEach(function(d) { totalDivs += Number(d.amount) || 0; });
+
+  var gain = totalValue - totalCost;
+  var gainPct = totalCost > 0 ? (gain / totalCost * 100) : 0;
+
+  // Hero
+  var totalEl = document.getElementById('portfolioTotal');
+  if(totalEl) totalEl.textContent = '$' + totalValue.toFixed(2);
+  var glEl = document.getElementById('portfolioGainLoss');
+  if(glEl) {
+    glEl.textContent = (gain >= 0 ? '+' : '') + '$' + gain.toFixed(2) + ' (' + (gain >= 0 ? '+' : '') + gainPct.toFixed(2) + '%)';
+    glEl.style.color = gain >= 0 ? 'var(--income)' : 'var(--expense)';
+  }
+  var costEl = document.getElementById('portfolioCost');
+  if(costEl) costEl.textContent = '$' + totalCost.toFixed(2);
+  var retEl = document.getElementById('portfolioReturn');
+  if(retEl) {
+    retEl.textContent = (gainPct >= 0 ? '+' : '') + gainPct.toFixed(2) + '%';
+    retEl.style.color = gainPct >= 0 ? 'var(--income)' : 'var(--expense)';
+  }
+  var divTotEl = document.getElementById('portfolioDivTotal');
+  if(divTotEl) divTotEl.textContent = '$' + totalDivs.toFixed(2);
+
+  // Allocation pie
+  var pieData = holdings.map(function(h) {
+    return {
+      label: h.ticker,
+      emoji: '',
+      val: (h.units||0) * (h.currentPrice||0),
+      color: h.color || '#818cf8'
+    };
+  }).filter(function(d){ return d.val > 0; });
+  renderPie('allocPie', 'allocLegend', pieData.length ? pieData : [{label:'No data',emoji:'',val:1,color:'var(--border)'}]);
+
+  // Contributions sparkline (investment category transactions last 6 months)
+  var months = [];
+  for(var i = 5; i >= 0; i--) {
+    var d = new Date(viewMonth);
+    d.setMonth(d.getMonth() - i);
+    months.push({
+      key: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'),
+      label: d.toLocaleString('default', {month:'short'})
+    });
+  }
+  var contribs = months.map(function(m) {
+    return txns.filter(function(t) {
+      return mKey(t.date) === m.key && t.type === 'expense' &&
+             (t.cat === 'investment' || (t.desc && t.desc.toLowerCase().includes('invest')));
+    }).reduce(function(s,t){ return s + t.amount; }, 0);
+  });
+  var maxC = Math.max.apply(null, contribs.concat([1]));
+  var sparkEl = document.getElementById('contribSparkline');
+  if(sparkEl) {
+    sparkEl.innerHTML = contribs.map(function(v, i) {
+      return '<div style="flex:1;border-radius:4px 4px 0 0;min-height:3px;height:' +
+        Math.max(4, v/maxC*48) + 'px;background:' +
+        (i===5?'var(--accent)':'var(--s4)') +
+        ';border:1px solid '+(i===5?'var(--accent)':'var(--border)')+
+        ';transition:height .5s ease;" title="'+months[i].label+': $'+v.toFixed(0)+'"></div>';
+    }).join('');
+  }
+  var lblEl = document.getElementById('contribLabels');
+  if(lblEl) {
+    lblEl.innerHTML = months.map(function(m,i) {
+      return '<span style="font-size:10px;color:'+(i===5?'var(--text2)':'var(--text3)')+'">'+m.label+'</span>';
+    }).join('');
+  }
+  var thisMonthContrib = contribs[5];
+  var totalContrib = txns.filter(function(t) {
+    return t.type === 'expense' && (t.cat === 'investment' || (t.desc && t.desc.toLowerCase().includes('invest')));
+  }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var cmEl = document.getElementById('contribThisMonth');
+  if(cmEl) cmEl.textContent = '$' + thisMonthContrib.toFixed(2);
+  var ctEl = document.getElementById('contribTotal');
+  if(ctEl) ctEl.textContent = '$' + totalContrib.toFixed(2);
+
+  renderHoldings();
+  renderDividends();
+}
+
+function renderHoldings() {
+  var list = document.getElementById('holdingsList');
+  if(!list) return;
+  var totalValue = holdings.reduce(function(s,h){ return s + (h.units||0)*(h.currentPrice||0); }, 0);
+
+  if(!holdings.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#128200;</div><p>No holdings yet.<br>Tap below to add your first ETF.</p></div>';
+    return;
+  }
+
+  list.innerHTML = holdings.map(function(h, i) {
+    var value   = (h.units||0) * (h.currentPrice||0);
+    var cost    = (h.units||0) * (h.avgPrice||0);
+    var gain    = value - cost;
+    var gainPct = cost > 0 ? (gain/cost*100) : 0;
+    var alloc   = totalValue > 0 ? (value/totalValue*100) : 0;
+    var isPos   = gain >= 0;
+    return '<div class="holding-card" data-idx="'+i+'">' +
+      '<div class="holding-header">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:'+h.color+'22;border:1px solid '+h.color+'44;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+      '<span style="font-size:11px;font-weight:800;color:'+h.color+'">'+escH(h.ticker)+'</span></div>' +
+      '<div style="flex:1;min-width:0;">' +
+      '<div class="holding-ticker">'+escH(h.ticker)+'</div>' +
+      '<div class="holding-name">'+escH(h.name||'')+'</div></div>' +
+      '<div><div class="holding-value">$'+(value).toFixed(2)+'</div>' +
+      '<div class="holding-gl '+(isPos?'pos':'neg')+'">'+(isPos?'+':'')+gain.toFixed(2)+' ('+(isPos?'+':'')+gainPct.toFixed(2)+'%)</div>' +
+      '</div></div>' +
+      '<div class="holding-meta">' +
+      '<span>'+h.units+' units @ $'+h.avgPrice+'</span>' +
+      '<span>Current: $'+(h.currentPrice||0)+'</span>' +
+      '<span style="color:var(--accent)">'+alloc.toFixed(1)+'% of portfolio</span>' +
+      '</div>' +
+      '<div class="holding-bar"><div class="holding-bar-fill" style="width:'+alloc+'%;background:'+h.color+'"></div></div>' +
+      '</div>';
+  }).join('');
+
+  list.querySelectorAll('.holding-card').forEach(function(card) {
+    card.addEventListener('click', function() { openEditHolding(parseInt(this.dataset.idx)); });
+  });
+}
+
+function renderDividends() {
+  var list = document.getElementById('dividendsList');
+  if(!list) return;
+  if(!dividends.length) {
+    list.innerHTML = '<div class="empty" style="padding:20px 0"><div class="empty-icon" style="font-size:24px">&#127808;</div><p>No dividends recorded yet.</p></div>';
+    return;
+  }
+  var sorted = dividends.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+  list.innerHTML = sorted.map(function(d) {
+    return '<div class="div-item">' +
+      '<div class="div-left">' +
+      '<span class="div-ticker">'+escH(d.ticker)+'</span>' +
+      '<div><div style="font-size:13px;font-weight:500;">'+escH(d.notes||'Distribution')+'</div>' +
+      '<div class="div-info">'+normDate(d.date)+'</div></div></div>' +
+      '<div class="div-amount">+$'+Number(d.amount).toFixed(2)+'</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ── HOLDING MODAL ─────────────────────────────────────────────────────
+function openAddHolding() {
+  document.getElementById('holdingModalTitle').textContent = 'Add Holding';
+  document.getElementById('holdingEditIdx').value = '';
+  document.getElementById('holdingTicker').value = '';
+  document.getElementById('holdingName').value = '';
+  document.getElementById('holdingUnits').value = '';
+  document.getElementById('holdingAvgPrice').value = '';
+  document.getElementById('holdingCurrentPrice').value = '';
+  document.getElementById('deleteHoldingBtn').style.display = 'none';
+  document.getElementById('saveHoldingBtn').textContent = 'Add Holding';
+
+  // Ticker suggestions — pre-fill with Betashares ETFs
+  var sug = document.getElementById('tickerSuggestions');
+  if(sug) {
+    sug.innerHTML = BETASHARES_ETFS.map(function(e) {
+      return '<div class="ticker-chip" data-ticker="'+e.ticker+'" data-name="'+e.name+'" data-color="'+e.color+'">'+e.ticker+'</div>';
+    }).join('');
+    sug.querySelectorAll('.ticker-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        document.getElementById('holdingTicker').value = this.dataset.ticker;
+        document.getElementById('holdingName').value = this.dataset.name;
+        selectedHoldingColor = this.dataset.color;
+        sug.querySelectorAll('.ticker-chip').forEach(function(c){ c.style.borderColor=''; c.style.color=''; });
+        this.style.borderColor = selectedHoldingColor;
+        this.style.color = selectedHoldingColor;
+      });
+    });
+  }
+
+  // Color picker
+  selectedHoldingColor = COLORS[0];
+  var cp = document.getElementById('holdingColorPicker');
+  if(cp) {
+    cp.innerHTML = COLORS.map(function(c,i) {
+      return '<div class="cp '+(i===0?'selected':'')+'" style="background:'+c+'" data-color="'+c+'"></div>';
+    }).join('');
+    cp.querySelectorAll('.cp').forEach(function(el) {
+      el.addEventListener('click', function() {
+        cp.querySelectorAll('.cp').forEach(function(x){ x.classList.remove('selected'); });
+        this.classList.add('selected');
+        selectedHoldingColor = this.dataset.color;
+      });
+    });
+  }
+  _openOv('holdingOv');
+}
+
+function openEditHolding(idx) {
+  var h = holdings[idx]; if(!h) return;
+  document.getElementById('holdingModalTitle').textContent = 'Edit Holding';
+  document.getElementById('holdingEditIdx').value = idx;
+  document.getElementById('holdingTicker').value = h.ticker || '';
+  document.getElementById('holdingName').value = h.name || '';
+  document.getElementById('holdingUnits').value = h.units || '';
+  document.getElementById('holdingAvgPrice').value = h.avgPrice || '';
+  document.getElementById('holdingCurrentPrice').value = h.currentPrice || '';
+  document.getElementById('deleteHoldingBtn').style.display = 'block';
+  document.getElementById('saveHoldingBtn').textContent = 'Save Changes';
+  selectedHoldingColor = h.color || COLORS[0];
+  var sug = document.getElementById('tickerSuggestions');
+  if(sug) sug.innerHTML = '';
+  var cp = document.getElementById('holdingColorPicker');
+  if(cp) {
+    cp.innerHTML = COLORS.map(function(c) {
+      return '<div class="cp '+(c===selectedHoldingColor?'selected':'')+'" style="background:'+c+'" data-color="'+c+'"></div>';
+    }).join('');
+    cp.querySelectorAll('.cp').forEach(function(el) {
+      el.addEventListener('click', function() {
+        cp.querySelectorAll('.cp').forEach(function(x){ x.classList.remove('selected'); });
+        this.classList.add('selected');
+        selectedHoldingColor = this.dataset.color;
+      });
+    });
+  }
+  _openOv('holdingOv');
+}
+
+var selectedHoldingColor = '#818cf8';
+
+function saveHolding() {
+  var ticker  = document.getElementById('holdingTicker').value.trim().toUpperCase();
+  var name    = document.getElementById('holdingName').value.trim();
+  var units   = parseFloat(document.getElementById('holdingUnits').value) || 0;
+  var avgPrice= parseFloat(document.getElementById('holdingAvgPrice').value) || 0;
+  var curPrice= parseFloat(document.getElementById('holdingCurrentPrice').value) || 0;
+  var editIdx = document.getElementById('holdingEditIdx').value;
+
+  if(!ticker) { showToast('Enter a ticker code','err'); return; }
+  if(!units || units <= 0) { showToast('Enter number of units','err'); return; }
+  if(!avgPrice || avgPrice <= 0) { showToast('Enter average buy price','err'); return; }
+
+  var holding = {ticker:ticker, name:name, units:units, avgPrice:avgPrice, currentPrice:curPrice||avgPrice, color:selectedHoldingColor};
+
+  if(editIdx !== '') {
+    holdings[parseInt(editIdx)] = holding;
+    showToast(ticker + ' updated','ok');
+  } else {
+    holdings.push(holding);
+    showToast(ticker + ' added to portfolio','ok');
+  }
+  save(); closeOv('holdingOv'); renderPortfolio();
+}
+
+function deleteHolding() {
+  var editIdx = parseInt(document.getElementById('holdingEditIdx').value);
+  if(isNaN(editIdx)) return;
+  if(!confirm('Remove this holding?')) return;
+  holdings.splice(editIdx, 1);
+  save(); closeOv('holdingOv'); renderPortfolio();
+  showToast('Holding removed');
+}
+
+// ── DIVIDEND MODAL ────────────────────────────────────────────────────
+function openAddDividend() {
+  var sel = document.getElementById('dividendTicker');
+  if(sel) {
+    sel.innerHTML = holdings.map(function(h) {
+      return '<option value="'+escH(h.ticker)+'">'+escH(h.ticker)+' - '+escH(h.name||'')+'</option>';
+    }).join('');
+    if(!holdings.length) sel.innerHTML = '<option value="">Add a holding first</option>';
+  }
+  document.getElementById('dividendAmount').value = '';
+  document.getElementById('dividendDate').valueAsDate = new Date();
+  document.getElementById('dividendNotes').value = '';
+  _openOv('dividendOv');
+}
+
+function saveDividend() {
+  var ticker = document.getElementById('dividendTicker').value;
+  var amount = parseFloat(document.getElementById('dividendAmount').value) || 0;
+  var date   = document.getElementById('dividendDate').value;
+  var notes  = document.getElementById('dividendNotes').value.trim();
+  if(!ticker) { showToast('Select a holding','err'); return; }
+  if(!amount || amount <= 0) { showToast('Enter dividend amount','err'); return; }
+  if(!date) { showToast('Pick a date','err'); return; }
+  dividends.push({ticker:ticker, amount:amount, date:date, notes:notes});
+  // Also add as income transaction
+  txns.push({id:Date.now().toString(), type:'income', amount:amount, desc:ticker+' dividend'+(notes?' - '+notes:''), cat:'investment', date:date});
+  save(); closeOv('dividendOv'); renderPortfolio(); render();
+  showToast(ticker + ' dividend recorded','ok');
 }
 
 // ── YNAB FUNCTIONS ───────────────────────────────────────────────────
@@ -2184,6 +2629,17 @@ document.addEventListener('DOMContentLoaded', function() {
   if (bankConfirm) bankConfirm.addEventListener('click', confirmBankImport);
   var sortBtn = document.getElementById('sortToggleBtn');
   if (sortBtn) sortBtn.addEventListener('click', toggleSort);
+  // Portfolio buttons
+  var addHolding = document.getElementById('addHoldingBtn');
+  if (addHolding) addHolding.addEventListener('click', openAddHolding);
+  var saveHolding = document.getElementById('saveHoldingBtn');
+  if (saveHolding) saveHolding.addEventListener('click', saveHolding);
+  var delHolding = document.getElementById('deleteHoldingBtn');
+  if (delHolding) delHolding.addEventListener('click', deleteHolding);
+  var addDiv = document.getElementById('addDividendBtn');
+  if (addDiv) addDiv.addEventListener('click', openAddDividend);
+  var saveDiv = document.getElementById('saveDividendBtn');
+  if (saveDiv) saveDiv.addEventListener('click', saveDividend);
   // YNAB buttons
   var saveAlloc = document.getElementById('saveAllocBtn');
   if (saveAlloc) saveAlloc.addEventListener('click', saveAllocations);
