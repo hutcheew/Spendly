@@ -275,6 +275,59 @@ input[type="file"]{display:none;}
 .scan-field span:last-child{font-weight:600;}
 
 /* Toast */
+/* ── YNAB STYLES ── */
+.ynab-section{padding:14px 18px 0;}
+.ynab-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:8px;}
+.ynab-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ynab-icon{font-size:20px;}
+.ynab-title{flex:1;font-weight:500;font-size:14px;}
+.ynab-available{font-family:'Instrument Serif',serif;font-size:18px;letter-spacing:-.3px;}
+.ynab-available.green{color:var(--income);}
+.ynab-available.yellow{color:var(--warn);}
+.ynab-available.red{color:var(--expense);}
+.ynab-track{height:5px;background:var(--s4);border-radius:99px;overflow:hidden;margin-top:6px;}
+.ynab-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.ynab-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px;}
+.ynab-tabs{display:flex;gap:6px;margin:10px 18px 0;overflow-x:auto;scrollbar-width:none;}
+.ynab-tabs::-webkit-scrollbar{display:none;}
+.ynab-tab{background:var(--s2);border:1px solid var(--border);color:var(--text3);border-radius:99px;padding:6px 14px;font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.ynab-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(124,106,255,.1);}
+.age-of-money{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--border);border-radius:var(--card-r);padding:18px;margin:0 18px 10px;text-align:center;}
+.aom-number{font-family:'Instrument Serif',serif;font-size:52px;letter-spacing:-2px;color:var(--accent);}
+.aom-label{font-size:11px;color:var(--text3);margin-top:4px;}
+.aom-msg{font-size:12px;color:var(--text2);margin-top:8px;line-height:1.6;}
+.goal-progress{background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:8px;}
+.goal-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.goal-emoji{font-size:22px;}
+.goal-info{flex:1;}
+.goal-name{font-weight:600;font-size:14px;}
+.goal-date{font-size:11px;color:var(--text3);margin-top:2px;}
+.goal-amount{font-family:'Instrument Serif',serif;font-size:18px;text-align:right;}
+.goal-pct{font-size:11px;color:var(--text3);}
+.goal-track{height:6px;background:var(--s4);border-radius:99px;overflow:hidden;}
+.goal-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease;}
+.debt-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:8px;}
+.debt-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.debt-icon{font-size:20px;}
+.debt-title{flex:1;font-weight:500;font-size:14px;}
+.debt-balance{font-family:'Instrument Serif',serif;font-size:18px;color:var(--expense);}
+.debt-track{height:5px;background:var(--s4);border-radius:99px;overflow:hidden;margin-top:6px;}
+.debt-fill{height:100%;border-radius:99px;background:var(--expense);transition:width .5s ease;}
+.debt-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px;}
+.tbg-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.tbg-row:last-child{border-bottom:none;}
+.tbg-left{display:flex;align-items:center;gap:8px;}
+.tbg-cat{font-size:13px;font-weight:500;}
+.tbg-right{display:flex;align-items:center;gap:12px;}
+.tbg-input{background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:13px;width:80px;text-align:right;outline:none;}
+.tbg-input:focus{border-color:var(--accent);}
+.tbg-avail{font-size:13px;font-weight:600;min-width:60px;text-align:right;}
+.ready-to-assign{margin:10px 18px 0;background:linear-gradient(135deg,rgba(124,106,255,.15),rgba(176,106,255,.1));border:1px solid rgba(124,106,255,.3);border-radius:var(--card-r);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.rta-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);}
+.rta-amount{font-family:'Instrument Serif',serif;font-size:28px;letter-spacing:-1px;}
+.rta-amount.positive{color:var(--accent);}
+.rta-amount.negative{color:var(--expense);}
+
 .toast{position:fixed;bottom:calc(108px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(16px);background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:99px;padding:10px 20px;font-size:12px;font-weight:500;opacity:0;transition:all .3s;z-index:600;white-space:nowrap;max-width:320px;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.ok{border-color:rgba(34,211,160,.5);color:var(--income);}
@@ -432,9 +485,87 @@ input[type="file"]{display:none;}
 
 <!-- BUDGET -->
 <div id="view-budget" style="display:none">
-  <div class="budget-sec">
+  <!-- YNAB sub-tabs -->
+  <div class="ynab-tabs">
+    <div class="ynab-tab active" id="ynab-tab-budget" onclick="switchYnabTab('budget',this)">&#127919; Budget</div>
+    <div class="ynab-tab" id="ynab-tab-assign" onclick="switchYnabTab('assign',this)">&#128176; Assign</div>
+    <div class="ynab-tab" id="ynab-tab-goals" onclick="switchYnabTab('goals',this)">&#127942; Goals</div>
+    <div class="ynab-tab" id="ynab-tab-debts" onclick="switchYnabTab('debts',this)">&#128196; Debts</div>
+    <div class="ynab-tab" id="ynab-tab-aom" onclick="switchYnabTab('aom',this)">&#8987; Age of Money</div>
+  </div>
+
+  <!-- Budget limits -->
+  <div id="ynab-budget" class="ynab-section">
     <div id="budgetList"></div>
-    <button class="btn-primary acc-btn" style="margin-top:4px" id="newBudgetBtn">+ Set Budget Goal</button>
+    <button class="btn-primary acc-btn" style="margin-top:4px" id="newBudgetBtn">+ Set Budget Limit</button>
+  </div>
+
+  <!-- Assign dollars -->
+  <div id="ynab-assign" class="ynab-section" style="display:none">
+    <div class="ready-to-assign">
+      <div><div class="rta-label">Ready to assign</div><div class="rta-amount positive" id="rtaAmount">$0.00</div></div>
+      <div style="font-size:11px;color:var(--text3);text-align:right">Income minus<br>what's assigned</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-top:10px;">
+      <div class="sec-lbl" style="margin-bottom:12px">Assign to categories</div>
+      <div id="assignList"></div>
+    </div>
+    <button class="btn-primary acc-btn" style="margin-top:8px" id="saveAllocBtn">Save allocations</button>
+  </div>
+
+  <!-- Savings goals -->
+  <div id="ynab-goals" class="ynab-section" style="display:none">
+    <div id="goalsList"></div>
+    <button class="btn-primary acc-btn" style="margin-top:4px" id="newGoalBtn">+ New Savings Goal</button>
+  </div>
+
+  <!-- Debts -->
+  <div id="ynab-debts" class="ynab-section" style="display:none">
+    <div id="debtsList"></div>
+    <button class="btn-primary acc-btn" style="margin-top:4px" id="newDebtBtn">+ Add Debt</button>
+  </div>
+
+  <!-- Age of Money -->
+  <div id="ynab-aom" class="ynab-section" style="display:none">
+    <div class="age-of-money">
+      <div class="aom-number" id="aomDays">—</div>
+      <div class="aom-label">days old</div>
+      <div class="aom-msg" id="aomMsg">Add more transactions to calculate your age of money.</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;">
+      <div class="sec-lbl" style="margin-bottom:10px">What this means</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.8">Your <strong>age of money</strong> is the average number of days between when money comes in and when you spend it. The older your money, the more buffer you have.<br><br>
+      <span style="color:var(--expense)">&#9632; Under 10 days</span> — living paycheck to paycheck<br>
+      <span style="color:var(--warn)">&#9632; 10–30 days</span> — getting there<br>
+      <span style="color:var(--income)">&#9632; Over 30 days</span> — healthy buffer<br>
+      <span style="color:var(--accent)">&#9632; Over 60 days</span> — excellent cushion</p>
+    </div>
+  </div>
+</div>
+
+<!-- NEW SAVINGS GOAL -->
+<div class="overlay" id="newGoalOv" onclick="closeOvOutside(event,'newGoalOv')">
+  <div class="sheet">
+    <div class="handle"></div><h2>New Savings Goal</h2>
+    <div class="fg"><label>Goal name</label><input type="text" id="goalName" placeholder="e.g. Japan trip, Emergency fund..."></div>
+    <div class="fg"><label>Target amount (AUD)</label><input type="number" id="goalTarget" placeholder="e.g. 3000" min="1" step="1" inputmode="decimal"></div>
+    <div class="fg"><label>Current savings</label><input type="number" id="goalCurrent" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Target date</label><input type="date" id="goalDate"></div>
+    <div class="fg"><label>Icon</label><div class="emoji-picker" id="goalEmojiPicker"></div></div>
+    <button class="btn-primary acc-btn" id="saveGoalBtn">Save goal</button>
+  </div>
+</div>
+
+<!-- NEW DEBT -->
+<div class="overlay" id="newDebtOv" onclick="closeOvOutside(event,'newDebtOv')">
+  <div class="sheet">
+    <div class="handle"></div><h2>Add Debt</h2>
+    <div class="fg"><label>Name</label><input type="text" id="debtName" placeholder="e.g. Credit card, Car loan..."></div>
+    <div class="fg"><label>Total balance owed (AUD)</label><input type="number" id="debtBalance" placeholder="e.g. 5000" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Original amount (AUD)</label><input type="number" id="debtOriginal" placeholder="e.g. 8000" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Minimum monthly payment</label><input type="number" id="debtMinPayment" placeholder="e.g. 150" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Interest rate (% p.a.)</label><input type="number" id="debtInterest" placeholder="e.g. 19.99" min="0" step="0.01" inputmode="decimal"></div>
+    <button class="btn-primary exp-btn" id="saveDebtBtn">Add debt</button>
   </div>
 </div>
 
@@ -697,6 +828,9 @@ let autoSync   = localStorage.getItem('sply_auto_sync')|| 'off';
 let apiKey     = localStorage.getItem('sply_api_key')  || '';
 
 let curFilter='all', curView='overview', curType='expense', curSort='newest';
+let allocations = (function(){ try { var a = JSON.parse(localStorage.getItem('sply_alloc') || '{}'); return a && typeof a === 'object' ? a : {}; } catch(e){ return {}; } })();
+let savingsGoals = (function(){ try { var s = JSON.parse(localStorage.getItem('sply_goals') || '[]'); return Array.isArray(s) ? s : []; } catch(e){ return []; } })();
+let debts = (function(){ try { var d = JSON.parse(localStorage.getItem('sply_debts') || '[]'); return Array.isArray(d) ? d : []; } catch(e){ return []; } })();
 let selEmoji=EMOJIS[0], selColor=COLORS[0];
 let viewMonth=new Date(); viewMonth.setDate(1);
 let selectedBank='cba', bankParsed=[], scannedTxData=null;
@@ -709,6 +843,9 @@ function save() {
   localStorage.setItem('sply_deleted', JSON.stringify(deletedIds));
   localStorage.setItem('sply_budgets', JSON.stringify(Array.isArray(budgets) ? budgets : []));
   localStorage.setItem('sply_offline', JSON.stringify(offlineQ));
+  localStorage.setItem('sply_alloc',   JSON.stringify(allocations));
+  localStorage.setItem('sply_goals',   JSON.stringify(Array.isArray(savingsGoals) ? savingsGoals : []));
+  localStorage.setItem('sply_debts',   JSON.stringify(Array.isArray(debts) ? debts : []));
 }
 function saveSyncCfg() {
   localStorage.setItem('sply_gas_url',   gasUrl);
@@ -878,14 +1015,14 @@ function renderAnalytics() {
   // Top cat
   const expByCat=catsFor('expense').map(c=>({...c,val:mt.filter(t=>t.type==='expense'&&t.cat===c.id).reduce((s,t)=>s+t.amount,0)})).filter(d=>d.val>0).sort((a,b)=>b.val-a.val);
   if(expByCat.length){document.getElementById('topCat').textContent=expByCat[0].emoji;document.getElementById('topCatName').textContent=expByCat[0].label;}
-  else{document.getElementById('topCat').textContent='—';document.getElementById('topCatName').textContent='No data';}
+  else{document.getElementById('topCat').textContent='--';document.getElementById('topCatName').textContent='No data';}
 
   // Avg tx
   const avgEl=document.getElementById('avgTx');
   const expTx=mt.filter(t=>t.type==='expense');
-  avgEl.textContent=expTx.length?fmt(expense/expTx.length):'—';
+  avgEl.textContent=expTx.length?fmt(expense/expTx.length):'--';
 
-  // Sparkline — last 6 months
+  // Sparkline -- last 6 months
   const months=[];
   for(let i=5;i>=0;i--){const d=new Date(viewMonth);d.setMonth(d.getMonth()-i);months.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.toLocaleString('default',{month:'short'})});}
   const vals=months.map(m=>txns.filter(t=>mKey(t.date)===m.key&&t.type==='expense').reduce((s,t)=>s+t.amount,0));
@@ -994,7 +1131,7 @@ function saveBudgetGoal() {
     sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>').join('');
     showToast('Please select a category','err'); return;
   }
-  if (!cat) { showToast('No category found — try again','err'); return; }
+  if (!cat) { showToast('No category found -- try again','err'); return; }
   if (!limit || limit <= 0) { showToast('Enter a limit amount','err'); return; }
 
   if(!Array.isArray(budgets)) budgets = []; budgets = budgets.filter(b => b.cat !== cat);
@@ -1088,7 +1225,7 @@ function deleteTx(id) {
 function confirmClear(){if(confirm('Delete ALL transactions?')){txns.forEach(t=>{if(!deletedIds.includes(t.id))deletedIds.push(t.id);});txns=[];save();render();showToast('All data cleared');}}
 
 // ── GOOGLE SHEETS SYNC ─────────────────────────────────────────────────
-const GAS_CODE = `// Spendly Pro — Apps Script Backend
+const GAS_CODE = `// Spendly Pro -- Apps Script Backend
 // 1. Open your Google Sheet → Extensions → Apps Script
 // 2. Delete all code, paste this, Save
 // 3. Deploy → New Deployment → Web App
@@ -1285,13 +1422,13 @@ async function connectSheets(){
       updateSyncUI();showToast('Connected! Pushing data...','ok');
       await pushToSheets();
     } else { showToast('Connection failed: '+(res.error||'unknown'),'err'); }
-  }catch(e){showToast('Could not reach script — check URL & deployment','err');}
+  }catch(e){showToast('Could not reach script -- check URL & deployment','err');}
   setSyncAnim(false);
 }
 
 async function doSync(silent=false){
   if(!gasUrl){if(!silent)showToast('Not connected to Google Sheets','err');return;}
-  if(!navigator.onLine){offlineQ.push({action:'sync',ts:Date.now()});save();showToast('Offline — queued for later','info');return;}
+  if(!navigator.onLine){offlineQ.push({action:'sync',ts:Date.now()});save();showToast('Offline -- queued for later','info');return;}
   if(!silent)showToast('Syncing...','info');
   setSyncAnim(true);
   try{await pushToSheets();if(!silent)showToast('&#10003; Synced to Google Sheets','ok');}
@@ -1333,13 +1470,13 @@ async function pullFromSheets(){
           return {id:String(rc.id),emoji:String(rc.emoji||'📦'),label:String(rc.label||'Custom'),color:String(rc.color||'#6b7280'),type:String(rc.type||'both')};
         }).concat(localOnly);
       } else {
-        // Sheet has no custom cats — keep local ones
+        // Sheet has no custom cats -- keep local ones
         console.log('No custom cats in sheet, keeping local');
       }
       console.log('Custom cats after merge:', JSON.stringify(customCats));
     } catch(e){ console.warn('Custom cats sync skipped:',e); }
 
-    // STEP 2: Map transactions — now allCats() includes the custom ones from step 1
+    // STEP 2: Map transactions -- now allCats() includes the custom ones from step 1
     const rawTxns = Array.isArray(res.txns) ? res.txns : [];
     const allC = allCats();
     txns = rawTxns.map(function(t){
@@ -1398,7 +1535,7 @@ function parseBankCSV(text){
   const lines=text.trim().split('\n').filter(l=>l.trim());
   if(lines.length<2){showToast('No data found in file','err');return;}
 
-  // Parse headers — try multiple common formats
+  // Parse headers -- try multiple common formats
   const rawHeaders=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim().toLowerCase());
 
   // Find column indices flexibly
@@ -1409,7 +1546,7 @@ function parseBankCSV(text){
   const debitIdx=findCol('debit');
   const creditIdx=findCol('credit');
 
-  if(dateIdx<0||amtIdx<0&&debitIdx<0){showToast('Could not detect columns — check bank selection','err');return;}
+  if(dateIdx<0||amtIdx<0&&debitIdx<0){showToast('Could not detect columns -- check bank selection','err');return;}
 
   const parsed=[];
   for(let i=1;i<lines.length;i++){
@@ -1648,17 +1785,19 @@ function closeMenu(){document.getElementById('menuOv').classList.remove('open');
 
 function switchView(v){
   curView=v;
-  ['overview','transactions','analytics','budget'].forEach(n=>{
-    const el=document.getElementById('view-'+n);
-    if(el)el.style.display=n===v?'block':'none';
+  ['overview','transactions','analytics','budget'].forEach(function(n){
+    var el=document.getElementById('view-'+n);
+    if(el) el.style.display=n===v?'block':'none';
   });
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','transactions','analytics','budget'][i]===v));
-  if(v==='analytics')renderAnalytics();
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    t.classList.toggle('active',['overview','transactions','analytics','budget'][i]===v);
+  });
+  if(v==='analytics') renderAnalytics();
   if(v==='budget'){
-    // populate budget cat selector
-    const sel=document.getElementById('budgetCatSel');
-    sel.innerHTML=catsFor('expense').map(c=>'<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>').join('');
+    var sel=document.getElementById('budgetCatSel');
+    if(sel) sel.innerHTML=catsFor('expense').map(function(c){ return '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>'; }).join('');
     renderBudgetView();
+    switchYnabTab(curYnabTab, document.getElementById('ynab-tab-'+curYnabTab));
   }
 }
 
@@ -1674,7 +1813,7 @@ function showToast(msg,type){
 // ── OFFLINE SUPPORT ────────────────────────────────────────────────────
 window.addEventListener('online',()=>{
   document.getElementById('offlineBanner').classList.remove('show');
-  if(offlineQ.length>0&&gasUrl){showToast('Back online — syncing...','info');setTimeout(()=>{offlineQ=[];save();doSync(true);},1000);}
+  if(offlineQ.length>0&&gasUrl){showToast('Back online -- syncing...','info');setTimeout(()=>{offlineQ=[];save();doSync(true);},1000);}
 });
 window.addEventListener('offline',()=>{document.getElementById('offlineBanner').classList.add('show');});
 if(!navigator.onLine)document.getElementById('offlineBanner').classList.add('show');
@@ -1704,8 +1843,329 @@ if(!txns.length){
     {id:'e10',type:'expense',amount:320,desc:'Tokyo flights',cat:'travel',date:`${y}-${m}-13`},
   ];
   budgets=[{cat:'food',limit:300},{cat:'dining',limit:150},{cat:'entertainment',limit:100}];
+  savingsGoals=[{name:'Japan trip',target:3000,current:850,targetDate:'2026-12-01',emoji:'✈️'},{name:'Emergency fund',target:10000,current:4200,targetDate:'2027-06-01',emoji:'🏦'}];
+  debts=[{name:'Credit card',balance:2400,original:5000,minPayment:150,interest:19.99}];
   save();
 }
+
+// ── YNAB FUNCTIONS ───────────────────────────────────────────────────
+
+var curYnabTab = 'budget';
+
+function switchYnabTab(tab, el) {
+  curYnabTab = tab;
+  document.querySelectorAll('.ynab-tab').forEach(function(t){ t.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  ['budget','assign','goals','debts','aom'].forEach(function(t){
+    var el = document.getElementById('ynab-'+t);
+    if(el) el.style.display = t===tab ? 'block' : 'none';
+  });
+  if(tab==='assign') renderAssign();
+  if(tab==='goals') renderGoals();
+  if(tab==='debts') renderDebts();
+  if(tab==='aom') renderAgeOfMoney();
+}
+
+// ── READY TO ASSIGN ──────────────────────────────────────────────────
+function getReadyToAssign() {
+  var mt = monthTx();
+  var income = mt.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var key = curKey();
+  var totalAssigned = 0;
+  var cats = catsFor('expense');
+  cats.forEach(function(c){
+    var val = allocations[key] && allocations[key][c.id] ? Number(allocations[key][c.id]) : 0;
+    totalAssigned += val;
+  });
+  return income - totalAssigned;
+}
+
+function renderAssign() {
+  var mt = monthTx();
+  var key = curKey();
+  var cats = catsFor('expense');
+  var rta = getReadyToAssign();
+  var rtaEl = document.getElementById('rtaAmount');
+  if(rtaEl){
+    rtaEl.textContent = (rta < 0 ? '-' : '') + fmt(rta);
+    rtaEl.className = 'rta-amount ' + (rta >= 0 ? 'positive' : 'negative');
+  }
+  var html = '';
+  cats.forEach(function(c){
+    var assigned = allocations[key] && allocations[key][c.id] ? Number(allocations[key][c.id]) : 0;
+    var spent = mt.filter(function(t){ return t.type==='expense' && t.cat===c.id; }).reduce(function(s,t){ return s+t.amount; }, 0);
+    var available = assigned - spent;
+    var availColor = available < 0 ? 'var(--expense)' : available === 0 ? 'var(--text3)' : 'var(--income)';
+    html += '<div class="tbg-row">';
+    html += '<div class="tbg-left"><span>'+c.emoji+'</span><span class="tbg-cat">'+escH(c.label)+'</span></div>';
+    html += '<div class="tbg-right">';
+    html += '<input type="number" class="tbg-input alloc-input" data-cat="'+c.id+'" value="'+(assigned||'')+'" placeholder="0" min="0" step="1">';
+    html += '<span class="tbg-avail" style="color:'+availColor+'">'+(available>=0?'':'-')+fmt(available)+'</span>';
+    html += '</div></div>';
+  });
+  var list = document.getElementById('assignList');
+  if(list) {
+    list.innerHTML = html;
+    list.querySelectorAll('.alloc-input').forEach(function(inp){
+      inp.addEventListener('input', function(){ updateRTA(); });
+    });
+  }
+}
+
+function updateRTA() {
+  var key = curKey();
+  var mt = monthTx();
+  var income = mt.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var totalAssigned = 0;
+  document.querySelectorAll('.alloc-input').forEach(function(inp){
+    totalAssigned += parseFloat(inp.value)||0;
+  });
+  var rta = income - totalAssigned;
+  var rtaEl = document.getElementById('rtaAmount');
+  if(rtaEl){
+    rtaEl.textContent = (rta<0?'-':'') + fmt(rta);
+    rtaEl.className = 'rta-amount '+(rta>=0?'positive':'negative');
+  }
+}
+
+function saveAllocations() {
+  var key = curKey();
+  if(!allocations[key]) allocations[key] = {};
+  document.querySelectorAll('.alloc-input').forEach(function(inp){
+    var cat = inp.dataset.cat;
+    var val = parseFloat(inp.value)||0;
+    allocations[key][cat] = val;
+  });
+  save();
+  showToast('Allocations saved ✓','ok');
+  renderBudgetView();
+  renderBudgetAlerts();
+}
+
+// ── BUDGET VIEW (enhanced with rollover) ─────────────────────────────
+function getRollover(cat) {
+  // Sum unspent from previous months
+  var total = 0;
+  var now = new Date(viewMonth);
+  for(var i=1; i<=3; i++) {
+    var prev = new Date(now);
+    prev.setMonth(prev.getMonth()-i);
+    var pKey = prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
+    var b = budgets.find(function(x){ return x.cat===cat; });
+    if(!b) continue;
+    var pMt = txns.filter(function(t){ return mKey(t.date)===pKey; });
+    var pSpent = pMt.filter(function(t){ return t.type==='expense'&&t.cat===cat; }).reduce(function(s,t){ return s+t.amount; },0);
+    var pAlloc = allocations[pKey] && allocations[pKey][cat] ? Number(allocations[pKey][cat]) : b.limit;
+    var unspent = pAlloc - pSpent;
+    if(unspent > 0) total += unspent;
+    else break; // stop rolling if a month was overspent
+  }
+  return total;
+}
+
+// ── SAVINGS GOALS ─────────────────────────────────────────────────────
+function renderGoals() {
+  var list = document.getElementById('goalsList');
+  if(!list) return;
+  if(!savingsGoals.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">&#127942;</div><p>No savings goals yet.<br>Tap the button below to create one.</p></div>';
+    return;
+  }
+  var html = '';
+  savingsGoals.forEach(function(g, i){
+    var pct = g.target > 0 ? Math.min(g.current/g.target*100, 100) : 0;
+    var remaining = Math.max(g.target - g.current, 0);
+    var daysLeft = '';
+    var monthsLeft = '';
+    if(g.targetDate){
+      var td = new Date(g.targetDate);
+      var now = new Date();
+      var diff = td - now;
+      if(diff > 0){
+        var days = Math.ceil(diff/86400000);
+        var months = Math.ceil(diff/(86400000*30));
+        daysLeft = days + ' days left';
+        monthsLeft = months > 0 ? ' · $'+Math.ceil(remaining/months)+'/mo needed' : '';
+      } else { daysLeft = 'Past target date'; }
+    }
+    html += '<div class="goal-progress">';
+    html += '<div class="goal-header">';
+    html += '<div class="goal-emoji">'+(g.emoji||'🎯')+'</div>';
+    html += '<div class="goal-info"><div class="goal-name">'+escH(g.name)+'</div>';
+    if(daysLeft) html += '<div class="goal-date">'+daysLeft+monthsLeft+'</div>';
+    html += '</div>';
+    html += '<div style="text-align:right"><div class="goal-amount">'+fmt(g.current)+' / '+fmt(g.target)+'</div>';
+    html += '<div class="goal-pct">'+Math.round(pct)+'%</div></div>';
+    html += '<button class="del-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
+    html += '</div>';
+    html += '<div class="goal-track"><div class="goal-fill" style="width:'+pct+'%"></div></div>';
+    html += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    html += '<input type="number" class="tbg-input" placeholder="Add amount" data-idx="'+i+'" id="goalAdd_'+i+'" style="flex:1" min="0" step="0.01">';
+    html += '<button class="add-goal-btn" data-idx="'+i+'" style="background:var(--accent);border:none;color:#fff;border-radius:8px;padding:6px 14px;font-weight:600;font-size:12px;cursor:pointer;">Add</button>';
+    html += '</div></div>';
+  });
+  list.innerHTML = html;
+  list.querySelectorAll('.del-goal-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ deleteGoal(parseInt(this.dataset.idx)); });
+  });
+  list.querySelectorAll('.add-goal-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var idx = parseInt(this.dataset.idx);
+      var inp = document.getElementById('goalAdd_'+idx);
+      var amt = parseFloat(inp ? inp.value : 0)||0;
+      if(amt>0){ savingsGoals[idx].current = (savingsGoals[idx].current||0)+amt; save(); renderGoals(); showToast(fmt(amt)+' added to goal','ok'); }
+    });
+  });
+}
+
+function openNewGoal() {
+  document.getElementById('goalName').value='';
+  document.getElementById('goalTarget').value='';
+  document.getElementById('goalCurrent').value='';
+  document.getElementById('goalDate').value='';
+  var picker = document.getElementById('goalEmojiPicker');
+  if(picker) picker.innerHTML = ['🎯','🏠','✈️','🚗','💍','🎓','🏖️','💰','🏋️','🎮'].map(function(e,i){
+    return '<div class="ep '+(i===0?'selected':'')+'" data-emoji="'+e+'">'+e+'</div>';
+  }).join('');
+  if(picker) picker.querySelectorAll('.ep').forEach(function(ep){
+    ep.addEventListener('click', function(){
+      picker.querySelectorAll('.ep').forEach(function(x){ x.classList.remove('selected'); });
+      this.classList.add('selected');
+    });
+  });
+  _openOv('newGoalOv');
+}
+
+function saveGoal() {
+  var name = document.getElementById('goalName').value.trim();
+  var target = parseFloat(document.getElementById('goalTarget').value)||0;
+  var current = parseFloat(document.getElementById('goalCurrent').value)||0;
+  var date = document.getElementById('goalDate').value;
+  var selEmoji = document.querySelector('#goalEmojiPicker .ep.selected');
+  if(!name||target<=0){ showToast('Enter name and target amount','err'); return; }
+  savingsGoals.push({name:name,target:target,current:current,targetDate:date,emoji:selEmoji?selEmoji.dataset.emoji:'🎯'});
+  save(); closeOv('newGoalOv'); renderGoals(); showToast('"'+name+'" goal added','ok');
+}
+
+function deleteGoal(idx) {
+  savingsGoals.splice(idx,1); save(); renderGoals();
+}
+
+// ── DEBTS ──────────────────────────────────────────────────────────────
+function renderDebts() {
+  var list = document.getElementById('debtsList');
+  if(!list) return;
+  if(!debts.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">&#128196;</div><p>No debts tracked yet.<br>Tap the button below to add one.</p></div>';
+    return;
+  }
+  var totalDebt = debts.reduce(function(s,d){ return s+(d.balance||0); },0);
+  var html = '<div style="background:var(--s2);border:1px solid rgba(242,92,122,.2);border-radius:var(--card-r);padding:14px;margin-bottom:10px;text-align:center">';
+  html += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:4px">Total debt</div>';
+  html += '<div style="font-family:serif;font-size:32px;letter-spacing:-1px;color:var(--expense)">'+fmt(totalDebt)+'</div></div>';
+  debts.forEach(function(d, i){
+    var paidOff = d.original > 0 ? Math.min((1-(d.balance/d.original))*100,100) : 0;
+    var monthsToPayoff = d.minPayment > 0 ? Math.ceil(d.balance/d.minPayment) : 0;
+    html += '<div class="debt-card">';
+    html += '<div class="debt-header">';
+    html += '<div class="debt-icon">💳</div>';
+    html += '<div class="debt-title">'+escH(d.name)+'</div>';
+    html += '<div class="debt-balance">'+fmt(d.balance)+'</div>';
+    html += '<button class="del-debt-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
+    html += '</div>';
+    if(d.original > 0){
+      html += '<div class="debt-track"><div class="debt-fill" style="width:'+paidOff+'%;background:var(--income)"></div></div>';
+      html += '<div class="debt-meta"><span>'+Math.round(paidOff)+'% paid off</span><span>'+fmt(d.original)+' original</span></div>';
+    }
+    if(d.interest) html += '<div style="font-size:11px;color:var(--text3);margin-top:6px">'+d.interest+'% p.a. interest rate</div>';
+    if(d.minPayment) html += '<div style="font-size:11px;color:var(--text3);margin-top:2px">Min payment: '+fmt(d.minPayment)+'/mo'+(monthsToPayoff?' · ~'+monthsToPayoff+' months to pay off':'')+'</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    html += '<input type="number" class="tbg-input" placeholder="Payment made" data-idx="'+i+'" id="debtPay_'+i+'" style="flex:1" min="0" step="0.01">';
+    html += '<button class="pay-debt-btn" data-idx="'+i+'" style="background:var(--income);border:none;color:#060a0a;border-radius:8px;padding:6px 14px;font-weight:600;font-size:12px;cursor:pointer;">Pay</button>';
+    html += '</div></div>';
+  });
+  list.innerHTML = html;
+  list.querySelectorAll('.del-debt-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ deleteDebt(parseInt(this.dataset.idx)); });
+  });
+  list.querySelectorAll('.pay-debt-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var idx = parseInt(this.dataset.idx);
+      var inp = document.getElementById('debtPay_'+idx);
+      var amt = parseFloat(inp?inp.value:0)||0;
+      if(amt>0){ debts[idx].balance = Math.max((debts[idx].balance||0)-amt,0); save(); renderDebts(); showToast('Payment of '+fmt(amt)+' recorded','ok'); }
+    });
+  });
+}
+
+function openNewDebt() {
+  document.getElementById('debtName').value='';
+  document.getElementById('debtBalance').value='';
+  document.getElementById('debtOriginal').value='';
+  document.getElementById('debtMinPayment').value='';
+  document.getElementById('debtInterest').value='';
+  _openOv('newDebtOv');
+}
+
+function saveDebt() {
+  var name = document.getElementById('debtName').value.trim();
+  var balance = parseFloat(document.getElementById('debtBalance').value)||0;
+  var original = parseFloat(document.getElementById('debtOriginal').value)||0;
+  var minPayment = parseFloat(document.getElementById('debtMinPayment').value)||0;
+  var interest = parseFloat(document.getElementById('debtInterest').value)||0;
+  if(!name||balance<=0){ showToast('Enter name and balance','err'); return; }
+  debts.push({name:name,balance:balance,original:original||balance,minPayment:minPayment,interest:interest});
+  save(); closeOv('newDebtOv'); renderDebts(); showToast('"'+name+'" added','ok');
+}
+
+function deleteDebt(idx){ debts.splice(idx,1); save(); renderDebts(); }
+
+// ── AGE OF MONEY ───────────────────────────────────────────────────────
+function renderAgeOfMoney() {
+  var expTxns = txns.filter(function(t){ return t.type==='expense'; }).slice().sort(function(a,b){
+    var da=parseDate(a.date),db=parseDate(b.date); return db-da;
+  });
+  var incTxns = txns.filter(function(t){ return t.type==='income'; }).slice().sort(function(a,b){
+    var da=parseDate(a.date),db=parseDate(b.date); return db-da;
+  });
+  if(expTxns.length < 3 || incTxns.length < 2){
+    document.getElementById('aomDays').textContent='--';
+    document.getElementById('aomMsg').textContent='Add more transactions to calculate your age of money.';
+    return;
+  }
+  // Calculate average days between income and subsequent spending
+  var ages = [];
+  expTxns.slice(0,20).forEach(function(exp){
+    var expDate = parseDate(exp.date);
+    if(!expDate) return;
+    // Find the most recent income before this expense
+    var prevIncome = incTxns.find(function(inc){
+      var incDate = parseDate(inc.date);
+      return incDate && incDate <= expDate;
+    });
+    if(prevIncome){
+      var incDate = parseDate(prevIncome.date);
+      var days = Math.round((expDate - incDate) / 86400000);
+      if(days >= 0 && days < 365) ages.push(days);
+    }
+  });
+  if(!ages.length){
+    document.getElementById('aomDays').textContent='--';
+    document.getElementById('aomMsg').textContent='Not enough data yet.';
+    return;
+  }
+  var avg = Math.round(ages.reduce(function(s,a){ return s+a; },0)/ages.length);
+  document.getElementById('aomDays').textContent = avg;
+  var msg, color;
+  if(avg < 10){ msg="Your money is very young - you're spending almost as fast as you earn. Try to build a buffer."; color='var(--expense)'; }
+  else if(avg < 20){ msg="Getting there! You're spending money that's about "+avg+" days old. Aim to get above 30 days."; color='var(--warn)'; }
+  else if(avg < 60){ msg="Good buffer! Your money is "+avg+" days old before you spend it. You're not living paycheck to paycheck."; color='var(--income)'; }
+  else { msg="Excellent! Your money is "+avg+" days old - you have a strong financial cushion and great spending habits."; color='var(--accent)'; }
+  document.getElementById('aomDays').style.color = color;
+  document.getElementById('aomMsg').textContent = msg;
+}
+
+
 
 // ── INIT ───────────────────────────────────────────────────────────────
 function toggleSort() {
@@ -1714,16 +2174,27 @@ function toggleSort() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const nb = document.getElementById('newBudgetBtn');
+  var nb = document.getElementById('newBudgetBtn');
   if (nb) nb.addEventListener('click', openNewBudget);
-  const sb = document.getElementById('saveBudgetBtn');
+  var sb = document.getElementById('saveBudgetBtn');
   if (sb) sb.addEventListener('click', saveBudgetGoal);
-  const txDel = document.getElementById('txDeleteBtn');
+  var txDel = document.getElementById('txDeleteBtn');
   if (txDel) txDel.addEventListener('click', deleteFromEdit);
-  const bankConfirm = document.getElementById('confirmBankBtn');
+  var bankConfirm = document.getElementById('confirmBankBtn');
   if (bankConfirm) bankConfirm.addEventListener('click', confirmBankImport);
-  const sortBtn = document.getElementById('sortToggleBtn');
+  var sortBtn = document.getElementById('sortToggleBtn');
   if (sortBtn) sortBtn.addEventListener('click', toggleSort);
+  // YNAB buttons
+  var saveAlloc = document.getElementById('saveAllocBtn');
+  if (saveAlloc) saveAlloc.addEventListener('click', saveAllocations);
+  var newGoal = document.getElementById('newGoalBtn');
+  if (newGoal) newGoal.addEventListener('click', openNewGoal);
+  var saveGoalBtn = document.getElementById('saveGoalBtn');
+  if (saveGoalBtn) saveGoalBtn.addEventListener('click', saveGoal);
+  var newDebt = document.getElementById('newDebtBtn');
+  if (newDebt) newDebt.addEventListener('click', openNewDebt);
+  var saveDebtBtn = document.getElementById('saveDebtBtn');
+  if (saveDebtBtn) saveDebtBtn.addEventListener('click', saveDebt);
 });
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
