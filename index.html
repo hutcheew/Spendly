@@ -618,7 +618,7 @@ input[type="file"]{display:none;}
 
   <!-- Allocation pie -->
   <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:12px;">Asset Allocation</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">Asset Allocation</div><button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">&#8635; Live Prices</button></div>
     <div style="display:flex;align-items:center;gap:16px;">
       <svg id="allocPie" width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0"></svg>
       <div id="allocLegend" style="flex:1;display:flex;flex-direction:column;gap:6px;"></div>
@@ -1974,10 +1974,10 @@ if(!txns.length){
   savingsGoals=[{name:'Japan trip',target:3000,current:850,targetDate:'2026-12-01',emoji:'✈️'},{name:'Emergency fund',target:10000,current:4200,targetDate:'2027-06-01',emoji:'🏦'}];
   debts=[{name:'Credit card',balance:2400,original:5000,minPayment:150,interest:19.99}];
   holdings=[
-    {ticker:'VGS', name:'Vanguard MSCI Index Intl ETF', units:50, avgPrice:105.20, currentPrice:118.40, color:'#818cf8'},
-    {ticker:'VAS', name:'Vanguard Australian Shares ETF', units:80, avgPrice:92.50, currentPrice:98.10, color:'#22d3a0'},
-    {ticker:'NDQ', name:'BetaShares NASDAQ 100 ETF', units:30, avgPrice:38.60, currentPrice:45.20, color:'#f97316'},
-    {ticker:'EMKT', name:'BetaShares Emerging Markets ETF', units:100, avgPrice:8.20, currentPrice:8.85, color:'#f472b6'},
+    {ticker:'VGS',  name:'Vanguard MSCI Index Intl ETF',       units:50,  avgPrice:105.20, currentPrice:118.40, color:'#818cf8'},
+    {ticker:'NDQ',  name:'BetaShares NASDAQ 100 ETF',           units:30,  avgPrice:38.60,  currentPrice:45.20,  color:'#f97316'},
+    {ticker:'A200', name:'BetaShares Australia 200 ETF',        units:80,  avgPrice:120.50, currentPrice:132.10, color:'#22d3a0'},
+    {ticker:'GHHF', name:'BetaShares Global High Quality ETF',  units:100, avgPrice:14.20,  currentPrice:15.80,  color:'#38bdf8'},
   ];
   dividends=[
     {ticker:'VGS', amount:124.50, date:'2026-03-15', notes:'Q1 distribution'},
@@ -1990,15 +1990,56 @@ if(!txns.length){
 // ── PORTFOLIO FUNCTIONS ───────────────────────────────────────────────
 
 const BETASHARES_ETFS = [
-  {ticker:'VGS', name:'Vanguard MSCI Index Intl ETF', color:'#818cf8'},
-  {ticker:'VAS', name:'Vanguard Australian Shares ETF', color:'#22d3a0'},
-  {ticker:'NDQ', name:'BetaShares NASDAQ 100 ETF', color:'#f97316'},
-  {ticker:'EMKT', name:'BetaShares Emerging Markets ETF', color:'#f472b6'},
-  {ticker:'A200', name:'BetaShares Australia 200 ETF', color:'#34d399'},
-  {ticker:'IVV', name:'iShares S&P500 ETF', color:'#60a5fa'},
-  {ticker:'VTS', name:'Vanguard US Total Market ETF', color:'#a78bfa'},
-  {ticker:'HACK', name:'BetaShares Global Cybersecurity ETF', color:'#fb923c'},
+  {ticker:'VGS',  name:'Vanguard MSCI Index Intl ETF',          color:'#818cf8'},
+  {ticker:'NDQ',  name:'BetaShares NASDAQ 100 ETF',              color:'#f97316'},
+  {ticker:'A200', name:'BetaShares Australia 200 ETF',           color:'#22d3a0'},
+  {ticker:'GHHF', name:'BetaShares Global High Quality ETF',     color:'#38bdf8'},
+  {ticker:'BGBL', name:'BetaShares Global Sustainability ETF',   color:'#a3e635'},
+  {ticker:'VAS',  name:'Vanguard Australian Shares ETF',         color:'#34d399'},
+  {ticker:'EMKT', name:'BetaShares Emerging Markets ETF',        color:'#f472b6'},
+  {ticker:'IVV',  name:'iShares S&P500 ETF',                     color:'#60a5fa'},
+  {ticker:'VTS',  name:'Vanguard US Total Market ETF',           color:'#a78bfa'},
+  {ticker:'HACK', name:'BetaShares Global Cybersecurity ETF',    color:'#fb923c'},
 ];
+
+// ── ASX LIVE PRICE FETCHER (Yahoo Finance 15-min delayed) ─────────────
+async function fetchASXPrice(ticker) {
+  try {
+    // Yahoo Finance uses .AX suffix for ASX stocks
+    var symbol = ticker + '.AX';
+    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d';
+    var res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var price = data.chart.result[0].meta.regularMarketPrice;
+    return price ? Number(price) : null;
+  } catch(e) {
+    console.warn('Price fetch failed for ' + ticker + ':', e.message);
+    return null;
+  }
+}
+
+async function refreshAllPrices() {
+  if (!holdings.length) { showToast('No holdings to update', 'err'); return; }
+  showToast('Fetching ASX prices...', 'info');
+  var updated = 0;
+  for (var i = 0; i < holdings.length; i++) {
+    var price = await fetchASXPrice(holdings[i].ticker);
+    if (price) {
+      holdings[i].currentPrice = price;
+      updated++;
+    }
+    // Small delay to avoid rate limiting
+    await new Promise(function(r){ setTimeout(r, 300); });
+  }
+  save();
+  renderPortfolio();
+  if (updated > 0) {
+    showToast('Updated ' + updated + ' prices from ASX', 'ok');
+  } else {
+    showToast('Could not fetch prices - try again later', 'err');
+  }
+}
 
 function renderPortfolio() {
   var totalValue = 0, totalCost = 0, totalDivs = 0;
@@ -2170,12 +2211,27 @@ function openAddHolding() {
     }).join('');
     sug.querySelectorAll('.ticker-chip').forEach(function(chip) {
       chip.addEventListener('click', function() {
-        document.getElementById('holdingTicker').value = this.dataset.ticker;
+        var ticker = this.dataset.ticker;
+        document.getElementById('holdingTicker').value = ticker;
         document.getElementById('holdingName').value = this.dataset.name;
         selectedHoldingColor = this.dataset.color;
         sug.querySelectorAll('.ticker-chip').forEach(function(c){ c.style.borderColor=''; c.style.color=''; });
         this.style.borderColor = selectedHoldingColor;
         this.style.color = selectedHoldingColor;
+        // Auto-fetch current price
+        var priceEl = document.getElementById('holdingCurrentPrice');
+        if (priceEl) {
+          priceEl.placeholder = 'Fetching price...';
+          fetchASXPrice(ticker).then(function(price) {
+            if (price) {
+              priceEl.value = price;
+              priceEl.placeholder = 'e.g. 118.20';
+              showToast(ticker + ': $' + price, 'ok');
+            } else {
+              priceEl.placeholder = 'Enter manually';
+            }
+          });
+        }
       });
     });
   }
@@ -2630,16 +2686,18 @@ document.addEventListener('DOMContentLoaded', function() {
   var sortBtn = document.getElementById('sortToggleBtn');
   if (sortBtn) sortBtn.addEventListener('click', toggleSort);
   // Portfolio buttons
-  var addHolding = document.getElementById('addHoldingBtn');
-  if (addHolding) addHolding.addEventListener('click', openAddHolding);
-  var saveHolding = document.getElementById('saveHoldingBtn');
-  if (saveHolding) saveHolding.addEventListener('click', saveHolding);
-  var delHolding = document.getElementById('deleteHoldingBtn');
-  if (delHolding) delHolding.addEventListener('click', deleteHolding);
-  var addDiv = document.getElementById('addDividendBtn');
-  if (addDiv) addDiv.addEventListener('click', openAddDividend);
-  var saveDiv = document.getElementById('saveDividendBtn');
-  if (saveDiv) saveDiv.addEventListener('click', saveDividend);
+  var refreshPricesEl = document.getElementById('refreshPricesBtn');
+  if (refreshPricesEl) refreshPricesEl.addEventListener('click', refreshAllPrices);
+  var addHoldingEl = document.getElementById('addHoldingBtn');
+  if (addHoldingEl) addHoldingEl.addEventListener('click', openAddHolding);
+  var saveHoldingEl = document.getElementById('saveHoldingBtn');
+  if (saveHoldingEl) saveHoldingEl.addEventListener('click', saveHolding);
+  var delHoldingEl = document.getElementById('deleteHoldingBtn');
+  if (delHoldingEl) delHoldingEl.addEventListener('click', deleteHolding);
+  var addDivEl = document.getElementById('addDividendBtn');
+  if (addDivEl) addDivEl.addEventListener('click', openAddDividend);
+  var saveDivEl = document.getElementById('saveDividendBtn');
+  if (saveDivEl) saveDivEl.addEventListener('click', saveDividend);
   // YNAB buttons
   var saveAlloc = document.getElementById('saveAllocBtn');
   if (saveAlloc) saveAlloc.addEventListener('click', saveAllocations);
