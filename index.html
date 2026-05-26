@@ -1374,8 +1374,8 @@ function handleRequest(e) {
   } catch(err) { return json({ ok: false, error: 'Parse error: ' + err.message }); }
   try {
     if (action === 'ping') return json({ ok: true, sheet: getSheet().getName(), ts: new Date().toISOString() });
-    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); return json({ ok: true, ...stats }); }
-    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats() }); }
+    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); if (params.holdings) writeHoldings(params.holdings); if (params.dividends) writeDividends(params.dividends); return json({ ok: true, ...stats }); }
+    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats(), holdings: readHoldings(), dividends: readDividends() }); }
     return json({ ok: false, error: 'Unknown action: ' + action });
   } catch(err) { return json({ ok: false, error: err.message }); }
 }
@@ -1497,6 +1497,66 @@ function readCustomCats() {
     .map(r => ({ id:String(r[0]), emoji:r[1]||'📦', label:String(r[2]), color:r[3]||'#6b7280', type:r[4]||'both' }));
 }
 
+function writeHoldings(holdings) {
+  if (!holdings) return;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('Spendly_Holdings');
+  if (!sh) {
+    sh = ss.insertSheet('Spendly_Holdings');
+    sh.appendRow(['ticker','name','units','avgPrice','currentPrice','color']);
+    sh.getRange(1,1,1,6).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
+    sh.setFrozenRows(1);
+  }
+  const last = sh.getLastRow();
+  if (last > 1) sh.deleteRows(2, last - 1);
+  if (holdings.length) {
+    sh.getRange(2,1,holdings.length,6).setValues(
+      holdings.map(function(h){ return [h.ticker||'', h.name||'', Number(h.units)||0, Number(h.avgPrice)||0, Number(h.currentPrice)||0, h.color||'#818cf8']; })
+    );
+  }
+}
+
+function readHoldings() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Spendly_Holdings');
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2,1,sh.getLastRow()-1,6).getValues()
+    .filter(function(r){ return r[0]; })
+    .map(function(r){ return { ticker:String(r[0]), name:String(r[1]), units:Number(r[2]), avgPrice:Number(r[3]), currentPrice:Number(r[4]), color:String(r[5]) }; });
+}
+
+function writeDividends(divs) {
+  if (!divs) return;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('Spendly_Dividends');
+  if (!sh) {
+    sh = ss.insertSheet('Spendly_Dividends');
+    sh.appendRow(['ticker','amount','date','notes']);
+    sh.getRange(1,1,1,4).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
+    sh.setFrozenRows(1);
+  }
+  const last = sh.getLastRow();
+  if (last > 1) sh.deleteRows(2, last - 1);
+  if (divs.length) {
+    sh.getRange(2,1,divs.length,4).setValues(
+      divs.map(function(d){ return [d.ticker||'', Number(d.amount)||0, d.date||'', d.notes||'']; })
+    );
+  }
+}
+
+function readDividends() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Spendly_Dividends');
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2,1,sh.getLastRow()-1,4).getValues()
+    .filter(function(r){ return r[0]; })
+    .map(function(r){
+      var d = r[2];
+      if (d instanceof Date) { d = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+      return { ticker:String(r[0]), amount:Number(r[1]), date:String(d), notes:String(r[3]) };
+    });
+}
+
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }`;
 
 function updateSyncUI() {
@@ -1564,7 +1624,7 @@ async function doSync(silent=false){
 }
 
 async function pushToSheets(){
-  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats});
+  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats,holdings,dividends});
   if(!res.ok) throw new Error(res.error||'Push failed');
   deletedIds=[];lastSync=new Date().toISOString();saveSyncCfg();save();updateSyncUI();
   if(document.getElementById('sheetsConnected').style.display!=='none')
@@ -1631,6 +1691,36 @@ async function pullFromSheets(){
     deletedIds=[];save();render();closeOv('sheetsOv');
     showToast('Pulled '+txns.length+' transactions','ok');
     // Push merged cats back so sheet has the complete combined list
+    // Apply holdings
+    try {
+      if(Array.isArray(res.holdings) && res.holdings.length){
+        holdings = res.holdings.map(function(h){
+          return {
+            ticker: String(h.ticker||''),
+            name: String(h.name||''),
+            units: Number(h.units)||0,
+            avgPrice: Number(h.avgPrice)||0,
+            currentPrice: Number(h.currentPrice)||0,
+            color: String(h.color||'#818cf8')
+          };
+        }).filter(function(h){ return h.ticker; });
+      }
+    } catch(e){ console.warn('Holdings sync skipped:',e); }
+
+    // Apply dividends
+    try {
+      if(Array.isArray(res.dividends) && res.dividends.length){
+        dividends = res.dividends.map(function(d){
+          return {
+            ticker: String(d.ticker||''),
+            amount: Number(d.amount)||0,
+            date: normDate(d.date),
+            notes: String(d.notes||'')
+          };
+        }).filter(function(d){ return d.ticker && d.amount > 0; });
+      }
+    } catch(e){ console.warn('Dividends sync skipped:',e); }
+
     if(gasUrl) setTimeout(function(){ pushToSheets(); }, 500);
   }catch(e){
     console.error('Pull error:',e);
