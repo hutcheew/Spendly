@@ -2092,21 +2092,52 @@ const BETASHARES_ETFS = [
   {ticker:'HACK', name:'BetaShares Global Cybersecurity ETF',    color:'#fb923c'},
 ];
 
-// ── ASX LIVE PRICE FETCHER (Yahoo Finance 15-min delayed) ─────────────
+// ── ASX LIVE PRICE FETCHER ────────────────────────────────────────────
+// Uses multiple proxy fallbacks to get around CORS restrictions
 async function fetchASXPrice(ticker) {
-  try {
-    // Yahoo Finance uses .AX suffix for ASX stocks
-    var symbol = ticker + '.AX';
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d';
-    var res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
-    var price = data.chart.result[0].meta.regularMarketPrice;
-    return price ? Number(price) : null;
-  } catch(e) {
-    console.warn('Price fetch failed for ' + ticker + ':', e.message);
-    return null;
+  var symbol = ticker + '.AX';
+  var proxies = [
+    // allorigins proxy
+    'https://api.allorigins.win/get?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d'),
+    // corsproxy.io
+    'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d'),
+  ];
+
+  for (var i = 0; i < proxies.length; i++) {
+    try {
+      var res = await fetch(proxies[i], { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) continue;
+      var outer = await res.json();
+      // allorigins wraps in {contents: "..."}
+      var raw = outer.contents !== undefined ? JSON.parse(outer.contents) : outer;
+      var price = raw.chart && raw.chart.result && raw.chart.result[0] && raw.chart.result[0].meta
+        ? raw.chart.result[0].meta.regularMarketPrice
+        : null;
+      if (price) return Number(price);
+    } catch(e) {
+      console.warn('Proxy ' + i + ' failed for ' + ticker + ':', e.message);
+    }
   }
+
+  // Final fallback: Yahoo Finance query2 endpoint via proxy
+  try {
+    var fallbackUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(
+      'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + symbol + '?modules=price'
+    );
+    var res2 = await fetch(fallbackUrl, { signal: AbortSignal.timeout(6000) });
+    if (res2.ok) {
+      var outer2 = await res2.json();
+      var raw2 = outer2.contents !== undefined ? JSON.parse(outer2.contents) : outer2;
+      var price2 = raw2.quoteSummary && raw2.quoteSummary.result && raw2.quoteSummary.result[0]
+        ? raw2.quoteSummary.result[0].price.regularMarketPrice.raw
+        : null;
+      if (price2) return Number(price2);
+    }
+  } catch(e) {
+    console.warn('Fallback failed for ' + ticker + ':', e.message);
+  }
+
+  return null;
 }
 
 async function refreshAllPrices() {
