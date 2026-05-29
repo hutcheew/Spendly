@@ -484,51 +484,40 @@ input[type="file"]{display:none;}
 <div id="view-analytics" style="display:none">
   <div class="analytics-sec">
     <div class="analytics-row">
-      <div class="acard">
-        <div class="acard-label">vs last month</div>
-        <div class="acard-val" id="vsLastMonth">—</div>
-        <div class="acard-sub" id="vsLastMonthSub">Expenses</div>
-      </div>
-      <div class="acard">
-        <div class="acard-label">Savings rate</div>
-        <div class="acard-val" id="savingsRate">—</div>
-        <div class="acard-sub">of income saved</div>
-      </div>
+      <div class="acard"><div class="acard-label">vs last month</div><div class="acard-val" id="vsLastMonth">—</div><div class="acard-sub" id="vsLastMonthSub">Expenses</div></div>
+      <div class="acard"><div class="acard-label">Savings rate</div><div class="acard-val" id="savingsRate">—</div><div class="acard-sub">of income saved</div></div>
     </div>
     <div class="analytics-row">
-      <div class="acard">
-        <div class="acard-label">Top category</div>
-        <div class="acard-val" id="topCat" style="font-size:28px">—</div>
-        <div class="acard-sub" id="topCatName">No data</div>
-      </div>
-      <div class="acard">
-        <div class="acard-label">Avg transaction</div>
-        <div class="acard-val" id="avgTx">—</div>
-        <div class="acard-sub" id="avgTxSub">This month</div>
-      </div>
+      <div class="acard"><div class="acard-label">Top category</div><div class="acard-val" id="topCat" style="font-size:28px">—</div><div class="acard-sub" id="topCatName">No data</div></div>
+      <div class="acard"><div class="acard-label">Avg transaction</div><div class="acard-val" id="avgTx">—</div><div class="acard-sub" id="avgTxSub">This month</div></div>
     </div>
-    <!-- Spending trend (last 6 months) -->
+
+    <!-- Trend chart -->
     <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;">
-      <div class="sec-lbl" style="margin-bottom:8px">6-month spending trend</div>
-      <div class="sparkline-wrap" id="sparkline"></div>
-      <div style="display:flex;justify-content:space-between;margin-top:6px;" id="sparkLabels"></div>
+      <div class="sec-lbl" style="margin-bottom:6px">6-month trend</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="trendLegend"></div>
+      <div style="position:relative;height:160px"><canvas id="trendChart" role="img" aria-label="Income vs expenses over 6 months">Line chart of income and expenses.</canvas></div>
     </div>
-    <div class="pie-title sec-lbl" style="margin-bottom:12px">Expense breakdown</div>
-    <div class="pie-section">
-      <div class="pie-wrap">
-        <svg id="expPie" width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0"></svg>
-        <div class="pie-legend" id="expLegend"></div>
+
+    <!-- Expense donut + bars -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;">
+      <div class="sec-lbl" style="margin-bottom:6px">Expense breakdown</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="expLegend"></div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="position:relative;height:130px;width:130px;flex-shrink:0"><canvas id="expPie" role="img" aria-label="Expense breakdown donut chart">Expenses by category.</canvas></div>
+        <div style="flex:1" id="expBarsNew"></div>
       </div>
     </div>
-    <div class="sec-lbl" style="margin-bottom:12px">Income sources</div>
-    <div class="pie-section">
-      <div class="pie-wrap">
-        <svg id="incPie" width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0"></svg>
-        <div class="pie-legend" id="incLegend"></div>
+
+    <!-- Income donut + bars -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:14px;">
+      <div class="sec-lbl" style="margin-bottom:6px">Income sources</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="incLegend"></div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="position:relative;height:130px;width:130px;flex-shrink:0"><canvas id="incPie" role="img" aria-label="Income sources donut chart">Income by source.</canvas></div>
+        <div style="flex:1" id="incBarsNew"></div>
       </div>
     </div>
-    <div class="sec-lbl" style="margin-bottom:12px">Top spending categories</div>
-    <div id="barChart" style="margin-bottom:14px"></div>
   </div>
 </div>
 
@@ -643,28 +632,33 @@ input[type="file"]{display:none;}
     </div>
   </div>
 
-  <!-- Allocation pie -->
+  <!-- Allocation chart -->
   <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">Asset Allocation</div><button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">&#8635; Live Prices</button></div>
-    <div style="display:flex;align-items:center;gap:16px;">
-      <svg id="allocPie" width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0"></svg>
-      <div id="allocLegend" style="flex:1;display:flex;flex-direction:column;gap:6px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">Asset Allocation</div>
+      <button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">&#8635; Live Prices</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="allocLegend"></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="position:relative;height:130px;width:130px;flex-shrink:0"><canvas id="allocPie" role="img" aria-label="ETF allocation donut chart">Portfolio allocation by ETF.</canvas></div>
+      <div style="flex:1" id="allocBarsNew"></div>
     </div>
   </div>
 
-  <!-- Monthly contributions -->
+  <!-- Holdings performance bar chart -->
   <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;">Monthly Contributions</div>
-    <div style="height:52px;display:flex;align-items:flex-end;gap:4px;" id="contribSparkline"></div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;" id="contribLabels"></div>
-    <div style="margin-top:10px;display:flex;justify-content:space-between;font-size:12px;">
-      <span style="color:var(--text3);">This month</span>
-      <span style="font-weight:600;" id="contribThisMonth">$0.00</span>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;">Holdings performance</div>
+    <div style="position:relative;" id="holdingPerfWrap"><canvas id="holdingPerfChart" role="img" aria-label="Holdings gain loss percentage bar chart">ETF returns percentage.</canvas></div>
+  </div>
+
+  <!-- Monthly contributions bar chart -->
+  <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:6px;">Monthly contributions</div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:10px;">
+      <span style="color:var(--text3);">This month: <span style="font-weight:600;color:var(--text);" id="contribThisMonth">$0</span></span>
+      <span style="color:var(--text3);">Total: <span style="font-weight:600;color:var(--text);" id="contribTotal">$0</span></span>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px;">
-      <span style="color:var(--text3);">Total invested</span>
-      <span style="font-weight:600;" id="contribTotal">$0.00</span>
-    </div>
+    <div style="position:relative;height:120px"><canvas id="contribChart" role="img" aria-label="Monthly investment contributions bar chart">Contributions over 6 months.</canvas></div>
   </div>
 
   <!-- Holdings list -->
@@ -1210,59 +1204,96 @@ function renderBudgetAlerts() {
 }
 
 // ── ANALYTICS ─────────────────────────────────────────────────────────
+var _chartInstances = {};
+function destroyChart(id) {
+  if (_chartInstances[id]) { try { _chartInstances[id].destroy(); } catch(e){} delete _chartInstances[id]; }
+}
+function buildDonutWithBars(canvasId, legendId, barsId, labels, values, colors) {
+  destroyChart(canvasId);
+  var total = values.reduce(function(s,v){ return s+v; }, 0);
+  if (!total) {
+    if(legendId) document.getElementById(legendId).innerHTML = '';
+    if(barsId) document.getElementById(barsId).innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">No data yet</div>';
+    return;
+  }
+  var canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  _chartInstances[canvasId] = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: 'rgba(0,0,0,0)', hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: true, cutout: '68%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ return ' ' + ctx.label + ': $' + ctx.parsed.toFixed(0) + ' (' + Math.round(ctx.parsed/total*100) + '%)'; } } } } }
+  });
+  if(legendId) {
+    document.getElementById(legendId).innerHTML = labels.map(function(l,i){
+      return '<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:'+colors[i]+';flex-shrink:0"></span>'+escH(l)+' '+Math.round(values[i]/total*100)+'%</span>';
+    }).join('');
+  }
+  if(barsId) {
+    var max = Math.max.apply(null, values);
+    document.getElementById(barsId).innerHTML = labels.map(function(l,i){
+      return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">'+
+        '<span style="font-size:11px;color:var(--text2);width:72px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(l)+'</span>'+
+        '<div style="flex:1;background:var(--s4);border-radius:4px;height:6px;overflow:hidden">'+
+          '<div style="width:'+Math.round(values[i]/max*100)+'%;height:100%;background:'+colors[i]+';border-radius:4px;transition:width .5s ease"></div>'+
+        '</div>'+
+        '<span style="font-size:11px;font-weight:600;width:44px;text-align:right;color:var(--text)">$'+values[i].toFixed(0)+'</span>'+
+      '</div>';
+    }).join('');
+  }
+}
 function renderAnalytics() {
-  const mt=monthTx();
-  const income=mt.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expense=mt.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-
-  // vs last month
-  const lastM=new Date(viewMonth); lastM.setMonth(lastM.getMonth()-1);
-  const lastKey=lastM.getFullYear()+'-'+String(lastM.getMonth()+1).padStart(2,'0');
-  const lastMt=txns.filter(t=>mKey(t.date)===lastKey);
-  const lastExp=lastMt.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const diff=expense-lastExp;
-  const diffEl=document.getElementById('vsLastMonth');
-  diffEl.textContent=(diff>=0?'+':'')+fmt(diff);
-  diffEl.className='acard-val '+(diff>0?'trend-up':diff<0?'trend-down':'trend-same');
-  document.getElementById('vsLastMonthSub').textContent=diff===0?'Same as last month':diff>0?'More than last month':'Less than last month';
-
-  // Savings rate
-  const sr=income>0?Math.round((income-expense)/income*100):0;
-  const srEl=document.getElementById('savingsRate');
-  srEl.textContent=sr+'%';
-  srEl.className='acard-val '+(sr>=20?'trend-down':sr<0?'trend-up':'');
-
-  // Top cat
-  const expByCat=catsFor('expense').map(c=>({...c,val:mt.filter(t=>t.type==='expense'&&t.cat===c.id).reduce((s,t)=>s+t.amount,0)})).filter(d=>d.val>0).sort((a,b)=>b.val-a.val);
-  if(expByCat.length){document.getElementById('topCat').textContent=expByCat[0].emoji;document.getElementById('topCatName').textContent=expByCat[0].label;}
-  else{document.getElementById('topCat').textContent='--';document.getElementById('topCatName').textContent='No data';}
-
-  // Avg tx
-  const avgEl=document.getElementById('avgTx');
-  const expTx=mt.filter(t=>t.type==='expense');
-  avgEl.textContent=expTx.length?fmt(expense/expTx.length):'--';
-
-  // Sparkline -- last 6 months
-  const months=[];
-  for(let i=5;i>=0;i--){const d=new Date(viewMonth);d.setMonth(d.getMonth()-i);months.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.toLocaleString('default',{month:'short'})});}
-  const vals=months.map(m=>txns.filter(t=>mKey(t.date)===m.key&&t.type==='expense').reduce((s,t)=>s+t.amount,0));
-  const maxVal=Math.max(...vals,1);
-  document.getElementById('sparkline').innerHTML=vals.map((v,i)=>`<div class="spark-bar" style="height:${Math.max(4,v/maxVal*44)}px;background:${i===5?'var(--accent)':'var(--s4)'};border:1px solid ${i===5?'var(--accent)':'var(--border)'}" title="${months[i].label}: ${fmt(v)}"></div>`).join('');
-  document.getElementById('sparkLabels').innerHTML=months.map((m,i)=>`<span style="font-size:10px;color:${i===5?'var(--text2)':'var(--text3)'};">${m.label}</span>`).join('');
-
-  // Pie charts
-  const incData=catsFor('income').map(c=>({...c,val:mt.filter(t=>t.type==='income'&&t.cat===c.id).reduce((s,t)=>s+t.amount,0)})).filter(d=>d.val>0);
-  renderPie('expPie','expLegend',expByCat);
-  renderPie('incPie','incLegend',incData);
-
-  // Bar chart
-  const maxBar=expByCat[0]?.val||1;
-  document.getElementById('barChart').innerHTML=expByCat.slice(0,7).map(d=>`
-    <div class="bar-row">
-      <div class="bar-lbl">${d.emoji} ${d.label}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(d.val/maxBar)*100}%;background:${d.color}"></div></div>
-      <div class="bar-val">${fmt(d.val)}</div>
-    </div>`).join('')||'<div class="empty" style="padding:20px 0"><p>No expense data yet.</p></div>';
+  var mt = monthTx();
+  var income  = mt.filter(function(t){ return t.type==="income"; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var expense = mt.filter(function(t){ return t.type==="expense"; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var lastM = new Date(viewMonth); lastM.setMonth(lastM.getMonth()-1);
+  var lastKey = lastM.getFullYear()+"-"+String(lastM.getMonth()+1).padStart(2,"0");
+  var lastExp = txns.filter(function(t){ return mKey(t.date)===lastKey && t.type==="expense"; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var diff = expense - lastExp;
+  var diffEl = document.getElementById("vsLastMonth");
+  if(diffEl){ diffEl.textContent=(diff>=0?"+":"")+fmt(diff); diffEl.className="acard-val "+(diff>0?"trend-up":diff<0?"trend-down":"trend-same"); }
+  var subEl = document.getElementById("vsLastMonthSub");
+  if(subEl) subEl.textContent = diff===0?"Same as last month":diff>0?"More than last month":"Less than last month";
+  var sr = income>0 ? Math.round((income-expense)/income*100) : 0;
+  var srEl = document.getElementById("savingsRate");
+  if(srEl){ srEl.textContent=sr+"%"; srEl.className="acard-val "+(sr>=20?"trend-down":sr<0?"trend-up":""); }
+  var expByCat = catsFor("expense").map(function(c){
+    return Object.assign({},c,{val:mt.filter(function(t){return t.type==="expense"&&t.cat===c.id;}).reduce(function(s,t){return s+t.amount;},0)});
+  }).filter(function(d){return d.val>0;}).sort(function(a,b){return b.val-a.val;});
+  if(expByCat.length){ document.getElementById("topCat").textContent=expByCat[0].emoji; document.getElementById("topCatName").textContent=expByCat[0].label; }
+  else { document.getElementById("topCat").textContent="--"; document.getElementById("topCatName").textContent="No data"; }
+  var expTx = mt.filter(function(t){return t.type==="expense";});
+  var avgEl = document.getElementById("avgTx");
+  if(avgEl) avgEl.textContent = expTx.length ? fmt(expense/expTx.length) : "--";
+  var months6 = [];
+  for(var i=5;i>=0;i--){ var dm=new Date(viewMonth); dm.setMonth(dm.getMonth()-i); months6.push({key:dm.getFullYear()+"-"+String(dm.getMonth()+1).padStart(2,"0"),label:dm.toLocaleString("default",{month:"short"})}); }
+  var expVals = months6.map(function(m){ return txns.filter(function(t){return mKey(t.date)===m.key&&t.type==="expense";}).reduce(function(s,t){return s+t.amount;},0); });
+  var incVals = months6.map(function(m){ return txns.filter(function(t){return mKey(t.date)===m.key&&t.type==="income";}).reduce(function(s,t){return s+t.amount;},0); });
+  var trendLeg = document.getElementById("trendLegend");
+  if(trendLeg) trendLeg.innerHTML = "<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:#60a5fa'></span>Expenses</span><span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;border:2px dashed #22d3a0'></span>Income</span>";
+  destroyChart("trendChart");
+  var tc = document.getElementById("trendChart");
+  if(tc) _chartInstances["trendChart"] = new Chart(tc, {
+    type:"line",
+    data:{ labels:months6.map(function(m){return m.label;}), datasets:[
+      {label:"Expenses",data:expVals,borderColor:"#60a5fa",backgroundColor:"rgba(96,165,250,0.08)",fill:true,tension:.4,pointRadius:3,pointBackgroundColor:"#60a5fa",borderWidth:2},
+      {label:"Income",data:incVals,borderColor:"#22d3a0",backgroundColor:"rgba(34,211,160,0.05)",fill:true,tension:.4,pointRadius:3,pointBackgroundColor:"#22d3a0",borderWidth:2,borderDash:[5,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return " "+c.dataset.label+": $"+c.parsed.y.toFixed(0);}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11},color:"#6b6b8a"}},y:{grid:{color:"rgba(128,128,128,0.1)"},ticks:{font:{size:11},color:"#6b6b8a",callback:function(v){return "$"+v.toLocaleString();}}}}}
+  });
+  buildDonutWithBars("expPie","expLegend","expBarsNew",
+    expByCat.map(function(d){return d.emoji+" "+d.label;}),
+    expByCat.map(function(d){return d.val;}),
+    expByCat.map(function(d){return d.color;})
+  );
+  var incData = catsFor("income").map(function(c){
+    return Object.assign({},c,{val:mt.filter(function(t){return t.type==="income"&&t.cat===c.id;}).reduce(function(s,t){return s+t.amount;},0)});
+  }).filter(function(d){return d.val>0;}).sort(function(a,b){return b.val-a.val;});
+  buildDonutWithBars("incPie","incLegend","incBarsNew",
+    incData.map(function(d){return d.emoji+" "+d.label;}),
+    incData.map(function(d){return d.val;}),
+    incData.map(function(d){return d.color;})
+  );
 }
 
 function renderPie(svgId,legendId,data) {
@@ -2518,95 +2549,101 @@ async function refreshAllPrices() {
 
 function renderPortfolio() {
   var totalValue = 0, totalCost = 0, totalDivs = 0;
-
-  // Calculate totals
   holdings.forEach(function(h) {
-    var value = (h.units || 0) * (h.currentPrice || 0);
-    var cost  = (h.units || 0) * (h.avgPrice || 0);
-    totalValue += value;
-    totalCost  += cost;
+    totalValue += (h.units||0)*(h.currentPrice||0);
+    totalCost  += (h.units||0)*(h.avgPrice||0);
   });
-  dividends.forEach(function(d) { totalDivs += Number(d.amount) || 0; });
-
+  dividends.forEach(function(d){ totalDivs += Number(d.amount)||0; });
   var gain = totalValue - totalCost;
-  var gainPct = totalCost > 0 ? (gain / totalCost * 100) : 0;
+  var gainPct = totalCost > 0 ? (gain/totalCost*100) : 0;
 
-  // Hero
-  var totalEl = document.getElementById('portfolioTotal');
-  if(totalEl) totalEl.textContent = '$' + totalValue.toFixed(2);
-  var glEl = document.getElementById('portfolioGainLoss');
-  if(glEl) {
-    glEl.textContent = (gain >= 0 ? '+' : '') + '$' + gain.toFixed(2) + ' (' + (gain >= 0 ? '+' : '') + gainPct.toFixed(2) + '%)';
-    glEl.style.color = gain >= 0 ? 'var(--income)' : 'var(--expense)';
-  }
-  var costEl = document.getElementById('portfolioCost');
-  if(costEl) costEl.textContent = '$' + totalCost.toFixed(2);
-  var retEl = document.getElementById('portfolioReturn');
-  if(retEl) {
-    retEl.textContent = (gainPct >= 0 ? '+' : '') + gainPct.toFixed(2) + '%';
-    retEl.style.color = gainPct >= 0 ? 'var(--income)' : 'var(--expense)';
-  }
-  var divTotEl = document.getElementById('portfolioDivTotal');
-  if(divTotEl) divTotEl.textContent = '$' + totalDivs.toFixed(2);
+  var totalEl = document.getElementById("portfolioTotal");
+  if(totalEl) totalEl.textContent = "$"+totalValue.toFixed(2);
+  var glEl = document.getElementById("portfolioGainLoss");
+  if(glEl){ glEl.textContent=(gain>=0?"+":"-")+"$"+Math.abs(gain).toFixed(2)+" ("+(gain>=0?"+":"")+gainPct.toFixed(2)+"%)"; glEl.style.color=gain>=0?"var(--income)":"var(--expense)"; }
+  var costEl = document.getElementById("portfolioCost");
+  if(costEl) costEl.textContent = "$"+totalCost.toFixed(2);
+  var retEl = document.getElementById("portfolioReturn");
+  if(retEl){ retEl.textContent=(gainPct>=0?"+":"")+gainPct.toFixed(2)+"%"; retEl.style.color=gainPct>=0?"var(--income)":"var(--expense)"; }
+  var divEl = document.getElementById("portfolioDivTotal");
+  if(divEl) divEl.textContent = "$"+totalDivs.toFixed(2);
 
-  // Allocation pie
-  var pieData = holdings.map(function(h) {
-    return {
-      label: h.ticker,
-      emoji: '',
-      val: (h.units||0) * (h.currentPrice||0),
-      color: h.color || '#818cf8'
-    };
-  }).filter(function(d){ return d.val > 0; });
-  renderPie('allocPie', 'allocLegend', pieData.length ? pieData : [{label:'No data',emoji:'',val:1,color:'var(--border)'}]);
-
-  // Contributions sparkline (investment category transactions last 6 months)
-  var months = [];
-  for(var i = 5; i >= 0; i--) {
-    var d = new Date(viewMonth);
-    d.setMonth(d.getMonth() - i);
-    months.push({
-      key: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'),
-      label: d.toLocaleString('default', {month:'short'})
-    });
+  // ── Allocation donut ──
+  var pieData = holdings.map(function(h){return {label:h.ticker,val:(h.units||0)*(h.currentPrice||0),color:h.color||"#818cf8"};}).filter(function(d){return d.val>0;});
+  destroyChart("allocPie");
+  var allocCanvas = document.getElementById("allocPie");
+  if(allocCanvas && pieData.length) {
+    _chartInstances["allocPie"] = new Chart(allocCanvas, {
+      type:"doughnut",
+      data:{ labels:pieData.map(function(d){return d.label;}), datasets:[{data:pieData.map(function(d){return d.val;}),backgroundColor:pieData.map(function(d){return d.color;}),borderWidth:2,borderColor:"rgba(0,0,0,0)",hoverOffset:4}] },
+      options:{responsive:true,maintainAspectRatio:true,cutout:"68%",plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return " "+c.label+": $"+c.parsed.toFixed(0)+" ("+Math.round(c.parsed/totalValue*100)+"%)";}}}}}}
+    );
   }
-  var contribs = months.map(function(m) {
-    return txns.filter(function(t) {
-      return mKey(t.date) === m.key && t.type === 'expense' &&
-             (t.cat === 'investment' || (t.desc && t.desc.toLowerCase().includes('invest')));
-    }).reduce(function(s,t){ return s + t.amount; }, 0);
+  var allocLeg = document.getElementById("allocLegend");
+  if(allocLeg) allocLeg.innerHTML = pieData.map(function(d){ return "<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:"+d.color+"'></span>"+escH(d.label)+" "+Math.round(d.val/totalValue*100)+"%</span>"; }).join("");
+  var allocBars = document.getElementById("allocBarsNew");
+  if(allocBars) {
+    var maxV = Math.max.apply(null, pieData.map(function(d){return d.val;}).concat([1]));
+    allocBars.innerHTML = pieData.map(function(d){
+      return "<div style='display:flex;align-items:center;gap:6px;margin-bottom:7px'>"+
+        "<span style='font-size:11px;font-weight:700;color:"+d.color+";width:44px;flex-shrink:0'>"+escH(d.label)+"</span>"+
+        "<div style='flex:1;background:var(--s4);border-radius:4px;height:6px;overflow:hidden'><div style='width:"+Math.round(d.val/maxV*100)+"%;height:100%;background:"+d.color+";border-radius:4px;transition:width .5s ease'></div></div>"+
+        "<span style='font-size:11px;font-weight:600;width:52px;text-align:right;color:var(--text)'>$"+d.val.toFixed(0)+"</span>"+
+      "</div>";
+    }).join("");
+  }
+
+  // ── Holdings performance bar chart ──
+  var perfWrap = document.getElementById("holdingPerfWrap");
+  if(perfWrap && holdings.length) {
+    perfWrap.style.height = Math.max(120, holdings.length*44)+"px";
+    destroyChart("holdingPerfChart");
+    var hpc = document.getElementById("holdingPerfChart");
+    if(hpc) {
+      var gainPcts = holdings.map(function(h){ return h.avgPrice>0 ? ((h.currentPrice-h.avgPrice)/h.avgPrice*100) : 0; });
+      _chartInstances["holdingPerfChart"] = new Chart(hpc, {
+        type:"bar",
+        data:{ labels:holdings.map(function(h){return h.ticker;}), datasets:[{
+          label:"Return %", data:gainPcts,
+          backgroundColor:holdings.map(function(h,i){ return gainPcts[i]>=0?"rgba(34,211,160,0.8)":"rgba(242,92,122,0.8)"; }),
+          borderRadius:6, borderSkipped:false
+        }]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
+            var h=holdings[c.dataIndex];
+            var val=(h.units||0)*(h.currentPrice||0);
+            var cost=(h.units||0)*(h.avgPrice||0);
+            return [" Return: "+(c.parsed.y>=0?"+":"")+c.parsed.y.toFixed(2)+"%"," Value: $"+val.toFixed(2)," Gain: $"+(val-cost).toFixed(2)];
+          }}}},
+          scales:{x:{grid:{display:false},ticks:{font:{size:12},color:"var(--text2)"}},y:{grid:{color:"rgba(128,128,128,0.1)"},ticks:{font:{size:11},color:"#6b6b8a",callback:function(v){return v+"%";}},afterDataLimits:function(axis){axis.max=Math.max(axis.max,5);axis.min=Math.min(axis.min,-2);}}}}
+      });
+    }
+  }
+
+  // ── Contributions bar chart ──
+  var months6 = [];
+  for(var i=5;i>=0;i--){ var dm=new Date(viewMonth); dm.setMonth(dm.getMonth()-i); months6.push({key:dm.getFullYear()+"-"+String(dm.getMonth()+1).padStart(2,"0"),label:dm.toLocaleString("default",{month:"short"})}); }
+  var contribs = months6.map(function(m){
+    return txns.filter(function(t){ return mKey(t.date)===m.key&&t.type==="expense"&&(t.cat==="investment"||(t.desc&&t.desc.toLowerCase().includes("invest"))); }).reduce(function(s,t){return s+t.amount;},0);
   });
-  var maxC = Math.max.apply(null, contribs.concat([1]));
-  var sparkEl = document.getElementById('contribSparkline');
-  if(sparkEl) {
-    sparkEl.innerHTML = contribs.map(function(v, i) {
-      return '<div style="flex:1;border-radius:4px 4px 0 0;min-height:3px;height:' +
-        Math.max(4, v/maxC*48) + 'px;background:' +
-        (i===5?'var(--accent)':'var(--s4)') +
-        ';border:1px solid '+(i===5?'var(--accent)':'var(--border)')+
-        ';transition:height .5s ease;" title="'+months[i].label+': $'+v.toFixed(0)+'"></div>';
-    }).join('');
-  }
-  var lblEl = document.getElementById('contribLabels');
-  if(lblEl) {
-    lblEl.innerHTML = months.map(function(m,i) {
-      return '<span style="font-size:10px;color:'+(i===5?'var(--text2)':'var(--text3)')+'">'+m.label+'</span>';
-    }).join('');
-  }
-  var thisMonthContrib = contribs[5];
-  var totalContrib = txns.filter(function(t) {
-    return t.type === 'expense' && (t.cat === 'investment' || (t.desc && t.desc.toLowerCase().includes('invest')));
-  }).reduce(function(s,t){ return s+t.amount; }, 0);
-  var cmEl = document.getElementById('contribThisMonth');
-  if(cmEl) cmEl.textContent = '$' + thisMonthContrib.toFixed(2);
-  var ctEl = document.getElementById('contribTotal');
-  if(ctEl) ctEl.textContent = '$' + totalContrib.toFixed(2);
+  var thisMonthC = contribs[5];
+  var totalC = txns.filter(function(t){return t.type==="expense"&&(t.cat==="investment"||(t.desc&&t.desc.toLowerCase().includes("invest")));}).reduce(function(s,t){return s+t.amount;},0);
+  var cmEl = document.getElementById("contribThisMonth"); if(cmEl) cmEl.textContent="$"+thisMonthC.toFixed(0);
+  var ctEl = document.getElementById("contribTotal"); if(ctEl) ctEl.textContent="$"+totalC.toFixed(0);
+
+  destroyChart("contribChart");
+  var cc = document.getElementById("contribChart");
+  if(cc) _chartInstances["contribChart"] = new Chart(cc, {
+    type:"bar",
+    data:{ labels:months6.map(function(m){return m.label;}), datasets:[{label:"Invested",data:contribs,backgroundColor:months6.map(function(m,i){return i===5?"rgba(124,106,255,0.9)":"rgba(124,106,255,0.4)";}),borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return " $"+c.parsed.y.toFixed(0);}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11},color:"#6b6b8a"}},y:{grid:{color:"rgba(128,128,128,0.1)"},ticks:{font:{size:11},color:"#6b6b8a",callback:function(v){return "$"+v;}}}}}
+  });
 
   renderHoldings();
   renderDividends();
   renderAutoInvestCard();
 }
-
 function renderHoldings() {
   var list = document.getElementById('holdingsList');
   if(!list) return;
@@ -3195,5 +3232,6 @@ document.addEventListener('DOMContentLoaded', function() {
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </body>
 </html>
