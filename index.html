@@ -1357,6 +1357,10 @@ input[type="file"]{display:none;}
       <div class="mi-icon">&#127991;&#65039;</div><div><div class="mi-label">Categories</div><div class="mi-desc">Add or remove custom categories</div></div>
     </div>
     <div class="menu-div"></div>
+    <div class="menu-item" onclick="closeMenu();openOv('benchmarksOv')">
+      <div class="mi-icon">&#128200;</div><div><div class="mi-label">Benchmarks</div><div class="mi-desc">Configure which ETFs track each index</div></div>
+    </div>
+    <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();toggleTheme()">
       <div class="mi-icon">&#127769;</div><div><div class="mi-label" id="themeToggleLabel">Switch to light theme</div><div class="mi-desc">Toggle between dark and light appearance</div></div>
     </div>
@@ -1669,6 +1673,21 @@ input[type="file"]{display:none;}
   </div>
 </div>
 
+<!-- BENCHMARKS CONFIG -->
+<div class="overlay" id="benchmarksOv" onclick="closeOvOutside(event,'benchmarksOv')">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Benchmark indices</h2>
+    <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px">Select which ETFs track each index. Defaults are ASX-listed. Refresh benchmarks after changing.</p>
+    <div id="benchTickerList"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn-primary acc-btn" onclick="saveBenchTickers()">&#10003; Save</button>
+      <button class="btn-secondary" onclick="resetBenchTickers()">&#8634; Reset defaults</button>
+      <button class="btn-secondary" onclick="closeOv('benchmarksOv')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── PANTRY STATE ──────────────────────────────────────────────────────
 var pantryItems = (function(){ try { return JSON.parse(localStorage.getItem('sply_pantry')||'[]'); } catch(e){ return []; } })();
@@ -1968,9 +1987,10 @@ async function scanWithGemini() {
   var prompt = 'List every grocery/household item on this receipt. For each item return name (short common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Respond ONLY with a JSON array like: [{"name":"Rice","qty":1,"unit":"kg"}]. No extra text.';
   // Support both new AQ. auth keys and legacy AIza keys
   var isAuthKey = key.startsWith('AQ.');
+  var model = isAuthKey ? 'gemini-2.0-flash' : 'gemini-2.0-flash';
   var url = isAuthKey
-    ? 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-    : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key;
+    ? 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent'
+    : 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
   var headers = {'Content-Type':'application/json'};
   if(isAuthKey) headers['x-goog-api-key'] = key;
   var res = await fetch(url,{
@@ -3594,11 +3614,53 @@ function saveNewCat(){
 function openOv(id){
   if(id==='sheetsOv'){openSheetsModal();return;}
   if(id==='exportOv'){ _openOv(id); setTimeout(updateExportCount,50); return; }
+  if(id==='benchmarksOv'){ renderBenchTickers(); _openOv(id); return; }
   _openOv(id);
 }
 function _openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){document.getElementById(id).classList.remove('open');}
 function closeOvOutside(e,id){if(e.target===document.getElementById(id))closeOv(id);}
+
+function renderBenchTickers() {
+  var el = document.getElementById('benchTickerList');
+  if(!el) return;
+  el.innerHTML = BENCHMARKS.map(function(b){
+    var val = benchTickers[b.ticker] || b.ticker;
+    return '<div style="margin-bottom:12px;padding:10px;background:var(--s3);border-radius:10px">'+
+      '<label style="display:block;font-size:11px;font-weight:700;color:'+b.color+';margin-bottom:4px">'+escH(b.name)+'</label>'+
+      '<input type="text" class="bench-ticker-input" data-key="'+b.ticker+'" value="'+escH(val)+'" placeholder="e.g. '+b.ticker+'" style="width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:monospace">'+
+      '<div style="font-size:10px;color:var(--text3);margin-top:4px">Default: <code>'+b.ticker+'</code></div>'+
+    '</div>';
+  }).join('');
+}
+function saveBenchTickers() {
+  var inputs = document.querySelectorAll('.bench-ticker-input');
+  var map = {};
+  inputs.forEach(function(inp){
+    var key = inp.dataset.key;
+    var val = inp.value.trim().toUpperCase();
+    if(val && val !== key) map[key] = val;
+  });
+  benchTickers = map;
+  localStorage.setItem('sply_bench_tickers', JSON.stringify(map));
+  // Refresh by re-fetching with new tickers
+  benchmarkData = null;
+  benchmarkPrices = null;
+  localStorage.removeItem('sply_bench');
+  localStorage.removeItem('sply_bench_prices');
+  closeOv('benchmarksOv');
+  fetchBenchmarks();
+}
+function resetBenchTickers() {
+  benchTickers = {};
+  localStorage.removeItem('sply_bench_tickers');
+  benchmarkData = null;
+  benchmarkPrices = null;
+  localStorage.removeItem('sply_bench');
+  localStorage.removeItem('sply_bench_prices');
+  closeOv('benchmarksOv');
+  fetchBenchmarks();
+}
 function openMenu(){document.getElementById('menuOv').classList.add('open');}
 function closeMenu(){document.getElementById('menuOv').classList.remove('open');}
 
@@ -3817,7 +3879,14 @@ function renderCGT() {
 }
 
 // ── BENCHMARK ─────────────────────────────────────────────────────────
-var benchmarkData = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench')||'null'); } catch(e){ return null; } })();
+var benchmarkData = (function(){ try {
+  var d = JSON.parse(localStorage.getItem('sply_bench')||'null');
+  if(d && !localStorage.getItem('sply_bench_prices')) { localStorage.removeItem('sply_bench'); return null; }
+  return d;
+} catch(e){ return null; } })();
+var benchmarkPrices = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_prices')||'null'); } catch(e){ return null; } })();
+var benchTickers = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_tickers')||'null'); } catch(e){ return null; } })()||{};
+function benchTicker(b){ return benchTickers[b.ticker]||b.ticker; }
 var BENCHMARKS = [
   {name:'ASX 200',ticker:'IOZ.AX',color:'#22d3a0'},
   {name:'S&P 500',ticker:'IVV.AX',color:'#60a5fa'},
@@ -3835,7 +3904,11 @@ function renderBenchmark() {
   var allItems = [{name:'My Portfolio',ticker:'PORTFOLIO',color:'var(--accent)',returnPct:portfolioReturn}];
   if(benchmarkData) {
     BENCHMARKS.forEach(function(b){
-      if(benchmarkData[b.ticker] !== undefined) allItems.push(Object.assign({},b,{returnPct:benchmarkData[b.ticker]}));
+      if(benchmarkData[b.ticker] !== undefined) {
+        var item = Object.assign({},b,{returnPct:benchmarkData[b.ticker]});
+        if(benchmarkPrices && benchmarkPrices[b.ticker]) item.price = benchmarkPrices[b.ticker];
+        allItems.push(item);
+      }
     });
   } else {
     BENCHMARKS.forEach(function(b){ allItems.push(Object.assign({},b,{returnPct:null})); });
@@ -3843,38 +3916,44 @@ function renderBenchmark() {
 
   var maxR = Math.max.apply(null, allItems.map(function(x){return Math.abs(x.returnPct||0);}).concat([5]));
   list.innerHTML = allItems.map(function(item){
-    if(item.returnPct===null) return '<div class="bench-row"><div class="bench-lbl">'+escH(item.name)+'</div><div style="flex:1;font-size:11px;color:var(--text3)">— tap refresh to fetch</div></div>';
-    var pct = item.returnPct||0;
-    var barW = Math.abs(pct)/maxR*100;
+    var pct = item.returnPct;
+    var actTicker = item.ticker!=='PORTFOLIO' ? benchTicker(item) : '';
+    var subtitle = actTicker && actTicker!==item.ticker ? ' ('+actTicker+')' : '';
+    if(pct===null) {
+      var px = item.price ? ' $'+item.price.toFixed(2) : '';
+      return '<div class="bench-row"><div class="bench-lbl">'+escH(item.name)+subtitle+'</div><div style="flex:1;font-size:11px;color:var(--text3)">'+px+' — baseline set, fetch again for change</div></div>';
+    }
+    var pctVal = pct||0;
+    var barW = Math.abs(pctVal)/maxR*100;
+    var suffix = item.price ? ' $'+item.price.toFixed(2) : '';
     return '<div class="bench-row">'+
-      '<div class="bench-lbl" style="font-weight:'+(item.ticker==='PORTFOLIO'?'700':'400')+'">'+escH(item.name)+'</div>'+
-      '<div class="bench-bar-wrap"><div class="bench-bar" style="width:'+barW+'%;background:'+(pct>=0?item.color:'var(--expense)')+'"></div></div>'+
-      '<div class="bench-val" style="color:'+(pct>=0?'var(--income)':'var(--expense)')+'">'+(pct>=0?'+':'')+pct.toFixed(2)+'%</div>'+
+      '<div class="bench-lbl" style="font-weight:'+(item.ticker==='PORTFOLIO'?'700':'400')+'">'+escH(item.name)+suffix+subtitle+'</div>'+
+      '<div class="bench-bar-wrap"><div class="bench-bar" style="width:'+barW+'%;background:'+(pctVal>=0?item.color:'var(--expense)')+'"></div></div>'+
+      '<div class="bench-val" style="color:'+(pctVal>=0?'var(--income)':'var(--expense)')+'">'+(pctVal>=0?'+':'')+pctVal.toFixed(2)+'%</div>'+
     '</div>';
   }).join('');
 }
 
 async function fetchBenchmarks() {
   showToast('Fetching benchmark prices...','info');
-  var refs = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_ref')||'null'); } catch(e){ return null; } })();
-  var result = {};
+  var prev = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_prices')||'null'); } catch(e){ return null; } })();
+  var result = {}, prices = {};
   for(var i=0;i<BENCHMARKS.length;i++){
-    var price = await fetchASXPrice(BENCHMARKS[i].ticker.replace('.AX',''));
+    var b = BENCHMARKS[i];
+    var actualTicker = benchTicker(b);
+    var price = await fetchASXPrice(actualTicker.replace('.AX',''));
     if(!price) continue;
-    if(refs && refs[BENCHMARKS[i].ticker]) {
-      result[BENCHMARKS[i].ticker] = (price - refs[BENCHMARKS[i].ticker]) / refs[BENCHMARKS[i].ticker] * 100;
-    } else {
-      if(!refs) refs = {};
-      refs[BENCHMARKS[i].ticker] = price;
-      result[BENCHMARKS[i].ticker] = 0;
-    }
+    prices[b.ticker] = price;
+    var prevPx = prev && prev[b.ticker] ? prev[b.ticker] : null;
+    result[b.ticker] = prevPx ? (price - prevPx) / prevPx * 100 : null;
   }
-  if(Object.keys(result).length) {
+  if(Object.keys(prices).length) {
     benchmarkData = result;
+    benchmarkPrices = prices;
     localStorage.setItem('sply_bench', JSON.stringify(result));
-    localStorage.setItem('sply_bench_ref', JSON.stringify(refs));
+    localStorage.setItem('sply_bench_prices', JSON.stringify(prices));
     renderBenchmark();
-    showToast('Benchmarks updated'+(refs?' (returns vs first fetch date)':''),'ok');
+    showToast('Benchmarks updated','ok');
   } else {
     showToast('Could not fetch — try again later','err');
   }
@@ -4548,7 +4627,7 @@ async function fetchASXPrice(ticker) {
       var price = raw.chart && raw.chart.result && raw.chart.result[0] && raw.chart.result[0].meta
         ? raw.chart.result[0].meta.regularMarketPrice
         : null;
-      if (price) return Number(price);
+      if (price !== null) return Number(price);
     } catch(e) {
       console.warn('Proxy ' + i + ' failed for ' + ticker + ':', e.message);
     }
@@ -4581,7 +4660,7 @@ async function refreshAllPrices() {
   var updated = 0;
   for (var i = 0; i < holdings.length; i++) {
     var price = await fetchASXPrice(holdings[i].ticker);
-    if (price) {
+    if (price !== null) {
       holdings[i].currentPrice = price;
       updated++;
     }
@@ -4786,7 +4865,7 @@ function openAddHolding() {
         if (priceEl) {
           priceEl.placeholder = 'Fetching price...';
           fetchASXPrice(ticker).then(function(price) {
-            if (price) {
+            if (price !== null) {
               priceEl.value = price;
               priceEl.placeholder = 'e.g. 118.20';
               showToast(ticker + ': $' + price, 'ok');
