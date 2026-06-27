@@ -3835,7 +3835,7 @@ function renderBenchmark() {
   var allItems = [{name:'My Portfolio',ticker:'PORTFOLIO',color:'var(--accent)',returnPct:portfolioReturn}];
   if(benchmarkData) {
     BENCHMARKS.forEach(function(b){
-      if(benchmarkData[b.ticker]) allItems.push(Object.assign({},b,{returnPct:benchmarkData[b.ticker]}));
+      if(benchmarkData[b.ticker] !== undefined) allItems.push(Object.assign({},b,{returnPct:benchmarkData[b.ticker]}));
     });
   } else {
     BENCHMARKS.forEach(function(b){ allItems.push(Object.assign({},b,{returnPct:null})); });
