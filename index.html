@@ -862,10 +862,10 @@ input[type="file"]{display:none;}
   </div>
 </div>
 
-<!-- NEW SAVINGS GOAL -->
+<!-- NEW/EDIT SAVINGS GOAL -->
 <div class="overlay" id="newGoalOv" onclick="closeOvOutside(event,'newGoalOv')">
   <div class="sheet">
-    <div class="handle"></div><h2>New Savings Goal</h2>
+    <div class="handle"></div><h2 id="goalOvTitle">New Savings Goal</h2>
     <div class="fg"><label>Goal name</label><input type="text" id="goalName" placeholder="e.g. Japan trip, Emergency fund..."></div>
     <div class="fg"><label>Target amount (AUD)</label><input type="number" id="goalTarget" placeholder="e.g. 3000" min="1" step="1" inputmode="decimal"></div>
     <div class="fg"><label>Current savings</label><input type="number" id="goalCurrent" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
@@ -2444,8 +2444,8 @@ function renderHomeGoals() {
   if(!savingsGoals.length) { container.style.display='none'; return; }
   container.style.display='block';
   var top = savingsGoals.slice(0,3);
-  container.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:12px 14px;">'+
-    '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">&#127942; Savings goals</div>'+
+  container.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:12px 14px;cursor:pointer" onclick="switchView(\'budget\');setTimeout(function(){ switchYnabTab(\'goals\',document.getElementById(\'ynab-tab-goals\')); },100)">'+
+    '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">&#127942; Savings goals <span style="float:right;font-weight:400;color:var(--accent)">Edit &rarr;</span></div>'+
     top.map(function(g){
       var pct = g.target > 0 ? Math.min(g.current/g.target*100,100) : 0;
       return '<div style="margin-bottom:6px">'+
@@ -5111,7 +5111,7 @@ function renderGoals() {
   var list = document.getElementById('goalsList');
   if(!list) return;
   if(!savingsGoals.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">&#127942;</div><p>No savings goals yet.<br>Tap the button below to create one.</p></div>';
+    list.innerHTML='<div class="empty"><div class="empty-icon">&#127942;</div><p>No savings goals yet.<br>Tap the button below to create one.</p><p style="font-size:11px;color:var(--text3);margin-top:8px">You can also see goals from <a href="#" style="color:var(--accent);text-decoration:underline" onclick="switchView(\'overview\');return false">the home page</a>.</p></div>';
     return;
   }
   var html = '';
@@ -5139,6 +5139,7 @@ function renderGoals() {
     html += '</div>';
     html += '<div style="text-align:right"><div class="goal-amount">'+fmt(g.current)+' / '+fmt(g.target)+'</div>';
     html += '<div class="goal-pct">'+Math.round(pct)+'%</div></div>';
+    html += '<button class="edit-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;padding:4px">&#9998;</button>';
     html += '<button class="del-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
     html += '</div>';
     html += '<div class="goal-track"><div class="goal-fill" style="width:'+pct+'%"></div></div>';
@@ -5148,6 +5149,9 @@ function renderGoals() {
     html += '</div></div>';
   });
   list.innerHTML = html;
+  list.querySelectorAll('.edit-goal-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ editGoal(parseInt(this.dataset.idx)); });
+  });
   list.querySelectorAll('.del-goal-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ deleteGoal(parseInt(this.dataset.idx)); });
   });
@@ -5161,7 +5165,11 @@ function renderGoals() {
   });
 }
 
+var _editingGoal = -1;
 function openNewGoal() {
+  _editingGoal = -1;
+  document.getElementById('goalOvTitle').textContent = 'New Savings Goal';
+  document.getElementById('saveGoalBtn').textContent = 'Save goal';
   document.getElementById('goalName').value='';
   document.getElementById('goalTarget').value='';
   document.getElementById('goalCurrent').value='';
@@ -5169,6 +5177,29 @@ function openNewGoal() {
   var picker = document.getElementById('goalEmojiPicker');
   if(picker) picker.innerHTML = ['🎯','🏠','✈️','🚗','💍','🎓','🏖️','💰','🏋️','🎮'].map(function(e,i){
     return '<div class="ep '+(i===0?'selected':'')+'" data-emoji="'+e+'">'+e+'</div>';
+  }).join('');
+  if(picker) picker.querySelectorAll('.ep').forEach(function(ep){
+    ep.addEventListener('click', function(){
+      picker.querySelectorAll('.ep').forEach(function(x){ x.classList.remove('selected'); });
+      this.classList.add('selected');
+    });
+  });
+  _openOv('newGoalOv');
+}
+function editGoal(idx) {
+  var g = savingsGoals[idx];
+  if(!g) return;
+  _editingGoal = idx;
+  document.getElementById('goalOvTitle').textContent = 'Edit Savings Goal';
+  document.getElementById('saveGoalBtn').textContent = 'Update goal';
+  document.getElementById('goalName').value = g.name||'';
+  document.getElementById('goalTarget').value = g.target||'';
+  document.getElementById('goalCurrent').value = g.current||'';
+  document.getElementById('goalDate').value = g.targetDate||'';
+  var picker = document.getElementById('goalEmojiPicker');
+  if(picker) picker.innerHTML = ['🎯','🏠','✈️','🚗','💍','🎓','🏖️','💰','🏋️','🎮'].map(function(e,i){
+    var sel = g.emoji === e ? 'selected' : '';
+    return '<div class="ep '+sel+'" data-emoji="'+e+'">'+e+'</div>';
   }).join('');
   if(picker) picker.querySelectorAll('.ep').forEach(function(ep){
     ep.addEventListener('click', function(){
@@ -5186,8 +5217,14 @@ function saveGoal() {
   var date = document.getElementById('goalDate').value;
   var selEmoji = document.querySelector('#goalEmojiPicker .ep.selected');
   if(!name||target<=0){ showToast('Enter name and target amount','err'); return; }
-  savingsGoals.push({name:name,target:target,current:current,targetDate:date,emoji:selEmoji?selEmoji.dataset.emoji:'🎯'});
-  save(); closeOv('newGoalOv'); renderGoals(); showToast('"'+name+'" goal added','ok');
+  var g = {name:name,target:target,current:current,targetDate:date,emoji:selEmoji?selEmoji.dataset.emoji:'🎯'};
+  if(_editingGoal >= 0) {
+    savingsGoals[_editingGoal] = g;
+    save(); closeOv('newGoalOv'); renderGoals(); showToast('"'+name+'" updated','ok');
+  } else {
+    savingsGoals.push(g);
+    save(); closeOv('newGoalOv'); renderGoals(); showToast('"'+name+'" goal added','ok');
+  }
 }
 
 function deleteGoal(idx) {
