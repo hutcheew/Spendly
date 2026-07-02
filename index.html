@@ -2214,9 +2214,12 @@ function handlePantryPhoto(e) {
       pantryReceiptBase64 = dataUrl.split(',')[1];
       pantryReceiptMime = 'image/jpeg';
       var kb = Math.round(pantryReceiptBase64.length * 0.75 / 1024);
+      var sizeColor = kb > 900 ? 'var(--expense)' : kb > 500 ? 'var(--warn)' : 'var(--income)';
       document.getElementById('pantryReceiptPreview').innerHTML =
         '<img src="'+dataUrl+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain">'+
-        '<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px">'+kb+'KB ready to scan</div>';
+        '<div style="font-size:11px;color:'+sizeColor+';text-align:center;margin-top:6px;font-weight:600">'+
+          (kb > 900 ? '⚠️ ' : '✓ ')+kb+'KB'+(kb > 900?' — may be too large for OCR.space':' — ready to scan')+
+        '</div>';
       document.getElementById('pantryScanBtn').style.display = 'block';
       document.getElementById('pantryMatchResult').style.display = 'none';
     };
@@ -2321,18 +2324,43 @@ Respond ONLY with the JSON array. No markdown, no explanation.`;
 async function scanWithOCR() {
   var key = document.getElementById('pantryOcrKey').value.trim() || 'helloworld';
   localStorage.setItem('sply_ocr_key', key);
-  // OCR.space — get raw text then parse manually
+
+  if(!pantryReceiptBase64) throw new Error('No image loaded');
+
+  // Show exact size info
+  var bytes = Math.round(pantryReceiptBase64.length * 0.75);
+  var kb = Math.round(bytes / 1024);
+  console.log('OCR.space upload size:', kb, 'KB');
+  if(kb > 1024) throw new Error('Image too large ('+kb+'KB). Max 1MB. Try re-taking the photo in lower resolution.');
+
+  // OCR.space requires multipart/form-data with file upload (not raw base64 string)
+  // Convert base64 back to Blob for proper file upload
+  var byteChars = atob(pantryReceiptBase64);
+  var byteArr = new Uint8Array(byteChars.length);
+  for(var i=0; i<byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+  var blob = new Blob([byteArr], {type: pantryReceiptMime});
+
   var formData = new FormData();
-  formData.append('base64Image', 'data:'+pantryReceiptMime+';base64,'+pantryReceiptBase64);
+  formData.append('file', blob, 'receipt.jpg');
   formData.append('apikey', key);
   formData.append('language', 'eng');
   formData.append('isTable', 'true');
+  formData.append('OCREngine', '2'); // Engine 2 is better for receipts
+  formData.append('scale', 'true');
+  formData.append('isCreateSearchablePdf', 'false');
+  formData.append('isSearchablePdfHideTextLayer', 'false');
+
+  showToast('Uploading '+kb+'KB to OCR.space...', 'ok');
+
   var res = await fetch('https://api.ocr.space/parse/image', {method:'POST', body:formData});
-  if(!res.ok) throw new Error('OCR.space error '+res.status);
+  if(res.status === 413) throw new Error('Image still too large ('+kb+'KB) — OCR.space limit is 1MB');
+  if(!res.ok) throw new Error('OCR.space error '+res.status+' — check your API key');
+
   var data = await res.json();
+  if(data.IsErroredOnProcessing) throw new Error('OCR.space: '+data.ErrorMessage);
   var text = data.ParsedResults && data.ParsedResults[0] ? data.ParsedResults[0].ParsedText : '';
-  if(!text) throw new Error('No text extracted from image');
-  // Parse raw OCR text into item list — look for lines with quantities/prices
+  if(!text) throw new Error('No text found in image — try better lighting or a clearer photo');
+  console.log('OCR raw text:', text);
   return parseOCRText(text);
 }
 
