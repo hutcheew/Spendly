@@ -1730,10 +1730,36 @@ input[type="file"]{display:none;}
     <div id="pantryMatchResult" style="display:none">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Items found — select what to add to stock:</div>
       <div id="pantryMatchList"></div>
-      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:4px">&#10003; Update Selected Stock</button>
+
+      <!-- EXPENSE PROMPT -->
+      <div id="receiptExpensePrompt" style="background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">💳 Log as expense too?</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="checkbox" id="receiptLogExpense" checked style="width:16px;height:16px;accent-color:var(--accent)">
+          <label for="receiptLogExpense" style="font-size:12px;color:var(--text)">Add to expenses</label>
+        </div>
+        <div id="receiptExpenseFields">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:3px">Store</div>
+              <input type="text" id="receiptStore" placeholder="e.g. Coles, Woolworths" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit">
+            </div>
+            <div style="width:100px">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:3px">Total ($)</div>
+              <input type="number" id="receiptTotal" placeholder="0.00" step="0.01" inputmode="decimal" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:5px">Category</div>
+            <div id="receiptCatRow" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:10px">✓ Update Stock &amp; Log Expense</button>
     </div>
 
-    <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none">&#129302; Scan with AI</button>
+    <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none">🤖 Scan with AI</button>
   </div>
 </div>
 
@@ -2278,6 +2304,7 @@ Respond ONLY with the JSON array. No markdown, no explanation.`;
   if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Claude API error '+res.status);}
   var data = await res.json();
   var text = data.content[0].text.trim().replace(/```json|```/g,'').trim();
+  lastOCRRawText = text; // used for store detection
   return JSON.parse(text);
 }
 
@@ -2318,6 +2345,7 @@ Respond ONLY with the JSON array. No markdown, no explanation.`;
   if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Gemini API error '+res.status);}
   var data = await res.json();
   var text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g,'').trim();
+  lastOCRRawText = text; // used for store detection
   return JSON.parse(text);
 }
 
@@ -2361,6 +2389,7 @@ async function scanWithOCR() {
   var text = data.ParsedResults && data.ParsedResults[0] ? data.ParsedResults[0].ParsedText : '';
   if(!text) throw new Error('No text found in image — try better lighting or a clearer photo');
   console.log('OCR raw text:', text);
+  lastOCRRawText = text;
   return parseOCRText(text);
 }
 
@@ -2394,6 +2423,81 @@ function calcExpiryDate(estimatedExpiryDays) {
   var d = new Date();
   d.setDate(d.getDate() + Math.round(estimatedExpiryDays));
   return d.toISOString().split('T')[0];
+}
+
+// ── STORE DETECTION & RECEIPT EXPENSE ─────────────────────────────────
+var lastOCRRawText = '';
+
+var KNOWN_STORES = {
+  'coles':{'name':'Coles','cat':'food'},'woolworths':{'name':'Woolworths','cat':'food'},
+  'woolies':{'name':'Woolworths','cat':'food'},'aldi':{'name':'Aldi','cat':'food'},
+  'iga':{'name':'IGA','cat':'food'},'costco':{'name':'Costco','cat':'shopping'},
+  'harris farm':{'name':'Harris Farm','cat':'food'},'foodworks':{'name':'Foodworks','cat':'food'},
+  'drakes':{'name':'Drakes','cat':'food'},'spudshed':{'name':'Spudshed','cat':'food'},
+  'chemist warehouse':{'name':'Chemist Warehouse','cat':'health'},'priceline':{'name':'Priceline','cat':'health'},
+  'terry white':{'name':'Terry White','cat':'health'},'bunnings':{'name':'Bunnings','cat':'shopping'},
+  'kmart':{'name':'Kmart','cat':'shopping'},'target':{'name':'Target','cat':'shopping'},
+  'big w':{'name':'Big W','cat':'shopping'},'officeworks':{'name':'Officeworks','cat':'shopping'},
+  'jb hi-fi':{'name':'JB Hi-Fi','cat':'entertainment'},'myer':{'name':'Myer','cat':'shopping'},
+  'david jones':{'name':'David Jones','cat':'shopping'},'7-eleven':{'name':'7-Eleven','cat':'food'},
+  'bp':{'name':'BP','cat':'transport'},'shell':{'name':'Shell','cat':'transport'},
+  'caltex':{'name':'Caltex','cat':'transport'},'ampol':{'name':'Ampol','cat':'transport'},
+};
+
+var GROCERY_CATS = [
+  {id:'food',label:'Groceries',emoji:'🛒'},{id:'dining',label:'Dining',emoji:'🍽️'},
+  {id:'health',label:'Health',emoji:'💊'},{id:'shopping',label:'Shopping',emoji:'🛍️'},
+  {id:'entertainment',label:'Entertain',emoji:'🎬'},{id:'transport',label:'Transport',emoji:'🚗'},
+  {id:'other',label:'Other',emoji:'📦'},
+];
+
+function detectStoreFromOCR(text) {
+  if(!text) return null;
+  var lower = text.toLowerCase().substring(0,300);
+  for(var key in KNOWN_STORES){ if(lower.includes(key)) return KNOWN_STORES[key]; }
+  return null;
+}
+
+function detectTotalFromOCR(text) {
+  if(!text) return null;
+  var patterns = [
+    /total\s*due[:\s]*\$?([\d,]+\.\d{2})/i,/amount\s*due[:\s]*\$?([\d,]+\.\d{2})/i,
+    /^total[:\s]*\$?([\d,]+\.\d{2})/im,/grand\s*total[:\s]*\$?([\d,]+\.\d{2})/i,
+    /balance\s*due[:\s]*\$?([\d,]+\.\d{2})/i,
+  ];
+  for(var i=0;i<patterns.length;i++){ var m=text.match(patterns[i]); if(m) return parseFloat(m[1].replace(',','')); }
+  var all=text.match(/\$?([\d]+\.\d{2})/g);
+  if(all&&all.length) return parseFloat(all[all.length-1].replace('$',''));
+  return null;
+}
+
+function setupReceiptExpensePrompt(store, total, suggestedCat) {
+  var cb=document.getElementById('receiptLogExpense');
+  var fields=document.getElementById('receiptExpenseFields');
+  if(cb) cb.onchange=function(){ fields.style.display=this.checked?'block':'none'; };
+  if(store) document.getElementById('receiptStore').value=store.name;
+  if(total) document.getElementById('receiptTotal').value=total.toFixed(2);
+  var cat=suggestedCat||(store?store.cat:'food');
+  var catRow=document.getElementById('receiptCatRow');
+  if(catRow) catRow.innerHTML=GROCERY_CATS.map(function(c){
+    var sel=c.id===cat;
+    return '<button onclick="selectReceiptCat(\''+c.id+'\',this)" style="padding:5px 10px;border-radius:8px;border:1px solid '+(sel?'var(--accent)':'var(--border)')+';background:'+(sel?'rgba(124,106,255,.15)':'var(--s2)')+';color:'+(sel?'var(--accent)':'var(--text3)')+';font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s" data-cat="'+c.id+'">'+c.emoji+' '+c.label+'</button>';
+  }).join('');
+}
+
+function selectReceiptCat(cat, el) {
+  document.querySelectorAll('#receiptCatRow button').forEach(function(b){
+    b.style.borderColor='var(--border)';b.style.background='var(--s2)';b.style.color='var(--text3)';
+  });
+  el.style.borderColor='var(--accent)';el.style.background='rgba(124,106,255,.15)';el.style.color='var(--accent)';
+}
+
+function getSelectedReceiptCat() {
+  var btns=document.querySelectorAll('#receiptCatRow button');
+  for(var i=0;i<btns.length;i++){
+    if(btns[i].style.color==='var(--accent)'||btns[i].style.borderColor==='var(--accent)') return btns[i].dataset.cat||'food';
+  }
+  return 'food';
 }
 
 function renderPantryMatches(items) {
@@ -2438,6 +2542,11 @@ function renderPantryMatches(items) {
     '</div>';
   }).join('');
   document.getElementById('pantryMatchResult').style.display='block';
+
+  // Auto-detect store + total + category
+  var store = detectStoreFromOCR(lastOCRRawText);
+  var total = detectTotalFromOCR(lastOCRRawText);
+  setupReceiptExpensePrompt(store, total, store ? store.cat : 'food');
 }
 
 function togglePantryMatch(el) {
@@ -2466,32 +2575,53 @@ function applyPantryMatches() {
         newQty = pantryItems[existingIdx].max;
       }
       pantryItems[existingIdx].qty = Math.round(newQty*10)/10;
-      // Update expiry if AI provided one and none set
       if(expiryDate && !pantryItems[existingIdx].expiry) pantryItems[existingIdx].expiry = expiryDate;
-      // Update emoji if empty
       if(item.emoji && !pantryItems[existingIdx].emoji) pantryItems[existingIdx].emoji = item.emoji;
       updated++;
     } else {
       pantryItems.push({
-        name: item.name,
-        emoji: item.emoji||'',
-        qty: qty,
-        unit: item.unit||'pcs',
-        min: 1,
-        max: 0,
-        category: pantryCategory,
-        expiry: expiryDate,
+        name: item.name, emoji: item.emoji||'', qty: qty, unit: item.unit||'pcs',
+        min: 1, max: 0, category: pantryCategory, expiry: expiryDate,
         notes: item.typicalUsageDays ? 'Typically used in '+item.typicalUsageDays+' days' : 'Added from receipt',
-        typicalUsageDays: item.typicalUsageDays||0,
-        storage: item.storage||'pantry'
+        typicalUsageDays: item.typicalUsageDays||0, storage: item.storage||'pantry'
       });
       added++;
     }
   });
+
   savePantryState();
+
+  // Log expense if checkbox ticked
+  var logExpense = document.getElementById('receiptLogExpense');
+  if(logExpense && logExpense.checked) {
+    var store   = document.getElementById('receiptStore').value.trim();
+    var total   = parseFloat(document.getElementById('receiptTotal').value)||0;
+    var cat     = getSelectedReceiptCat();
+    if(total > 0) {
+      var desc = store || 'Grocery receipt';
+      var tx = {
+        id: Date.now().toString(),
+        type: 'expense',
+        amount: total,
+        desc: desc,
+        cat: cat,
+        date: new Date().toISOString().split('T')[0],
+        currency: 'AUD',
+        amountAUD: total
+      };
+      txns.push(tx);
+      save();
+      render();
+      if(typeof gasUrl !== 'undefined' && gasUrl) setTimeout(function(){ pushToSheets(); }, 800);
+      showToast('💳 $'+total.toFixed(2)+' logged at '+desc,'ok');
+    } else {
+      showToast('Enter a total amount to log the expense','err');
+    }
+  }
+
   closeOv('pantryScanOv');
   renderPantry();
-  showToast('Updated '+updated+' · Added '+added+' new','ok');
+  showToast('✓ Updated '+updated+' · Added '+added+' new','ok');
   syncPantry();
 }
 
