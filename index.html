@@ -2198,12 +2198,29 @@ function handlePantryPhoto(e) {
   var file = e.target.files[0]; if(!file) return;
   var reader = new FileReader();
   reader.onload = function(ev){
-    pantryReceiptBase64 = ev.target.result.split(',')[1];
-    pantryReceiptMime = file.type || 'image/jpeg';
-    document.getElementById('pantryReceiptPreview').innerHTML =
-      '<img src="'+ev.target.result+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain">';
-    document.getElementById('pantryScanBtn').style.display = 'block';
-    document.getElementById('pantryMatchResult').style.display = 'none';
+    // Compress via canvas before storing — keeps under 1MB for OCR.space
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement('canvas');
+      var MAX = 1400; // max width/height px — enough for receipt text
+      var scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      var quality = 0.82;
+      var dataUrl = canvas.toDataURL('image/jpeg', quality);
+      // If still over 900KB, compress more
+      if(dataUrl.length > 1200000) dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+      pantryReceiptBase64 = dataUrl.split(',')[1];
+      pantryReceiptMime = 'image/jpeg';
+      var kb = Math.round(pantryReceiptBase64.length * 0.75 / 1024);
+      document.getElementById('pantryReceiptPreview').innerHTML =
+        '<img src="'+dataUrl+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain">'+
+        '<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px">'+kb+'KB ready to scan</div>';
+      document.getElementById('pantryScanBtn').style.display = 'block';
+      document.getElementById('pantryMatchResult').style.display = 'none';
+    };
+    img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
   e.target.value='';
