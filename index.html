@@ -1908,8 +1908,8 @@ async function aiSuggestUsage() {
       var d = await res.json(); text = d.content[0].text;
     } else {
       var isAQ = key.startsWith('AQ.');
-      var url = isAQ ? 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
-                     : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key;
+      var url = isAQ ? 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'
+                     : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key='+key;
       var headers = {'Content-Type':'application/json'};
       if(isAQ) headers['x-goog-api-key']=key;
       res = await fetch(url,{method:'POST',headers:headers,body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
@@ -2281,7 +2281,7 @@ For each item return EXACTLY this structure:
 
 Respond ONLY with the JSON array. No markdown, no explanation.`;
   var isAuthKey = key.startsWith('AQ.');
-  var model = 'gemini-1.5-flash';
+  var model = 'gemini-2.5-flash-lite';
   var url = isAuthKey
     ? 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent'
     : 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
