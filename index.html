@@ -1684,82 +1684,93 @@ input[type="file"]{display:none;}
 
 <!-- PANTRY RECEIPT SCAN MODAL -->
 <div class="overlay" id="pantryScanOv" onclick="closeOvOutside(event,'pantryScanOv')">
-  <div class="sheet">
+  <div class="sheet" style="max-height:96vh;display:flex;flex-direction:column;padding-bottom:12px;">
     <div class="handle"></div>
-    <h2>Scan Receipt → Update Stock</h2>
-    <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:12px">Photo a receipt. AI reads the items, you select which ones to add to your pantry stock.</p>
+    <h2 style="flex-shrink:0">📷 Scan Receipt</h2>
 
-    <!-- API selector -->
-    <div class="fg">
-      <label>AI Engine</label>
-      <div class="api-toggle" id="pantryApiToggle">
-        <button class="api-toggle-btn active" onclick="setPantryApi('claude',this)">Claude</button>
-        <button class="api-toggle-btn" onclick="setPantryApi('gemini',this)">Gemini</button>
-        <button class="api-toggle-btn" onclick="setPantryApi('ocr',this)">OCR.space</button>
-      </div>
-    </div>
+    <!-- Scrollable content area -->
+    <div style="overflow-y:auto;flex:1;padding-bottom:calc(20px + var(--safe-bottom));">
 
-    <!-- API key fields -->
-    <div class="fg" id="pantryClaudeKeyGroup">
-      <label>Claude API key</label>
-      <input type="password" id="pantryClaudeKey" placeholder="sk-ant-..." autocomplete="off">
-      <small>Get one at console.anthropic.com — stored locally only</small>
-    </div>
-    <div class="fg" id="pantryGeminiKeyGroup" style="display:none">
-      <label>Gemini API key</label>
-      <input type="password" id="pantryGeminiKey" placeholder="AQ.Ab... or AIza..." autocomplete="off">
-      <small>Get one free at aistudio.google.com — 1,500 scans/day free</small>
-    </div>
-    <div class="fg" id="pantryOcrKeyGroup" style="display:none">
-      <label>OCR.space API key <span style="color:var(--text3);font-weight:400">(optional — free without key)</span></label>
-      <input type="password" id="pantryOcrKey" placeholder="helloworld (free) or your key" autocomplete="off">
-      <small>No account needed for basic use — 500 scans/day free at ocr.space</small>
-    </div>
-
-    <!-- Photo area -->
-    <div class="receipt-preview" id="pantryReceiptPreview" onclick="document.getElementById('pantryReceiptIn').click()" style="margin-bottom:10px">
-      <div><div style="font-size:32px;margin-bottom:8px">&#128247;</div><div>Tap to take photo or choose image</div></div>
-    </div>
-    <input type="file" id="pantryReceiptIn" accept="image/*" capture="environment" onchange="handlePantryPhoto(event)">
-
-    <div id="pantryScanLoading" style="display:none;text-align:center;padding:16px;color:var(--text3);font-size:13px">
-      <div style="font-size:28px;margin-bottom:8px">&#129302;</div>Reading receipt...
-    </div>
-
-    <!-- Matched items for selection -->
-    <div id="pantryMatchResult" style="display:none">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Items found — select what to add to stock:</div>
-      <div id="pantryMatchList"></div>
-
-      <!-- EXPENSE PROMPT -->
-      <div id="receiptExpensePrompt" style="background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">💳 Log as expense too?</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <input type="checkbox" id="receiptLogExpense" checked style="width:16px;height:16px;accent-color:var(--accent)">
-          <label for="receiptLogExpense" style="font-size:12px;color:var(--text)">Add to expenses</label>
-        </div>
-        <div id="receiptExpenseFields">
-          <div style="display:flex;gap:8px;margin-bottom:8px">
-            <div style="flex:1">
-              <div style="font-size:10px;color:var(--text3);margin-bottom:3px">Store</div>
-              <input type="text" id="receiptStore" placeholder="e.g. Coles, Woolworths" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit">
-            </div>
-            <div style="width:100px">
-              <div style="font-size:10px;color:var(--text3);margin-bottom:3px">Total ($)</div>
-              <input type="number" id="receiptTotal" placeholder="0.00" step="0.01" inputmode="decimal" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit">
-            </div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:5px">Category</div>
-            <div id="receiptCatRow" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
+      <!-- API selector -->
+      <div class="fg">
+        <label>AI Engine</label>
+        <div class="api-toggle" id="pantryApiToggle">
+          <button class="api-toggle-btn active" onclick="setPantryApi('claude',this)">Claude</button>
+          <button class="api-toggle-btn" onclick="setPantryApi('gemini',this)">Gemini</button>
+          <button class="api-toggle-btn" onclick="setPantryApi('ocr',this)">OCR.space</button>
         </div>
       </div>
 
-      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:10px">✓ Update Stock &amp; Log Expense</button>
-    </div>
+      <!-- API key fields -->
+      <div class="fg" id="pantryClaudeKeyGroup">
+        <label>Claude API key</label>
+        <input type="password" id="pantryClaudeKey" placeholder="sk-ant-..." autocomplete="off">
+        <small>console.anthropic.com — stored locally only</small>
+      </div>
+      <div class="fg" id="pantryGeminiKeyGroup" style="display:none">
+        <label>Gemini API key</label>
+        <input type="password" id="pantryGeminiKey" placeholder="AQ.Ab... or AIza..." autocomplete="off">
+        <small>aistudio.google.com — free 1,500/day</small>
+      </div>
+      <div class="fg" id="pantryOcrKeyGroup" style="display:none">
+        <label>OCR.space API key <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <input type="password" id="pantryOcrKey" placeholder="helloworld or your key" autocomplete="off">
+        <small>ocr.space — 500/day free</small>
+      </div>
 
-    <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none">🤖 Scan with AI</button>
+      <!-- Photo source toggle -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="api-toggle-btn active" id="btnCamera" onclick="setPhotoSource('camera')" style="flex:1;padding:9px">📷 Camera</button>
+        <button class="api-toggle-btn" id="btnGallery" onclick="setPhotoSource('gallery')" style="flex:1;padding:9px">🖼️ Gallery / Upload</button>
+      </div>
+
+      <!-- Photo area -->
+      <div class="receipt-preview" id="pantryReceiptPreview" onclick="triggerPhotoInput()" style="margin-bottom:6px;min-height:90px;cursor:pointer">
+        <div><div style="font-size:28px;margin-bottom:6px">📷</div><div style="font-size:12px">Tap to take photo or choose image</div></div>
+      </div>
+      <!-- Camera input -->
+      <input type="file" id="pantryReceiptInCamera" accept="image/*" capture="environment" onchange="handlePantryPhoto(event)" style="display:none">
+      <!-- Gallery/upload input -->
+      <input type="file" id="pantryReceiptInGallery" accept="image/*" onchange="handlePantryPhoto(event)" style="display:none">
+
+      <div id="pantryScanLoading" style="display:none;text-align:center;padding:12px;color:var(--text3);font-size:13px">
+        <div style="font-size:24px;margin-bottom:6px">🤖</div>Reading receipt...
+      </div>
+
+      <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none;margin-bottom:10px">🤖 Scan with AI</button>
+
+      <!-- Matched items -->
+      <div id="pantryMatchResult" style="display:none">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Items found — select to add to stock:</div>
+        <div id="pantryMatchList"></div>
+
+        <!-- EXPENSE PROMPT -->
+        <div id="receiptExpensePrompt" style="background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">💳 Log as expense?</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <input type="checkbox" id="receiptLogExpense" checked style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0">
+            <label for="receiptLogExpense" style="font-size:13px;color:var(--text)">Yes, add to my expenses</label>
+          </div>
+          <div id="receiptExpenseFields">
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <div style="flex:1">
+                <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Store</div>
+                <input type="text" id="receiptStore" placeholder="e.g. Coles" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+              </div>
+              <div style="width:110px">
+                <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Total ($) <span id="totalDetectedBadge" style="display:none;color:var(--income);font-size:9px;font-weight:700">AUTO</span></div>
+                <input type="number" id="receiptTotal" placeholder="0.00" step="0.01" inputmode="decimal" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Category</div>
+            <div id="receiptCatRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:12px">✓ Update Stock &amp; Log Expense</button>
+      </div>
+
+    </div><!-- end scrollable -->
   </div>
 </div>
 
@@ -2191,19 +2202,33 @@ var pantryReceiptMime = 'image/jpeg';
 var pantryScannedItems = [];
 var pantryApiProvider = localStorage.getItem('sply_pantry_api')||'claude';
 
+var pantryPhotoSource = 'camera'; // 'camera' | 'gallery'
+
+function setPhotoSource(src) {
+  pantryPhotoSource = src;
+  document.getElementById('btnCamera').classList.toggle('active', src==='camera');
+  document.getElementById('btnGallery').classList.toggle('active', src==='gallery');
+}
+
+function triggerPhotoInput() {
+  var id = pantryPhotoSource === 'gallery' ? 'pantryReceiptInGallery' : 'pantryReceiptInCamera';
+  document.getElementById(id).click();
+}
+
 function openPantryScan() {
-  // Pre-fill known keys
   var claudeKey = localStorage.getItem('sply_api_key')||'';
   var geminiKey = localStorage.getItem('sply_gemini_key')||'';
   var ocrKey    = localStorage.getItem('sply_ocr_key')||'';
   if(claudeKey) document.getElementById('pantryClaudeKey').value = claudeKey;
   if(geminiKey) document.getElementById('pantryGeminiKey').value = geminiKey;
   if(ocrKey)    document.getElementById('pantryOcrKey').value = ocrKey;
-  setPantryApi(pantryApiProvider, document.querySelector('#pantryApiToggle .api-toggle-btn'));
+  setPantryApi(pantryApiProvider, null);
   document.getElementById('pantryMatchResult').style.display='none';
   document.getElementById('pantryScanBtn').style.display='none';
   document.getElementById('pantryScanLoading').style.display='none';
-  document.getElementById('pantryReceiptPreview').innerHTML='<div><div style="font-size:32px;margin-bottom:8px">📷</div><div>Tap to take photo or choose image</div></div>';
+  document.getElementById('pantryReceiptPreview').innerHTML='<div><div style="font-size:28px;margin-bottom:6px">📷</div><div style="font-size:12px">Tap to take photo or choose image</div></div>';
+  pantryReceiptBase64 = null;
+  lastOCRRawText = '';
   _openOv('pantryScanOv');
 }
 
@@ -2278,55 +2303,63 @@ async function scanWithClaude() {
   var key = document.getElementById('pantryClaudeKey').value.trim();
   if(!key){ throw new Error('Enter your Claude API key'); }
   localStorage.setItem('sply_api_key', key);
-  var prompt = `You are a smart pantry assistant. Analyse this grocery receipt and return a JSON array of items.
+  var prompt = `You are a smart pantry assistant. Analyse this grocery receipt.
 
-For each item return EXACTLY this structure:
+Return a JSON object with TWO keys:
+1. "meta": { "store": "store name or null", "total": total amount as number or null }
+2. "items": array of items, each with EXACTLY:
 {
   "name": "clean common name (e.g. Milk, Chicken Breast, Pasta)",
   "qty": number bought (default 1),
   "unit": "pcs|kg|g|L|mL|bottle|box|bag|can|pack|bunch",
   "category": "dairy|meat|produce|pantry|frozen|snacks|drinks|cleaning|personal|other",
   "storage": "fridge|freezer|pantry|cool_dark",
-  "estimatedExpiryDays": days until likely expiry from today (e.g. Milk=7, Chicken=3, Rice=365, Bread=5),
-  "typicalUsageDays": how many days this quantity usually lasts (e.g. 1L milk=5),
+  "estimatedExpiryDays": days until likely expiry (Milk=7, Chicken=3, Rice=365, Bread=5),
+  "typicalUsageDays": days this quantity usually lasts,
   "emoji": "single relevant emoji"
 }
 
-Respond ONLY with the JSON array. No markdown, no explanation.`;
-  var res = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1200,messages:[{role:'user',content:[
-      {type:'image',source:{type:'base64',media_type:pantryReceiptMime,data:pantryReceiptBase64}},
-      {type:'text',text:prompt}
-    ]}]})
-  });
+Respond ONLY with the JSON object. No markdown, no explanation.`;
   if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Claude API error '+res.status);}
   var data = await res.json();
   var text = data.content[0].text.trim().replace(/```json|```/g,'').trim();
-  lastOCRRawText = text; // used for store detection
-  return JSON.parse(text);
+  var parsed = JSON.parse(text);
+  // Handle both {meta, items} and plain array
+  if(parsed.items) {
+    if(parsed.meta) {
+      if(parsed.meta.store) lastDetectedStore = parsed.meta.store;
+      if(parsed.meta.total) lastDetectedTotal = parsed.meta.total;
+    }
+    return parsed.items;
+  }
+  return parsed; // fallback plain array
 }
+
+// Store/total detected directly by AI (Claude/Gemini)
+var lastDetectedStore = null;
+var lastDetectedTotal = null;
 
 async function scanWithGemini() {
   var key = document.getElementById('pantryGeminiKey').value.trim();
   if(!key){ throw new Error('Enter your Gemini API key'); }
   localStorage.setItem('sply_gemini_key', key);
-  var prompt = `You are a smart pantry assistant. Analyse this grocery receipt and return a JSON array of items.
+  var prompt = `You are a smart pantry assistant. Analyse this grocery receipt.
 
-For each item return EXACTLY this structure:
+Return a JSON object with TWO keys:
+1. "meta": { "store": "store name or null", "total": total amount as number or null }
+2. "items": array of items, each with EXACTLY:
 {
   "name": "clean common name (e.g. Milk, Chicken Breast, Pasta)",
   "qty": number bought (default 1),
   "unit": "pcs|kg|g|L|mL|bottle|box|bag|can|pack|bunch",
   "category": "dairy|meat|produce|pantry|frozen|snacks|drinks|cleaning|personal|other",
   "storage": "fridge|freezer|pantry|cool_dark",
-  "estimatedExpiryDays": days until likely expiry from today (e.g. Milk=7, Chicken=3, Rice=365, Bread=5),
-  "typicalUsageDays": how many days this quantity usually lasts (e.g. 1L milk=5),
+  "estimatedExpiryDays": days until likely expiry (Milk=7, Chicken=3, Rice=365, Bread=5),
+  "typicalUsageDays": days this quantity usually lasts,
   "emoji": "single relevant emoji"
 }
 
-Respond ONLY with the JSON array. No markdown, no explanation.`;
+Respond ONLY with the JSON object. No markdown, no explanation.`;
   var isAuthKey = key.startsWith('AQ.');
   var model = 'gemini-2.5-flash-lite';
   var url = isAuthKey
@@ -2345,8 +2378,15 @@ Respond ONLY with the JSON array. No markdown, no explanation.`;
   if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Gemini API error '+res.status);}
   var data = await res.json();
   var text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g,'').trim();
-  lastOCRRawText = text; // used for store detection
-  return JSON.parse(text);
+  var parsed = JSON.parse(text);
+  if(parsed.items) {
+    if(parsed.meta) {
+      if(parsed.meta.store) lastDetectedStore = parsed.meta.store;
+      if(parsed.meta.total) lastDetectedTotal = parsed.meta.total;
+    }
+    return parsed.items;
+  }
+  return parsed;
 }
 
 async function scanWithOCR() {
@@ -2460,14 +2500,28 @@ function detectStoreFromOCR(text) {
 
 function detectTotalFromOCR(text) {
   if(!text) return null;
+  // Priority patterns — most specific first
   var patterns = [
-    /total\s*due[:\s]*\$?([\d,]+\.\d{2})/i,/amount\s*due[:\s]*\$?([\d,]+\.\d{2})/i,
-    /^total[:\s]*\$?([\d,]+\.\d{2})/im,/grand\s*total[:\s]*\$?([\d,]+\.\d{2})/i,
-    /balance\s*due[:\s]*\$?([\d,]+\.\d{2})/i,
+    /total\s*due[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /amount\s*due[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /grand\s*total[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /balance\s*due[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /balance[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /^total[:\s]*\$?\s*([\d,]+\.\d{2})/im,
+    /total\s*\$?\s*([\d,]+\.\d{2})/i,
+    /amount\s*payable[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /you\s+(?:paid|saved|saved\s+today)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /transaction\s*total[:\s]*\$?\s*([\d,]+\.\d{2})/i,
   ];
-  for(var i=0;i<patterns.length;i++){ var m=text.match(patterns[i]); if(m) return parseFloat(m[1].replace(',','')); }
-  var all=text.match(/\$?([\d]+\.\d{2})/g);
-  if(all&&all.length) return parseFloat(all[all.length-1].replace('$',''));
+  for(var i=0;i<patterns.length;i++){
+    var m=text.match(patterns[i]);
+    if(m){ var v=parseFloat(m[1].replace(/,/g,'')); if(v>0&&v<5000) return v; }
+  }
+  // Last resort: largest plausible dollar amount on receipt
+  var all = text.match(/\$?\s*(\d{1,4}\.\d{2})/g)||[];
+  var amounts = all.map(function(a){ return parseFloat(a.replace(/[$,\s]/g,'')); })
+    .filter(function(v){ return v>0&&v<5000; });
+  if(amounts.length) return Math.max.apply(null, amounts);
   return null;
 }
 
@@ -2476,12 +2530,20 @@ function setupReceiptExpensePrompt(store, total, suggestedCat) {
   var fields=document.getElementById('receiptExpenseFields');
   if(cb) cb.onchange=function(){ fields.style.display=this.checked?'block':'none'; };
   if(store) document.getElementById('receiptStore').value=store.name;
-  if(total) document.getElementById('receiptTotal').value=total.toFixed(2);
+  // Show total with AUTO badge if detected
+  var totalEl = document.getElementById('receiptTotal');
+  var badge   = document.getElementById('totalDetectedBadge');
+  if(total && totalEl) {
+    totalEl.value = total.toFixed(2);
+    if(badge) badge.style.display='inline';
+  } else {
+    if(badge) badge.style.display='none';
+  }
   var cat=suggestedCat||(store?store.cat:'food');
   var catRow=document.getElementById('receiptCatRow');
   if(catRow) catRow.innerHTML=GROCERY_CATS.map(function(c){
     var sel=c.id===cat;
-    return '<button onclick="selectReceiptCat(\''+c.id+'\',this)" style="padding:5px 10px;border-radius:8px;border:1px solid '+(sel?'var(--accent)':'var(--border)')+';background:'+(sel?'rgba(124,106,255,.15)':'var(--s2)')+';color:'+(sel?'var(--accent)':'var(--text3)')+';font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s" data-cat="'+c.id+'">'+c.emoji+' '+c.label+'</button>';
+    return '<button onclick="selectReceiptCat(\''+c.id+'\',this)" data-cat="'+c.id+'" style="padding:5px 10px;border-radius:8px;border:1px solid '+(sel?'var(--accent)':'var(--border)')+';background:'+(sel?'rgba(124,106,255,.15)':'var(--s2)')+';color:'+(sel?'var(--accent)':'var(--text3)')+';font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s">'+c.emoji+' '+c.label+'</button>';
   }).join('');
 }
 
@@ -2542,11 +2604,18 @@ function renderPantryMatches(items) {
     '</div>';
   }).join('');
   document.getElementById('pantryMatchResult').style.display='block';
-
-  // Auto-detect store + total + category
-  var store = detectStoreFromOCR(lastOCRRawText);
-  var total = detectTotalFromOCR(lastOCRRawText);
+  // Use AI-detected store/total (Claude/Gemini) or regex-detected (OCR)
+  var store = lastDetectedStore ? {name: lastDetectedStore, cat: guessStoreCategory(lastDetectedStore)} : detectStoreFromOCR(lastOCRRawText);
+  var total = lastDetectedTotal || detectTotalFromOCR(lastOCRRawText);
+  lastDetectedStore = null; lastDetectedTotal = null; // reset
   setupReceiptExpensePrompt(store, total, store ? store.cat : 'food');
+}
+
+function guessStoreCategory(storeName) {
+  if(!storeName) return 'food';
+  var lower = storeName.toLowerCase();
+  for(var key in KNOWN_STORES){ if(lower.includes(key)) return KNOWN_STORES[key].cat; }
+  return 'food';
 }
 
 function togglePantryMatch(el) {
