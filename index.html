@@ -1914,7 +1914,19 @@ function renderPantry() {
   var html = '';
 
   sectionsToShow.forEach(function(sec){
-    var items = pantryItems.filter(function(item){ return (item.category||'other')===sec.key; });
+function normalisePantryCategory(cat) {
+  // Map all possible values to the 5 section keys
+  var map = {
+    fridge:'fridge', freezer:'fridge', refrigerator:'fridge',
+    pantry:'pantry', cool_dark:'pantry', shelf:'pantry', dry:'pantry',
+    cleaning:'cleaning', laundry:'cleaning',
+    personal:'personal', bathroom:'personal', health:'personal',
+    other:'other', '':'other'
+  };
+  return map[String(cat||'').toLowerCase()] || 'other';
+}
+
+    var items = pantryItems.filter(function(item){ return normalisePantryCategory(item.category)===sec.key; });
     if(!items.length) return;
 
     // Sort within section: urgent first
@@ -2017,7 +2029,8 @@ function pantryStatusLevel(item, today, warn7) {
 }
 
 function pantryDefaultEmoji(cat) {
-  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[cat]||'📦';
+  var norm = normalisePantryCategory(cat);
+  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[norm]||'📦';
 }
 function pantryCategLabel(cat) {
   return {fridge:'Fridge',pantry:'Pantry Shelf',cleaning:'Cleaning',personal:'Bathroom',other:'Other'}[cat]||cat;
@@ -3277,8 +3290,8 @@ function handleRequest(e) {
   } catch(err) { return json({ ok: false, error: 'Parse error: ' + err.message }); }
   try {
     if (action === 'ping') return json({ ok: true, sheet: getSheet().getName(), ts: new Date().toISOString() });
-    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); if (params.holdings) writeHoldings(params.holdings); if (params.dividends) writeDividends(params.dividends); if (params.recurringTxns) writeRecurring(params.recurringTxns); if (params.autoInvest) writeAutoInvest(params.autoInvest); if (params.pantryItems) writePantry(params.pantryItems); return json({ ok: true, ...stats }); }
-    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats(), holdings: readHoldings(), dividends: readDividends(), recurringTxns: readRecurring(), autoInvest: readAutoInvest(), pantryItems: readPantry() }); }
+    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); if (params.holdings) writeHoldings(params.holdings); if (params.dividends) writeDividends(params.dividends); if (params.recurringTxns) writeRecurring(params.recurringTxns); if (params.autoInvest) writeAutoInvest(params.autoInvest); if (params.pantryItems) writePantry(params.pantryItems); if (params.projects) writeProjects(params.projects); return json({ ok: true, ...stats }); }
+    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats(), holdings: readHoldings(), dividends: readDividends(), recurringTxns: readRecurring(), autoInvest: readAutoInvest(), pantryItems: readPantry(), projects: readProjects() }); }
     return json({ ok: false, error: 'Unknown action: ' + action });
   } catch(err) { return json({ ok: false, error: err.message }); }
 }
@@ -3555,6 +3568,45 @@ function readPantry() {
     });
 }
 
+function writeProjects(items) {
+  if (!items) return;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('Spendly_Projects');
+  if (!sh) {
+    sh = ss.insertSheet('Spendly_Projects');
+    sh.setFrozenRows(1);
+  }
+  const headers = ['id','emoji','name','desc','start','end','budget','status','catBudgets'];
+  sh.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1a1a2e').setFontColor('#c8a96e');
+  const last = sh.getLastRow();
+  if (last > 1) sh.deleteRows(2, last - 1);
+  if (items.length) {
+    sh.getRange(2,1,items.length,headers.length).setValues(
+      items.map(function(p){ return [
+        String(p.id||''), String(p.emoji||''), String(p.name||''), String(p.desc||''),
+        String(p.start||''), String(p.end||''), Number(p.budget)||0, String(p.status||'planned'),
+        JSON.stringify(p.catBudgets||[])
+      ]; })
+    );
+    sh.autoResizeColumns(1, headers.length);
+  }
+}
+
+function readProjects() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Spendly_Projects');
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2,1,sh.getLastRow()-1,9).getValues()
+    .filter(function(r){ return r[0]&&r[2]; })
+    .map(function(r){
+      var catBudgets = [];
+      try { catBudgets = JSON.parse(r[8]||'[]'); } catch(e){}
+      return { id:String(r[0]), emoji:String(r[1]||''), name:String(r[2]), desc:String(r[3]||''),
+        start:String(r[4]||''), end:String(r[5]||''), budget:Number(r[6])||0,
+        status:String(r[7]||'planned'), catBudgets:catBudgets };
+    });
+}
+
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }`;
 
 function updateSyncUI() {
@@ -3622,7 +3674,7 @@ async function doSync(silent=false){
 }
 
 async function pushToSheets(){
-  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats,holdings,dividends,recurringTxns,autoInvest,pantryItems});
+  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats,holdings,dividends,recurringTxns,autoInvest,pantryItems,projects});
   if(!res.ok) throw new Error(res.error||'Push failed');
   deletedIds=[];lastSync=new Date().toISOString();saveSyncCfg();save();updateSyncUI();
   if(document.getElementById('sheetsConnected').style.display!=='none')
@@ -3777,6 +3829,21 @@ async function pullFromSheets(){
         if(typeof renderPantry === 'function') renderPantry();
       }
     } catch(e){ console.warn('Pantry sync skipped:',e); }
+
+    // Sync projects from Sheets
+    try {
+      if(Array.isArray(res.projects) && res.projects.length) {
+        projects = res.projects.map(function(p){
+          return { id:String(p.id||Date.now()), emoji:String(p.emoji||''), name:String(p.name||''),
+            desc:String(p.desc||''), start:String(p.start||''), end:String(p.end||''),
+            budget:Number(p.budget)||0, status:String(p.status||'planned'),
+            catBudgets:Array.isArray(p.catBudgets)?p.catBudgets:[] };
+        }).filter(function(p){ return p.name; });
+        saveProjectsState();
+        if(curView==='projects') renderProjects();
+        showToast('Projects synced ✓','ok');
+      }
+    } catch(e){ console.warn('Projects sync skipped:',e); }
 
     if(gasUrl) setTimeout(function(){ pushToSheets(); }, 500);
   }catch(e){
