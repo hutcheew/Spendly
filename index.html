@@ -1914,7 +1914,10 @@ function renderPantry() {
   var html = '';
 
   sectionsToShow.forEach(function(sec){
-    var items = pantryItems.filter(function(item){ return (item.category||'other')===sec.key; });
+    var items = pantryItems.filter(function(item){
+      var cat = normalisePantryCategory(item.category||item.storage||'other');
+      return cat === sec.key;
+    });
     if(!items.length) return;
 
     // Sort within section: urgent first
@@ -2016,8 +2019,20 @@ function pantryStatusLevel(item, today, warn7) {
   return s==='critical'?3 : s==='expired'?3 : s==='low'?2 : 1;
 }
 
+function normalisePantryCategory(cat) {
+  var map = {
+    fridge:'fridge', freezer:'fridge', refrigerator:'fridge', cold:'fridge',
+    pantry:'pantry', cool_dark:'pantry', shelf:'pantry', dry:'pantry', dry_goods:'pantry',
+    cleaning:'cleaning', laundry:'cleaning', household:'cleaning',
+    personal:'personal', bathroom:'personal', health:'personal', beauty:'personal',
+    other:'other', '':'other', 'undefined':'other', 'null':'other'
+  };
+  return map[String(cat||'').toLowerCase().trim()] || 'other';
+}
+
 function pantryDefaultEmoji(cat) {
-  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[cat]||'📦';
+  var norm = normalisePantryCategory(cat);
+  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[norm]||'📦';
 }
 function pantryCategLabel(cat) {
   return {fridge:'Fridge',pantry:'Pantry Shelf',cleaning:'Cleaning',personal:'Bathroom',other:'Other'}[cat]||cat;
@@ -3790,40 +3805,49 @@ async function pullFromSheets(){
 
     // Apply pantry items — merge by name, keep local-only
     try {
-      if(Array.isArray(res.pantryItems) && res.pantryItems.length) {
-        var sheetPantryNames = res.pantryItems.map(function(p){ return String(p.name).toLowerCase(); });
-        var localPantry = pantryItems.filter(function(p){ return !sheetPantryNames.includes(p.name.toLowerCase()); });
-        var sheetPantry = res.pantryItems.map(function(p){
-          return {
-            name:            String(p.name||''),
-            emoji:           String(p.emoji||''),
-            qty:             Number(p.qty)||0,
-            unit:            String(p.unit||'pcs'),
-            min:             Number(p.min)||1,
-            max:             Number(p.max)||0,
-            category:        String(p.category||'pantry'),
-            expiry:          String(p.expiry||''),
-            notes:           String(p.notes||''),
-            typicalUsageDays:Number(p.typicalUsageDays)||0,
-            storage:         String(p.storage||'pantry'),
-            containerSize:   Number(p.containerSize)||0,
-            containerUnit:   String(p.containerUnit||'mL'),
-            dailyUsage:      Number(p.dailyUsage)||0,
-            dailyUsageUnit:  String(p.dailyUsageUnit||'mL'),
-            confirmedCycles: Number(p.confirmedCycles)||0,
-            lastRefillDate:  String(p.lastRefillDate||''),
-            lastRefillQty:   Number(p.lastRefillQty)||0,
-            usageLog:        Array.isArray(p.usageLog)?p.usageLog:[]
-          };
-        }).filter(function(p){ return p.name; });
-        pantryItems = sheetPantry.concat(localPantry);
-        savePantryState();
-        if(typeof renderPantry === 'function') renderPantry();
-        showToast('Pantry synced — '+sheetPantry.length+' items loaded ✓','ok');
+      console.log('Pull response pantryItems:', res.pantryItems);
+      if(Array.isArray(res.pantryItems)) {
+        if(!res.pantryItems.length) {
+          showToast('Sheets returned 0 pantry items — check Spendly_Pantry tab exists','err');
+        } else {
+          var sheetPantryNames = res.pantryItems.map(function(p){ return String(p.name).toLowerCase(); });
+          var localPantry = pantryItems.filter(function(p){ return !sheetPantryNames.includes(p.name.toLowerCase()); });
+          var sheetPantry = res.pantryItems.map(function(p){
+            return {
+              name:            String(p.name||''),
+              emoji:           String(p.emoji||''),
+              qty:             Number(p.qty)||0,
+              unit:            String(p.unit||'pcs'),
+              min:             Number(p.min)||1,
+              max:             Number(p.max)||0,
+              category:        normalisePantryCategory(String(p.category||'pantry')),
+              expiry:          String(p.expiry||''),
+              notes:           String(p.notes||''),
+              typicalUsageDays:Number(p.typicalUsageDays)||0,
+              storage:         String(p.storage||'pantry'),
+              containerSize:   Number(p.containerSize)||0,
+              containerUnit:   String(p.containerUnit||'mL'),
+              dailyUsage:      Number(p.dailyUsage)||0,
+              dailyUsageUnit:  String(p.dailyUsageUnit||'mL'),
+              confirmedCycles: Number(p.confirmedCycles)||0,
+              lastRefillDate:  String(p.lastRefillDate||''),
+              lastRefillQty:   Number(p.lastRefillQty)||0,
+              usageLog:        Array.isArray(p.usageLog)?p.usageLog:[]
+            };
+          }).filter(function(p){ return p.name; });
+          pantryItems = sheetPantry.concat(localPantry);
+          savePantryState();
+          if(typeof renderPantry === 'function') renderPantry();
+          showToast('Pantry synced — '+sheetPantry.length+' items ✓','ok');
+        }
       } else {
-        showToast('No pantry items found in Sheets','err');
+        console.warn('pantryItems not in pull response:', res);
+        showToast('Pantry not in Sheets response — redeploy GAS','err');
       }
-    } catch(e){ console.warn('Pantry sync skipped:',e); }
+    } catch(e){
+      console.error('Pantry sync error:', e);
+      showToast('Pantry sync error: '+e.message,'err');
+    }
 
     if(gasUrl) setTimeout(function(){ pushToSheets(); }, 500);
   }catch(e){
@@ -6143,6 +6167,8 @@ document.addEventListener('DOMContentLoaded', function() {
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
 populateProjectDropdown();
+// Init pantry stats even before visiting the tab
+setTimeout(function(){ renderPantry(); }, 100);
 setTimeout(function(){ checkDueRecurring(); }, 1500);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
