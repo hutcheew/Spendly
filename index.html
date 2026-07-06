@@ -5380,6 +5380,8 @@ function quickEditPrice(idx) {
   save(); renderPortfolio();
   showToast(h.ticker+' price updated to $'+newPrice.toFixed(2),'ok');
 }
+
+function openEditHolding(idx) {
   var h = holdings[idx]; if(!h) return;
   document.getElementById('holdingModalTitle').textContent = 'Edit Holding';
   document.getElementById('holdingEditIdx').value = idx;
