@@ -5320,7 +5320,7 @@ function renderHoldings() {
       '</div></div>' +
       '<div class="holding-meta">' +
       '<span>'+h.units+' units @ $'+h.avgPrice+'</span>' +
-      '<span onclick="event.stopPropagation();quickEditPrice('+idx+')" style="color:var(--accent);cursor:pointer;text-decoration:underline" title="Tap to update price">Current: $'+(h.currentPrice||0)+'  ✎</span>' +
+      '<span onclick="event.stopPropagation();quickEditPrice('+i+')" style="color:var(--accent);cursor:pointer;text-decoration:underline" title="Tap to update price">Current: $'+(h.currentPrice||0)+'  ✎</span>' +
       '<span style="color:var(--accent)">'+alloc.toFixed(1)+'% of portfolio</span>' +
       '</div>' +
       '<div class="holding-bar"><div class="holding-bar-fill" style="width:'+alloc+'%;background:'+h.color+'"></div></div>' +
@@ -6186,6 +6186,7 @@ document.addEventListener('DOMContentLoaded', function() {
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
 populateProjectDropdown();
+setTimeout(function(){ renderPantry(); }, 100);
 setTimeout(function(){ checkDueRecurring(); }, 1500);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
