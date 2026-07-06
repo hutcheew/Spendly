@@ -1863,6 +1863,49 @@ var PANTRY_SECTIONS = [
   { key:'other',    label:'📦 Other',    emoji:'📦' },
 ];
 
+// ── CONSUMPTION PREDICTION ENGINE ────────────────────────────────────
+function toBaseUnit(val, unit) {
+  var conversions = { mL:1, L:1000, g:1, kg:1000, pcs:1, bottle:1, can:1, box:1, pack:1, bag:1, bunch:1 };
+  return (val||0) * (conversions[unit]||1);
+}
+
+function calcDaysRemaining(item) {
+  if(!item.dailyUsage || item.dailyUsage <= 0) return null;
+  var qty   = toBaseUnit(item.qty,   item.unit||'pcs');
+  var usage = toBaseUnit(item.dailyUsage, item.dailyUsageUnit||'mL');
+  if(usage <= 0) return null;
+  return Math.max(0, qty / usage);
+}
+
+function predictBuyDate(item, bufferDays) {
+  bufferDays = bufferDays || 2;
+  var days = calcDaysRemaining(item);
+  if(days === null) return null;
+  var d = new Date();
+  d.setDate(d.getDate() + Math.max(0, Math.round(days) - bufferDays));
+  return d;
+}
+
+function formatDate(d) {
+  if(!d) return '';
+  var days = Math.round((d - new Date()) / 86400000);
+  if(days <= 0) return 'today';
+  if(days === 1) return 'tomorrow';
+  if(days < 7) return 'in ' + days + ' days';
+  return d.toLocaleDateString('en-AU', {day:'numeric', month:'short'});
+}
+
+function normalisePantryCategory(cat) {
+  var map = {
+    fridge:'fridge', freezer:'fridge', refrigerator:'fridge', cold:'fridge',
+    pantry:'pantry', cool_dark:'pantry', shelf:'pantry', dry:'pantry', dry_goods:'pantry',
+    cleaning:'cleaning', laundry:'cleaning', household:'cleaning',
+    personal:'personal', bathroom:'personal', health:'personal', beauty:'personal',
+    other:'other', '':'other', 'undefined':'other', 'null':'other'
+  };
+  return map[String(cat||'').toLowerCase().trim()] || 'other';
+}
+
 function renderPantry() {
   var today = new Date(); today.setHours(0,0,0,0);
   var warn3 = new Date(today); warn3.setDate(warn3.getDate()+3);
@@ -1914,10 +1957,7 @@ function renderPantry() {
   var html = '';
 
   sectionsToShow.forEach(function(sec){
-    var items = pantryItems.filter(function(item){
-      var cat = normalisePantryCategory(item.category||item.storage||'other');
-      return cat === sec.key;
-    });
+    var items = pantryItems.filter(function(item){ return (item.category||'other')===sec.key; });
     if(!items.length) return;
 
     // Sort within section: urgent first
@@ -2019,20 +2059,8 @@ function pantryStatusLevel(item, today, warn7) {
   return s==='critical'?3 : s==='expired'?3 : s==='low'?2 : 1;
 }
 
-function normalisePantryCategory(cat) {
-  var map = {
-    fridge:'fridge', freezer:'fridge', refrigerator:'fridge', cold:'fridge',
-    pantry:'pantry', cool_dark:'pantry', shelf:'pantry', dry:'pantry', dry_goods:'pantry',
-    cleaning:'cleaning', laundry:'cleaning', household:'cleaning',
-    personal:'personal', bathroom:'personal', health:'personal', beauty:'personal',
-    other:'other', '':'other', 'undefined':'other', 'null':'other'
-  };
-  return map[String(cat||'').toLowerCase().trim()] || 'other';
-}
-
 function pantryDefaultEmoji(cat) {
-  var norm = normalisePantryCategory(cat);
-  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[norm]||'📦';
+  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[cat]||'📦';
 }
 function pantryCategLabel(cat) {
   return {fridge:'Fridge',pantry:'Pantry Shelf',cleaning:'Cleaning',personal:'Bathroom',other:'Other'}[cat]||cat;
@@ -3805,49 +3833,40 @@ async function pullFromSheets(){
 
     // Apply pantry items — merge by name, keep local-only
     try {
-      console.log('Pull response pantryItems:', res.pantryItems);
-      if(Array.isArray(res.pantryItems)) {
-        if(!res.pantryItems.length) {
-          showToast('Sheets returned 0 pantry items — check Spendly_Pantry tab exists','err');
-        } else {
-          var sheetPantryNames = res.pantryItems.map(function(p){ return String(p.name).toLowerCase(); });
-          var localPantry = pantryItems.filter(function(p){ return !sheetPantryNames.includes(p.name.toLowerCase()); });
-          var sheetPantry = res.pantryItems.map(function(p){
-            return {
-              name:            String(p.name||''),
-              emoji:           String(p.emoji||''),
-              qty:             Number(p.qty)||0,
-              unit:            String(p.unit||'pcs'),
-              min:             Number(p.min)||1,
-              max:             Number(p.max)||0,
-              category:        normalisePantryCategory(String(p.category||'pantry')),
-              expiry:          String(p.expiry||''),
-              notes:           String(p.notes||''),
-              typicalUsageDays:Number(p.typicalUsageDays)||0,
-              storage:         String(p.storage||'pantry'),
-              containerSize:   Number(p.containerSize)||0,
-              containerUnit:   String(p.containerUnit||'mL'),
-              dailyUsage:      Number(p.dailyUsage)||0,
-              dailyUsageUnit:  String(p.dailyUsageUnit||'mL'),
-              confirmedCycles: Number(p.confirmedCycles)||0,
-              lastRefillDate:  String(p.lastRefillDate||''),
-              lastRefillQty:   Number(p.lastRefillQty)||0,
-              usageLog:        Array.isArray(p.usageLog)?p.usageLog:[]
-            };
-          }).filter(function(p){ return p.name; });
-          pantryItems = sheetPantry.concat(localPantry);
-          savePantryState();
-          if(typeof renderPantry === 'function') renderPantry();
-          showToast('Pantry synced — '+sheetPantry.length+' items ✓','ok');
-        }
+      if(Array.isArray(res.pantryItems) && res.pantryItems.length) {
+        var sheetPantryNames = res.pantryItems.map(function(p){ return String(p.name).toLowerCase(); });
+        var localPantry = pantryItems.filter(function(p){ return !sheetPantryNames.includes(p.name.toLowerCase()); });
+        var sheetPantry = res.pantryItems.map(function(p){
+          return {
+            name:            String(p.name||''),
+            emoji:           String(p.emoji||''),
+            qty:             Number(p.qty)||0,
+            unit:            String(p.unit||'pcs'),
+            min:             Number(p.min)||1,
+            max:             Number(p.max)||0,
+            category:        String(p.category||'pantry'),
+            expiry:          String(p.expiry||''),
+            notes:           String(p.notes||''),
+            typicalUsageDays:Number(p.typicalUsageDays)||0,
+            storage:         String(p.storage||'pantry'),
+            containerSize:   Number(p.containerSize)||0,
+            containerUnit:   String(p.containerUnit||'mL'),
+            dailyUsage:      Number(p.dailyUsage)||0,
+            dailyUsageUnit:  String(p.dailyUsageUnit||'mL'),
+            confirmedCycles: Number(p.confirmedCycles)||0,
+            lastRefillDate:  String(p.lastRefillDate||''),
+            lastRefillQty:   Number(p.lastRefillQty)||0,
+            usageLog:        Array.isArray(p.usageLog)?p.usageLog:[]
+          };
+        }).filter(function(p){ return p.name; });
+        pantryItems = sheetPantry.concat(localPantry);
+        savePantryState();
+        if(typeof renderPantry === 'function') renderPantry();
+        showToast('Pantry synced — '+sheetPantry.length+' items loaded ✓','ok');
       } else {
-        console.warn('pantryItems not in pull response:', res);
-        showToast('Pantry not in Sheets response — redeploy GAS','err');
+        showToast('No pantry items found in Sheets','err');
       }
-    } catch(e){
-      console.error('Pantry sync error:', e);
-      showToast('Pantry sync error: '+e.message,'err');
-    }
+    } catch(e){ console.warn('Pantry sync skipped:',e); }
 
     if(gasUrl) setTimeout(function(){ pushToSheets(); }, 500);
   }catch(e){
@@ -6167,8 +6186,6 @@ document.addEventListener('DOMContentLoaded', function() {
 if(gasUrl&&autoSync==='open'){setTimeout(()=>doSync(true),2000);}
 render();
 populateProjectDropdown();
-// Init pantry stats even before visiting the tab
-setTimeout(function(){ renderPantry(); }, 100);
 setTimeout(function(){ checkDueRecurring(); }, 1500);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
