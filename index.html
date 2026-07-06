@@ -1914,19 +1914,7 @@ function renderPantry() {
   var html = '';
 
   sectionsToShow.forEach(function(sec){
-function normalisePantryCategory(cat) {
-  // Map all possible values to the 5 section keys
-  var map = {
-    fridge:'fridge', freezer:'fridge', refrigerator:'fridge',
-    pantry:'pantry', cool_dark:'pantry', shelf:'pantry', dry:'pantry',
-    cleaning:'cleaning', laundry:'cleaning',
-    personal:'personal', bathroom:'personal', health:'personal',
-    other:'other', '':'other'
-  };
-  return map[String(cat||'').toLowerCase()] || 'other';
-}
-
-    var items = pantryItems.filter(function(item){ return normalisePantryCategory(item.category)===sec.key; });
+    var items = pantryItems.filter(function(item){ return (item.category||'other')===sec.key; });
     if(!items.length) return;
 
     // Sort within section: urgent first
@@ -2029,8 +2017,7 @@ function pantryStatusLevel(item, today, warn7) {
 }
 
 function pantryDefaultEmoji(cat) {
-  var norm = normalisePantryCategory(cat);
-  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[norm]||'📦';
+  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[cat]||'📦';
 }
 function pantryCategLabel(cat) {
   return {fridge:'Fridge',pantry:'Pantry Shelf',cleaning:'Cleaning',personal:'Bathroom',other:'Other'}[cat]||cat;
@@ -2262,6 +2249,15 @@ function savePantryItem() {
   var name = document.getElementById('pantryName').value.trim();
   var qty  = parseFloat(document.getElementById('pantryQty').value)||0;
   if(!name){ showToast('Enter item name','err'); return; }
+  var idx = document.getElementById('pantryEditIdx').value;
+  var existingItem = idx !== '' ? pantryItems[parseInt(idx)] : null;
+
+  // Read consumption fields (may not exist in older modal versions)
+  var containerSize  = parseFloat((document.getElementById('pantryContainerSize')||{}).value)||0;
+  var containerUnit  = (document.getElementById('pantryContainerUnit')||{value:'mL'}).value;
+  var dailyUsage     = parseFloat((document.getElementById('pantryDailyUsage')||{}).value)||0;
+  var dailyUsageUnit = (document.getElementById('pantryDailyUsageUnit')||{value:'mL'}).value;
+
   var item = {
     name: name,
     emoji: document.getElementById('pantryEmoji').value.trim()||'',
@@ -2271,12 +2267,37 @@ function savePantryItem() {
     max: parseFloat(document.getElementById('pantryMax').value)||0,
     category: document.getElementById('pantryCategory').value,
     expiry: document.getElementById('pantryExpiry').value||'',
-    notes: document.getElementById('pantryNotes').value.trim()
+    notes: document.getElementById('pantryNotes').value.trim(),
+    // Consumption prediction fields
+    containerSize:    containerSize,
+    containerUnit:    containerUnit,
+    dailyUsage:       dailyUsage,
+    dailyUsageUnit:   dailyUsageUnit,
+    aiSuggestedUsage: existingItem ? (existingItem.aiSuggestedUsage||dailyUsage) : dailyUsage,
+    confirmedCycles:  existingItem ? (existingItem.confirmedCycles||0) : 0,
+    usageLog:         existingItem ? (existingItem.usageLog||[]) : [],
+    lastRefillDate:   existingItem ? (existingItem.lastRefillDate||'') : '',
+    lastRefillQty:    existingItem ? (existingItem.lastRefillQty||qty) : qty,
+    typicalUsageDays: existingItem ? (existingItem.typicalUsageDays||0) : 0,
+    storage:          existingItem ? (existingItem.storage||'pantry') : 'pantry'
   };
-  var idx = document.getElementById('pantryEditIdx').value;
-  if(idx !== '') { pantryItems[parseInt(idx)] = item; showToast('"'+name+'" updated','ok'); }
-  else { pantryItems.push(item); showToast('"'+name+'" added to pantry','ok'); }
-  savePantryState(); closeOv('addPantryOv'); renderPantry();
+
+  // Track refill
+  if(existingItem && qty > existingItem.qty && dailyUsage > 0) {
+    item.lastRefillDate = new Date().toISOString().split('T')[0];
+    item.lastRefillQty  = qty;
+  }
+
+  if(idx !== '') {
+    pantryItems[parseInt(idx)] = item;
+    showToast('"'+name+'" updated ✓','ok');
+  } else {
+    pantryItems.push(item);
+    showToast('"'+name+'" added to pantry ✓','ok');
+  }
+  savePantryState();
+  closeOv('addPantryOv');
+  renderPantry();
   syncPantry();
 }
 
@@ -3290,8 +3311,8 @@ function handleRequest(e) {
   } catch(err) { return json({ ok: false, error: 'Parse error: ' + err.message }); }
   try {
     if (action === 'ping') return json({ ok: true, sheet: getSheet().getName(), ts: new Date().toISOString() });
-    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); if (params.holdings) writeHoldings(params.holdings); if (params.dividends) writeDividends(params.dividends); if (params.recurringTxns) writeRecurring(params.recurringTxns); if (params.autoInvest) writeAutoInvest(params.autoInvest); if (params.pantryItems) writePantry(params.pantryItems); if (params.projects) writeProjects(params.projects); return json({ ok: true, ...stats }); }
-    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats(), holdings: readHoldings(), dividends: readDividends(), recurringTxns: readRecurring(), autoInvest: readAutoInvest(), pantryItems: readPantry(), projects: readProjects() }); }
+    if (action === 'push') { const del = params.deletedIds || []; if (del.length) deleteRows(del); const stats = writeAll(params.txns || []); if (params.budgets) writeBudgets(params.budgets); if (params.customCats) writeCustomCats(params.customCats); if (params.holdings) writeHoldings(params.holdings); if (params.dividends) writeDividends(params.dividends); if (params.recurringTxns) writeRecurring(params.recurringTxns); if (params.autoInvest) writeAutoInvest(params.autoInvest); if (params.pantryItems) writePantry(params.pantryItems); return json({ ok: true, ...stats }); }
+    if (action === 'pull') { return json({ ok: true, txns: readAll(), budgets: readBudgets(), customCats: readCustomCats(), holdings: readHoldings(), dividends: readDividends(), recurringTxns: readRecurring(), autoInvest: readAutoInvest(), pantryItems: readPantry() }); }
     return json({ ok: false, error: 'Unknown action: ' + action });
   } catch(err) { return json({ ok: false, error: err.message }); }
 }
@@ -3568,45 +3589,6 @@ function readPantry() {
     });
 }
 
-function writeProjects(items) {
-  if (!items) return;
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  let sh = ss.getSheetByName('Spendly_Projects');
-  if (!sh) {
-    sh = ss.insertSheet('Spendly_Projects');
-    sh.setFrozenRows(1);
-  }
-  const headers = ['id','emoji','name','desc','start','end','budget','status','catBudgets'];
-  sh.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1a1a2e').setFontColor('#c8a96e');
-  const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
-  if (items.length) {
-    sh.getRange(2,1,items.length,headers.length).setValues(
-      items.map(function(p){ return [
-        String(p.id||''), String(p.emoji||''), String(p.name||''), String(p.desc||''),
-        String(p.start||''), String(p.end||''), Number(p.budget)||0, String(p.status||'planned'),
-        JSON.stringify(p.catBudgets||[])
-      ]; })
-    );
-    sh.autoResizeColumns(1, headers.length);
-  }
-}
-
-function readProjects() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sh = ss.getSheetByName('Spendly_Projects');
-  if (!sh || sh.getLastRow() < 2) return [];
-  return sh.getRange(2,1,sh.getLastRow()-1,9).getValues()
-    .filter(function(r){ return r[0]&&r[2]; })
-    .map(function(r){
-      var catBudgets = [];
-      try { catBudgets = JSON.parse(r[8]||'[]'); } catch(e){}
-      return { id:String(r[0]), emoji:String(r[1]||''), name:String(r[2]), desc:String(r[3]||''),
-        start:String(r[4]||''), end:String(r[5]||''), budget:Number(r[6])||0,
-        status:String(r[7]||'planned'), catBudgets:catBudgets };
-    });
-}
-
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }`;
 
 function updateSyncUI() {
@@ -3674,7 +3656,7 @@ async function doSync(silent=false){
 }
 
 async function pushToSheets(){
-  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats,holdings,dividends,recurringTxns,autoInvest,pantryItems,projects});
+  const res=await callGAS(gasUrl,{action:'push',txns,deletedIds,budgets,customCats,holdings,dividends,recurringTxns,autoInvest,pantryItems});
   if(!res.ok) throw new Error(res.error||'Push failed');
   deletedIds=[];lastSync=new Date().toISOString();saveSyncCfg();save();updateSyncUI();
   if(document.getElementById('sheetsConnected').style.display!=='none')
@@ -3813,37 +3795,35 @@ async function pullFromSheets(){
         var localPantry = pantryItems.filter(function(p){ return !sheetPantryNames.includes(p.name.toLowerCase()); });
         var sheetPantry = res.pantryItems.map(function(p){
           return {
-            name: String(p.name||''),
-            emoji: String(p.emoji||''),
-            qty: Number(p.qty)||0,
-            unit: String(p.unit||'pcs'),
-            min: Number(p.min)||1,
-            max: Number(p.max)||0,
-            category: String(p.category||'pantry'),
-            expiry: String(p.expiry||''),
-            notes: String(p.notes||'')
+            name:            String(p.name||''),
+            emoji:           String(p.emoji||''),
+            qty:             Number(p.qty)||0,
+            unit:            String(p.unit||'pcs'),
+            min:             Number(p.min)||1,
+            max:             Number(p.max)||0,
+            category:        String(p.category||'pantry'),
+            expiry:          String(p.expiry||''),
+            notes:           String(p.notes||''),
+            typicalUsageDays:Number(p.typicalUsageDays)||0,
+            storage:         String(p.storage||'pantry'),
+            containerSize:   Number(p.containerSize)||0,
+            containerUnit:   String(p.containerUnit||'mL'),
+            dailyUsage:      Number(p.dailyUsage)||0,
+            dailyUsageUnit:  String(p.dailyUsageUnit||'mL'),
+            confirmedCycles: Number(p.confirmedCycles)||0,
+            lastRefillDate:  String(p.lastRefillDate||''),
+            lastRefillQty:   Number(p.lastRefillQty)||0,
+            usageLog:        Array.isArray(p.usageLog)?p.usageLog:[]
           };
         }).filter(function(p){ return p.name; });
         pantryItems = sheetPantry.concat(localPantry);
         savePantryState();
         if(typeof renderPantry === 'function') renderPantry();
+        showToast('Pantry synced — '+sheetPantry.length+' items loaded ✓','ok');
+      } else {
+        showToast('No pantry items found in Sheets','err');
       }
     } catch(e){ console.warn('Pantry sync skipped:',e); }
-
-    // Sync projects from Sheets
-    try {
-      if(Array.isArray(res.projects) && res.projects.length) {
-        projects = res.projects.map(function(p){
-          return { id:String(p.id||Date.now()), emoji:String(p.emoji||''), name:String(p.name||''),
-            desc:String(p.desc||''), start:String(p.start||''), end:String(p.end||''),
-            budget:Number(p.budget)||0, status:String(p.status||'planned'),
-            catBudgets:Array.isArray(p.catBudgets)?p.catBudgets:[] };
-        }).filter(function(p){ return p.name; });
-        saveProjectsState();
-        if(curView==='projects') renderProjects();
-        showToast('Projects synced ✓','ok');
-      }
-    } catch(e){ console.warn('Projects sync skipped:',e); }
 
     if(gasUrl) setTimeout(function(){ pushToSheets(); }, 500);
   }catch(e){
@@ -5114,70 +5094,59 @@ const BETASHARES_ETFS = [
 // ── ASX LIVE PRICE FETCHER ────────────────────────────────────────────
 // Uses multiple proxy fallbacks to get around CORS restrictions
 async function fetchASXPrice(ticker) {
-  var symbol = ticker + '.AX';
-  var proxies = [
-    // allorigins proxy
-    'https://api.allorigins.win/get?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d'),
-    // corsproxy.io
-    'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d'),
+  var symbol = ticker.includes('.') ? ticker : ticker + '.AX';
+  var endpoints = [
+    // Primary: Yahoo v8 chart via allorigins
+    { url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=2d'), parse: function(outer){ var raw = outer.contents ? JSON.parse(outer.contents) : outer; return raw.chart&&raw.chart.result&&raw.chart.result[0]?raw.chart.result[0].meta.regularMarketPrice:null; } },
+    // Fallback 1: Yahoo v8 via corsproxy
+    { url: 'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d'), parse: function(raw){ return raw.chart&&raw.chart.result&&raw.chart.result[0]?raw.chart.result[0].meta.regularMarketPrice:null; } },
+    // Fallback 2: Yahoo v10 quoteSummary
+    { url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + symbol + '?modules=price'), parse: function(outer){ var raw = outer.contents ? JSON.parse(outer.contents) : outer; return raw.quoteSummary&&raw.quoteSummary.result&&raw.quoteSummary.result[0]?raw.quoteSummary.result[0].price.regularMarketPrice.raw:null; } },
+    // Fallback 3: Yahoo v7 quote
+    { url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + symbol), parse: function(outer){ var raw = outer.contents ? JSON.parse(outer.contents) : outer; return raw.quoteResponse&&raw.quoteResponse.result&&raw.quoteResponse.result[0]?raw.quoteResponse.result[0].regularMarketPrice:null; } },
   ];
 
-  for (var i = 0; i < proxies.length; i++) {
+  for (var i = 0; i < endpoints.length; i++) {
     try {
-      var res = await fetch(proxies[i], { signal: AbortSignal.timeout(6000) });
+      var res = await fetch(endpoints[i].url, { signal: AbortSignal.timeout(7000) });
       if (!res.ok) continue;
-      var outer = await res.json();
-      // allorigins wraps in {contents: "..."}
-      var raw = outer.contents !== undefined ? JSON.parse(outer.contents) : outer;
-      var price = raw.chart && raw.chart.result && raw.chart.result[0] && raw.chart.result[0].meta
-        ? raw.chart.result[0].meta.regularMarketPrice
-        : null;
-      if (price !== null) return Number(price);
+      var data = await res.json();
+      var price = endpoints[i].parse(data);
+      if (price !== null && price !== undefined && !isNaN(price) && price > 0) {
+        return Number(price);
+      }
     } catch(e) {
-      console.warn('Proxy ' + i + ' failed for ' + ticker + ':', e.message);
+      console.warn('Price fetch attempt '+(i+1)+' failed for '+ticker+':', e.message);
     }
+    // Small delay between attempts
+    if(i < endpoints.length-1) await new Promise(function(r){ setTimeout(r,300); });
   }
-
-  // Final fallback: Yahoo Finance query2 endpoint via proxy
-  try {
-    var fallbackUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(
-      'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + symbol + '?modules=price'
-    );
-    var res2 = await fetch(fallbackUrl, { signal: AbortSignal.timeout(6000) });
-    if (res2.ok) {
-      var outer2 = await res2.json();
-      var raw2 = outer2.contents !== undefined ? JSON.parse(outer2.contents) : outer2;
-      var price2 = raw2.quoteSummary && raw2.quoteSummary.result && raw2.quoteSummary.result[0]
-        ? raw2.quoteSummary.result[0].price.regularMarketPrice.raw
-        : null;
-      if (price2 !== null) return Number(price2);
-    }
-  } catch(e) {
-    console.warn('Fallback failed for ' + ticker + ':', e.message);
-  }
-
   return null;
 }
 
 async function refreshAllPrices() {
   if (!holdings.length) { showToast('No holdings to update', 'err'); return; }
-  showToast('Fetching ASX prices...', 'info');
-  var updated = 0;
+  var btn = document.getElementById('refreshPricesBtn');
+  if(btn) { btn.textContent='⏳ Fetching...'; btn.disabled=true; }
+  var updated = 0, failed = [];
   for (var i = 0; i < holdings.length; i++) {
     var price = await fetchASXPrice(holdings[i].ticker);
     if (price !== null) {
       holdings[i].currentPrice = price;
       updated++;
+    } else {
+      failed.push(holdings[i].ticker);
     }
-    // Small delay to avoid rate limiting
-    await new Promise(function(r){ setTimeout(r, 300); });
+    await new Promise(function(r){ setTimeout(r, 400); });
   }
-  save();
-  renderPortfolio();
-  if (updated > 0) {
-    showToast('Updated ' + updated + ' prices from ASX', 'ok');
+  save(); renderPortfolio();
+  if(btn) { btn.textContent='↻ Refresh Prices'; btn.disabled=false; }
+  if (updated > 0 && !failed.length) {
+    showToast('Updated '+updated+' prices ✓','ok');
+  } else if(updated > 0) {
+    showToast(updated+' updated · '+failed.join(', ')+' failed — enter manually','err');
   } else {
-    showToast('Could not fetch prices - try again later', 'err');
+    showToast('Could not fetch prices — enter manually below','err');
   }
 }
 
@@ -5308,7 +5277,7 @@ function renderHoldings() {
       '</div></div>' +
       '<div class="holding-meta">' +
       '<span>'+h.units+' units @ $'+h.avgPrice+'</span>' +
-      '<span>Current: $'+(h.currentPrice||0)+'</span>' +
+      '<span onclick="event.stopPropagation();quickEditPrice('+idx+')" style="color:var(--accent);cursor:pointer;text-decoration:underline" title="Tap to update price">Current: $'+(h.currentPrice||0)+'  ✎</span>' +
       '<span style="color:var(--accent)">'+alloc.toFixed(1)+'% of portfolio</span>' +
       '</div>' +
       '<div class="holding-bar"><div class="holding-bar-fill" style="width:'+alloc+'%;background:'+h.color+'"></div></div>' +
@@ -5402,7 +5371,15 @@ function openAddHolding() {
   _openOv('holdingOv');
 }
 
-function openEditHolding(idx) {
+function quickEditPrice(idx) {
+  var h = holdings[idx];
+  if(!h) return;
+  var newPrice = parseFloat(prompt('Enter current price for '+h.ticker+' (AUD):', h.currentPrice||''));
+  if(isNaN(newPrice)||newPrice<=0) return;
+  holdings[idx].currentPrice = newPrice;
+  save(); renderPortfolio();
+  showToast(h.ticker+' price updated to $'+newPrice.toFixed(2),'ok');
+}
   var h = holdings[idx]; if(!h) return;
   document.getElementById('holdingModalTitle').textContent = 'Edit Holding';
   document.getElementById('holdingEditIdx').value = idx;
