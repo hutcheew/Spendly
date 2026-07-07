@@ -855,7 +855,7 @@ input[type="file"]{display:none;}
   <!-- YNAB sub-tabs -->
   <div class="ynab-tabs">
     <div class="ynab-tab active" id="ynab-tab-budget" onclick="switchYnabTab('budget',this)"><i class="ti ti-target" style="font-size:16px;vertical-align:middle"></i> Budget</div>
-    <div class="ynab-tab" id="ynab-tab-assign" onclick="switchYnabTab('assign',this)"><i class="ti ti-piggy-bank" style="font-size:16px;vertical-align:middle"></i> Assign</div>
+    <div class="ynab-tab" id="ynab-tab-assign" onclick="switchYnabTab('assign',this)"><i class="ti ti-pig-money" style="font-size:16px;vertical-align:middle"></i> Assign</div>
     <div class="ynab-tab" id="ynab-tab-goals" onclick="switchYnabTab('goals',this)"><i class="ti ti-trophy" style="font-size:16px;vertical-align:middle"></i> Goals</div>
     <div class="ynab-tab" id="ynab-tab-debts" onclick="switchYnabTab('debts',this)"><i class="ti ti-file-text" style="font-size:16px;vertical-align:middle"></i> Debts</div>
     <div class="ynab-tab" id="ynab-tab-aom" onclick="switchYnabTab('aom',this)"><i class="ti ti-clock" style="font-size:16px;vertical-align:middle"></i> Age of Money</div>
@@ -1278,9 +1278,9 @@ input[type="file"]{display:none;}
   <div class="pantry-filter-row" id="pantryFilterRow">
     <div class="chip active" onclick="setPantryFilter('all',this)">All</div>
     <div class="chip" onclick="setPantryFilter('fridge',this)"><i class="ti ti-snowflake" style="font-size:14px;vertical-align:middle"></i> Fridge</div>
-    <div class="chip" onclick="setPantryFilter('pantry',this)"><i class="ti ti-wheat" style="font-size:14px;vertical-align:middle"></i> Pantry</div>
-    <div class="chip" onclick="setPantryFilter('cleaning',this)"><i class="ti ti-broom" style="font-size:14px;vertical-align:middle"></i> Cleaning</div>
-    <div class="chip" onclick="setPantryFilter('personal',this)"><i class="ti ti-bathtub" style="font-size:14px;vertical-align:middle"></i> Bathroom</div>
+    <div class="chip" onclick="setPantryFilter('pantry',this)"><i class="ti ti-seeding" style="font-size:14px;vertical-align:middle"></i> Pantry</div>
+    <div class="chip" onclick="setPantryFilter('cleaning',this)"><i class="ti ti-sparkles" style="font-size:14px;vertical-align:middle"></i> Cleaning</div>
+    <div class="chip" onclick="setPantryFilter('personal',this)"><i class="ti ti-bath" style="font-size:14px;vertical-align:middle"></i> Bathroom</div>
     <div class="chip" onclick="setPantryFilter('other',this)"><i class="ti ti-package" style="font-size:14px;vertical-align:middle"></i> Other</div>
   </div>
 
@@ -2113,7 +2113,7 @@ function pantryStatusLevel(item, today, warn7) {
 }
 
 function pantryDefaultEmoji(cat) {
-  return {fridge:'snowflake',pantry:'wheat',cleaning:'broom',personal:'bathtub',other:'package'}[cat]||'package';
+  return {fridge:'snowflake',pantry:'seeding',cleaning:'sparkles',personal:'bath',other:'package'}[cat]||'package';
 }
 function pantryCategLabel(cat) {
   return {fridge:'Fridge',pantry:'Pantry Shelf',cleaning:'Cleaning',personal:'Bathroom',other:'Other'}[cat]||cat;
@@ -2857,7 +2857,7 @@ CAT_ICONS['bills'] = CAT_ICONS['bills'];
 // Emoji → Tabler icon mapping (used instead of literal emoji throughout the UI)
 var EMOJI_MAP = {
   '🛒':'shopping-cart','🚇':'bus','❤️':'heart','🛍':'shopping-bag','▶️':'player-play',
-  '📄':'file-text','🍽️':'dining','🗺️':'map','⋯':'dots','💳':'credit-card',
+  '📄':'file-text','🍽️':'chef-hat','🗺️':'map','⋯':'dots','💳':'credit-card',
   '💻':'device-laptop','📊':'chart-bar','⭐':'star','↑':'arrow-up',
   '📦':'package','🛁':'bath','🧹':'broom','🌾':'plant','❄️':'snowflake',
   '🏠':'home','🎯':'target','✈️':'plane','🚗':'car','💍':'diamond','🎓':'school',
@@ -2962,7 +2962,7 @@ const BUILTIN = {
     {id:'shopping',emoji:'shopping-bag',label:'Shopping',color:'#8b5cf6'},
     {id:'entertainment',emoji:'player-play',label:'Fun',color:'#06b6d4'},
     {id:'bills',emoji:'file-text',label:'Bills',color:'#f59e0b'},
-    {id:'dining',emoji:'dining',label:'Dining',color:'#fb923c'},
+    {id:'dining',emoji:'chef-hat',label:'Dining',color:'#fb923c'},
     {id:'travel',emoji:'map',label:'Travel',color:'#38bdf8'},
     {id:'other',emoji:'dots',label:'Other',color:'#6b7280'},
   ],
@@ -2975,7 +2975,7 @@ const BUILTIN = {
   ]
 };
 // Tabler icon names for custom category picker
-const CAT_ICON_NAMES=['coffee','beer','pizza','plane','building','books','music','paw','home','coin','barbell','bottle','leaf','monitor','baby','car','ball-football','palette','umbrella','wine','scissors','broom','device-mobile','tools','school','hospital','target','shopping-cart','home','diamond'];
+const CAT_ICON_NAMES=['coffee','beer','pizza','plane','building','books','music','paw','home','coin','barbell','bottle','leaf','device-desktop','baby-bottle','car','ball-football','palette','umbrella','glass-full','scissors','sparkles','device-mobile','tools','school','hospital','target','shopping-cart','home','diamond'];
 const COLORS=['#f97316','#60a5fa','#f472b6','#a78bfa','#22d3ee','#22d3a0','#fbbf24','#34d399','#f87171','#818cf8','#a3e635','#fb923c','#38bdf8','#e879f9','#86efac','#c084fc'];
 
 // Bank format definitions
@@ -4985,7 +4985,7 @@ function generateInsights() {
 
   // Savings rate
   var sr = income>0 ? (income-expense)/income*100 : 0;
-  if(sr>=30){ insights.push({type:'positive',icon:ti('piggy-bank',16),title:'Excellent savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving $'+(income-expense).toFixed(0)+' this month — '+sr.toFixed(0)+'% of income. Keep it up!'}); }
+  if(sr>=30){ insights.push({type:'positive',icon:ti('pig-money',16),title:'Excellent savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving $'+(income-expense).toFixed(0)+' this month — '+sr.toFixed(0)+'% of income. Keep it up!'}); }
   else if(sr<0){ insights.push({type:'alert',icon:ti('alert-circle',16),title:'Spending exceeds income',body:'You spent $'+(-income+expense).toFixed(0)+' more than you earned this month. Review your largest expense categories.'}); }
   else if(sr<15){ insights.push({type:'info',icon:ti('chart-line',16),title:'Savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving '+sr.toFixed(0)+'% of income. The general recommendation is 20%+. Try cutting $'+((income*0.2)-( income-expense)).toFixed(0)+' more.'}); }
 
