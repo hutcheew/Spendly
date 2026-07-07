@@ -628,8 +628,8 @@ input[type="file"]{display:none;}
         <span id="monthLabel"></span>
         <button id="nextMonth">&#8250;</button>
       </div>
-      <button class="icon-btn" id="syncIconBtn" onclick="doSync()" title="Sync">&#8635;<div class="sync-dot" id="syncDot"></div></button>
-      <button class="icon-btn" onclick="openMenu()">&#9881;&#65039;</button>
+      <button class="icon-btn" id="syncIconBtn" onclick="doSync()" title="Sync"><i class="ti ti-refresh" style="font-size:18px"></i><div class="sync-dot" id="syncDot"></div></button>
+      <button class="icon-btn" onclick="openMenu()"><i class="ti ti-settings" style="font-size:18px"></i></button>
     </div>
   </div>
 </div>
@@ -696,8 +696,8 @@ input[type="file"]{display:none;}
     <div class="sync-title" id="syncTitle">Google Sheets</div>
     <div class="sync-sub" id="syncSub">Not synced</div>
   </div>
-  <button class="sync-btn" onclick="doSync()">&#8635; Sync</button>
-  <button class="sync-btn" onclick="openOv('sheetsOv')" style="margin-left:4px">&#9998;</button>
+  <button class="sync-btn" onclick="doSync()"><i class="ti ti-refresh" style="font-size:16px;vertical-align:middle"></i> Sync</button>
+  <button class="sync-btn" onclick="openOv('sheetsOv')" style="margin-left:4px"><i class="ti ti-edit" style="font-size:16px"></i></button>
 </div>
 
 <!-- BUDGET ALERTS -->
@@ -762,17 +762,17 @@ input[type="file"]{display:none;}
   <!-- Search bar -->
   <div class="search-bar-wrap">
     <div class="search-wrap">
-      <span class="search-icon">&#128269;</span>
+      <span class="search-icon"><i class="ti ti-search"></i></span>
       <input class="search-bar" id="txSearch" type="text" placeholder="Search transactions..." oninput="onTxSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="search-clear" id="txSearchClear" onclick="clearTxSearch()">&#10005;</button>
+      <button class="search-clear" id="txSearchClear" onclick="clearTxSearch()"><i class="ti ti-x"></i></button>
     </div>
-    <button class="export-icon-btn" onclick="openOv('exportOv')" title="Export">&#8681;</button>
+    <button class="export-icon-btn" onclick="openOv('exportOv')" title="Export"><i class="ti ti-download" style="font-size:18px"></i></button>
   </div>
   <div class="search-results-count" id="txResultsCount"></div>
   <div class="list-sec">
     <div class="sec-lbl-row">
       <div class="sec-lbl" style="margin-bottom:0" id="txSecLabel">All transactions</div>
-      <button class="sort-btn" id="sortToggleBtn">&#8597; Newest</button>
+      <button class="sort-btn" id="sortToggleBtn"><i class="ti ti-arrows-sort" style="font-size:16px;vertical-align:middle"></i> Newest</button>
     </div>
     <div class="tx-list" id="txList"></div>
   </div>
@@ -854,11 +854,11 @@ input[type="file"]{display:none;}
 <div id="view-budget" style="display:none">
   <!-- YNAB sub-tabs -->
   <div class="ynab-tabs">
-    <div class="ynab-tab active" id="ynab-tab-budget" onclick="switchYnabTab('budget',this)">&#127919; Budget</div>
-    <div class="ynab-tab" id="ynab-tab-assign" onclick="switchYnabTab('assign',this)">&#128176; Assign</div>
-    <div class="ynab-tab" id="ynab-tab-goals" onclick="switchYnabTab('goals',this)">&#127942; Goals</div>
-    <div class="ynab-tab" id="ynab-tab-debts" onclick="switchYnabTab('debts',this)">&#128196; Debts</div>
-    <div class="ynab-tab" id="ynab-tab-aom" onclick="switchYnabTab('aom',this)">&#8987; Age of Money</div>
+    <div class="ynab-tab active" id="ynab-tab-budget" onclick="switchYnabTab('budget',this)"><i class="ti ti-target" style="font-size:16px;vertical-align:middle"></i> Budget</div>
+    <div class="ynab-tab" id="ynab-tab-assign" onclick="switchYnabTab('assign',this)"><i class="ti ti-piggy-bank" style="font-size:16px;vertical-align:middle"></i> Assign</div>
+    <div class="ynab-tab" id="ynab-tab-goals" onclick="switchYnabTab('goals',this)"><i class="ti ti-trophy" style="font-size:16px;vertical-align:middle"></i> Goals</div>
+    <div class="ynab-tab" id="ynab-tab-debts" onclick="switchYnabTab('debts',this)"><i class="ti ti-file-text" style="font-size:16px;vertical-align:middle"></i> Debts</div>
+    <div class="ynab-tab" id="ynab-tab-aom" onclick="switchYnabTab('aom',this)"><i class="ti ti-clock" style="font-size:16px;vertical-align:middle"></i> Age of Money</div>
   </div>
 
   <!-- Budget limits -->
@@ -902,10 +902,10 @@ input[type="file"]{display:none;}
     <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;">
       <div class="sec-lbl" style="margin-bottom:10px">What this means</div>
       <p style="font-size:12px;color:var(--text2);line-height:1.8">Your <strong>age of money</strong> is the average number of days between when money comes in and when you spend it. The older your money, the more buffer you have.<br><br>
-      <span style="color:var(--expense)">&#9632; Under 10 days</span> — living paycheck to paycheck<br>
-      <span style="color:var(--warn)">&#9632; 10–30 days</span> — getting there<br>
-      <span style="color:var(--income)">&#9632; Over 30 days</span> — healthy buffer<br>
-      <span style="color:var(--accent)">&#9632; Over 60 days</span> — excellent cushion</p>
+      <span style="color:var(--expense)"><i class="ti ti-square-filled" style="font-size:8px;vertical-align:middle;color:var(--expense)"></i> Under 10 days</span> — living paycheck to paycheck<br>
+      <span style="color:var(--warn)"><i class="ti ti-square-filled" style="font-size:8px;vertical-align:middle;color:var(--warn)"></i> 10–30 days</span> — getting there<br>
+      <span style="color:var(--income)"><i class="ti ti-square-filled" style="font-size:8px;vertical-align:middle;color:var(--income)"></i> Over 30 days</span> — healthy buffer<br>
+      <span style="color:var(--accent)"><i class="ti ti-square-filled" style="font-size:8px;vertical-align:middle;color:var(--accent)"></i> Over 60 days</span> — excellent cushion</p>
     </div>
   </div>
 </div>
@@ -963,11 +963,10 @@ input[type="file"]{display:none;}
 
   <!-- ETF Sub-tabs -->
   <div style="padding:10px 18px 0;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;">
-    <div class="ynab-tab active" id="etf-tab-overview" onclick="switchEtfTab('overview',this)">&#128200; Overview</div>
-    <div class="ynab-tab" id="etf-tab-rebal" onclick="switchEtfTab('rebal',this)">&#9878; Rebalance</div>
-    <div class="ynab-tab" id="etf-tab-cgt" onclick="switchEtfTab('cgt',this)">&#128203; CGT</div>
-    <div class="ynab-tab" id="etf-tab-bench" onclick="switchEtfTab('bench',this)">&#127942; Benchmark</div>
-    <div class="ynab-tab" id="etf-tab-fx" onclick="switchEtfTab('fx',this)">&#128177; Currency</div>
+    <div class="ynab-tab active" id="etf-tab-overview" onclick="switchEtfTab('overview',this)"><i class="ti ti-chart-bar" style="font-size:16px;vertical-align:middle"></i> Overview</div>
+    <div class="ynab-tab" id="etf-tab-rebal" onclick="switchEtfTab('rebal',this)"><i class="ti ti-arrows-shuffle" style="font-size:16px;vertical-align:middle"></i> Rebalance</div>
+    <div class="ynab-tab" id="etf-tab-cgt" onclick="switchEtfTab('cgt',this)"><i class="ti ti-calculator" style="font-size:16px;vertical-align:middle"></i> CGT</div>
+    <div class="ynab-tab" id="etf-tab-fx" onclick="switchEtfTab('fx',this)"><i class="ti ti-currency-dollar" style="font-size:16px;vertical-align:middle"></i> Currency</div>
   </div>
 
   <!-- Overview sub-tab -->
@@ -976,7 +975,7 @@ input[type="file"]{display:none;}
   <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">Asset Allocation</div>
-      <button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">&#8635; Live Prices</button>
+      <button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="ti ti-refresh" style="font-size:14px;vertical-align:middle"></i> Live Prices</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="allocLegend"></div>
     <div style="display:flex;align-items:center;gap:14px;">
@@ -1006,7 +1005,7 @@ input[type="file"]{display:none;}
   <div style="margin:10px 18px 0;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">Auto-Invest</div>
-      <button id="setupAutoInvestBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">&#9881; Setup</button>
+      <button id="setupAutoInvestBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="ti ti-settings" style="font-size:14px;vertical-align:middle"></i> Setup</button>
     </div>
     <div id="autoInvestCard"></div>
   </div>
@@ -1062,7 +1061,7 @@ input[type="file"]{display:none;}
       <p style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Your portfolio return vs major indices. Prices fetched live.</p>
       <div id="benchmarkList"></div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn-secondary" id="fetchBenchBtn" style="flex:1">&#8635; Fetch Prices</button>
+        <button class="btn-secondary" id="fetchBenchBtn" style="flex:1"><i class="ti ti-refresh" style="font-size:16px;vertical-align:middle"></i> Fetch Prices</button>
         <button class="btn-secondary" id="setBaselineBtn" style="flex:1">📌 Set Baseline</button>
       </div>
       <div id="baselineInfo" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center"></div>
@@ -1075,7 +1074,7 @@ input[type="file"]{display:none;}
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:4px;">Live Exchange Rates</div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Base currency: AUD. Tap any rate to use as converter.</p>
       <div id="fxRates"></div>
-      <button class="btn-secondary" id="fetchFxBtn" style="margin-top:8px">&#8635; Update Rates</button>
+      <button class="btn-secondary" id="fetchFxBtn" style="margin-top:8px"><i class="ti ti-refresh" style="font-size:16px;vertical-align:middle"></i> Update Rates</button>
     </div>
     <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:12px;">Quick Converter</div>
@@ -1142,7 +1141,7 @@ input[type="file"]{display:none;}
 <div class="overlay" id="autoInvestExecOv" onclick="closeOvOutside(event,'autoInvestExecOv')">
   <div class="sheet">
     <div class="handle"></div>
-    <h2>&#128200; Invest Now</h2>
+    <h2><i class="ti ti-trending-up" style="font-size:20px;vertical-align:middle"></i> Invest Now</h2>
     <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:14px">Review your fortnightly investment. Prices are pre-filled — update if needed.</p>
     <div id="execInvestRows"></div>
     <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:12px 0;">
@@ -1155,7 +1154,7 @@ input[type="file"]{display:none;}
       <label>Date</label>
       <input type="date" id="execDate">
     </div>
-    <button class="btn-primary acc-btn" id="confirmInvestBtn">&#10003; Confirm Investment</button>
+    <button class="btn-primary acc-btn" id="confirmInvestBtn"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Confirm Investment</button>
     <button class="btn-secondary" onclick="closeOv('autoInvestExecOv')">Cancel</button>
   </div>
 </div>
@@ -1202,9 +1201,9 @@ input[type="file"]{display:none;}
   <div style="padding:14px 18px 0;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">AI Insights</div>
-      <button id="refreshInsightsBtn" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;">&#129302; Analyse</button>
+      <button id="refreshInsightsBtn" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;"><i class="ti ti-sparkles" style="font-size:16px;vertical-align:middle"></i> Analyse</button>
     </div>
-    <div id="insightsList"><div class="empty"><div class="empty-icon">&#129302;</div><p>Tap Analyse to generate AI insights<br>from your spending patterns.</p></div></div>
+    <div id="insightsList"><div class="empty"><i class="ti ti-sparkles empty-icon"></i><p>Tap Analyse to generate AI insights<br>from your spending patterns.</p></div></div>
   </div>
   <div style="padding:14px 18px 0;">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:12px;">Cash Flow Forecast</div>
@@ -1214,7 +1213,7 @@ input[type="file"]{display:none;}
         <div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Days remaining</div><div style="font-size:24px;font-weight:600;" id="forecastDaysLeft">—</div></div>
       </div>
       <div class="forecast-bar"><div class="forecast-spent" id="forecastSpentBar" style="width:0%"></div><div class="forecast-projected" id="forecastProjBar" style="width:0%"></div><div class="forecast-remaining" id="forecastRemBar" style="width:100%"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px;"><span>&#9632; Spent</span><span>&#9632; Projected</span><span>&#9632; Remaining budget</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px;"><span><i class="ti ti-square-filled" style="font-size:8px;color:var(--expense)"></i> Spent</span><span><i class="ti ti-square-filled" style="font-size:8px;color:var(--warn)"></i> Projected</span><span><i class="ti ti-square-filled" style="font-size:8px;color:var(--accent)"></i> Remaining</span></div>
     </div>
     <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:14px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:10px;">Monthly Projections</div>
@@ -1266,23 +1265,23 @@ input[type="file"]{display:none;}
   <!-- Action buttons -->
   <div style="padding:10px 18px 0;display:flex;gap:8px;">
     <button class="btn-primary acc-btn" style="margin-top:0;flex:1;padding:11px" onclick="openAddPantryItem()">+ Add Item</button>
-    <button class="btn-secondary" style="margin-top:0;flex:1;padding:11px" onclick="openPantryScan()">&#128247; Scan Receipt</button>
+    <button class="btn-secondary" style="margin-top:0;flex:1;padding:11px" onclick="openPantryScan()"><i class="ti ti-camera" style="font-size:16px;vertical-align:middle"></i> Scan Receipt</button>
   </div>
 
   <!-- Urgency bar — always visible -->
   <div class="pantry-urgency-bar" id="pantryUrgencyBar" style="display:none">
-    <div class="pantry-urgency-title">⚠️ Needs attention</div>
+    <div class="pantry-urgency-title"><i class="ti ti-alert-triangle" style="font-size:16px;vertical-align:middle"></i> Needs attention</div>
     <div class="pantry-urgency-chips" id="pantryUrgencyChips"></div>
   </div>
 
   <!-- Section filter chips -->
   <div class="pantry-filter-row" id="pantryFilterRow">
     <div class="chip active" onclick="setPantryFilter('all',this)">All</div>
-    <div class="chip" onclick="setPantryFilter('fridge',this)">❄️ Fridge</div>
-    <div class="chip" onclick="setPantryFilter('pantry',this)">🌾 Pantry</div>
-    <div class="chip" onclick="setPantryFilter('cleaning',this)">🧹 Cleaning</div>
-    <div class="chip" onclick="setPantryFilter('personal',this)">🛁 Bathroom</div>
-    <div class="chip" onclick="setPantryFilter('other',this)">📦 Other</div>
+    <div class="chip" onclick="setPantryFilter('fridge',this)"><i class="ti ti-snowflake" style="font-size:14px;vertical-align:middle"></i> Fridge</div>
+    <div class="chip" onclick="setPantryFilter('pantry',this)"><i class="ti ti-wheat" style="font-size:14px;vertical-align:middle"></i> Pantry</div>
+    <div class="chip" onclick="setPantryFilter('cleaning',this)"><i class="ti ti-broom" style="font-size:14px;vertical-align:middle"></i> Cleaning</div>
+    <div class="chip" onclick="setPantryFilter('personal',this)"><i class="ti ti-bathtub" style="font-size:14px;vertical-align:middle"></i> Bathroom</div>
+    <div class="chip" onclick="setPantryFilter('other',this)"><i class="ti ti-package" style="font-size:14px;vertical-align:middle"></i> Other</div>
   </div>
 
   <!-- Sectioned items — rendered by JS -->
@@ -1314,12 +1313,12 @@ input[type="file"]{display:none;}
   <div style="display:flex;gap:6px;padding:10px 18px 0;overflow-x:auto">
     <div class="chip active" onclick="setProjFilter('all',this)">All</div>
     <div class="chip" onclick="setProjFilter('active',this)">🟢 Active</div>
-    <div class="chip" onclick="setProjFilter('planned',this)">📅 Planned</div>
+    <div class="chip" onclick="setProjFilter('planned',this)"><i class="ti ti-calendar" style="font-size:14px;vertical-align:middle"></i> Planned</div>
     <div class="chip" onclick="setProjFilter('done',this)">✓ Done</div>
   </div>
   <!-- Project list -->
   <div style="padding:10px 18px 80px" id="projectList">
-    <div class="empty"><div class="empty-icon">🧳</div><p>No projects yet.<br>Create one for your Mt Buller trips,<br>Hakuba, or any event with a budget.</p></div>
+    <div class="empty"><i class="ti ti-luggage empty-icon"></i><p>No projects yet.<br>Create one for your Mt Buller trips,<br>Hakuba, or any event with a budget.</p></div>
   </div>
 </div>
 
@@ -1333,7 +1332,7 @@ input[type="file"]{display:none;}
       <div style="display:flex;gap:8px">
         <div class="fg" style="width:52px">
           <label>Icon</label>
-          <input type="text" id="projectEmoji" placeholder="🏔️" maxlength="2" style="text-align:center;font-size:20px">
+          <input type="text" id="projectEmoji" placeholder="Icon" maxlength="2" style="text-align:center;font-size:20px">
         </div>
         <div class="fg" style="flex:1">
           <label>Project name *</label>
@@ -1385,12 +1384,12 @@ input[type="file"]{display:none;}
   <div class="sheet">
     <div class="handle"></div>
     <div style="text-align:center;padding:8px 0 16px">
-      <div style="font-size:36px;margin-bottom:8px">&#128260;</div>
+      <div style=""><i class="ti ti-repeat" style="font-size:36px;opacity:.5"></i></div>
       <h2 style="margin-bottom:6px">Recurring due</h2>
       <p style="font-size:12px;color:var(--text3);line-height:1.7" id="dueRecurMsg">A recurring transaction is due today.</p>
     </div>
     <div id="dueRecurCards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:300px;overflow-y:auto;"></div>
-    <button class="btn-primary acc-btn" id="addAllDueBtn">&#10003; Add All as Transactions</button>
+    <button class="btn-primary acc-btn" id="addAllDueBtn"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Add All as Transactions</button>
     <button class="btn-secondary" onclick="closeOv('dueRecurOv')">Remind me later</button>
   </div>
 </div>
@@ -1402,8 +1401,8 @@ input[type="file"]{display:none;}
     <h2 id="recurModalTitle">Add Recurring</h2>
     <input type="hidden" id="recurEditIdx">
     <div class="type-toggle">
-      <button class="type-btn exp active" id="recurTypeExp" onclick="setRecurType('expense')">&#8722; Expense</button>
-      <button class="type-btn inc" id="recurTypeInc" onclick="setRecurType('income')">&#43; Income</button>
+      <button class="type-btn exp active" id="recurTypeExp" onclick="setRecurType('expense')"><i class="ti ti-minus" style="font-size:16px;vertical-align:middle"></i> Expense</button>
+      <button class="type-btn inc" id="recurTypeInc" onclick="setRecurType('income')"><i class="ti ti-plus" style="font-size:16px;vertical-align:middle"></i> Income</button>
     </div>
     <div class="fg"><label>Name</label><input type="text" id="recurName" placeholder="e.g. Netflix, Rent, Salary..."></div>
     <div class="fg"><label>Amount (AUD)</label><input type="number" id="recurAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
@@ -1437,8 +1436,8 @@ input[type="file"]{display:none;}
 
 <!-- FABs -->
 <div class="fab-wrap">
-  <button class="fab fab-exp" onclick="openTxModal('expense')">&#8722; Expense</button>
-  <button class="fab fab-inc" onclick="openTxModal('income')">&#43; Income</button>
+  <button class="fab fab-exp" onclick="openTxModal('expense')"><i class="ti ti-minus" style="font-size:18px"></i> Expense</button>
+  <button class="fab fab-inc" onclick="openTxModal('income')"><i class="ti ti-plus" style="font-size:18px"></i> Income</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -1451,8 +1450,8 @@ input[type="file"]{display:none;}
     <h2 id="txModalTitle">New transaction</h2>
     <input type="hidden" id="editId">
     <div class="type-toggle">
-      <button class="type-btn exp active" id="typeExp" onclick="setType('expense')">&#8722; Expense</button>
-      <button class="type-btn inc" id="typeInc" onclick="setType('income')">&#43; Income</button>
+      <button class="type-btn exp active" id="typeExp" onclick="setType('expense')"><i class="ti ti-minus" style="font-size:16px;vertical-align:middle"></i> Expense</button>
+      <button class="type-btn inc" id="typeInc" onclick="setType('income')"><i class="ti ti-plus" style="font-size:16px;vertical-align:middle"></i> Income</button>
     </div>
     <div style="display:flex;gap:8px;">
       <div class="fg" style="flex:1"><label>Amount</label><input type="number" id="inAmt" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
@@ -1478,7 +1477,7 @@ input[type="file"]{display:none;}
       </select>
     </div>
     <button class="btn-primary exp-btn" id="txSubmitBtn" onclick="submitTx()">Add expense</button>
-    <button class="btn-danger" id="txDeleteBtn" style="display:none">&#128465; Delete transaction</button>
+    <button class="btn-danger" id="txDeleteBtn" style="display:none"><i class="ti ti-trash" style="font-size:16px;vertical-align:middle"></i> Delete transaction</button>
   </div>
 </div>
 
@@ -1489,36 +1488,36 @@ input[type="file"]{display:none;}
     <div class="handle"></div>
     <h2 style="margin-bottom:14px;font-size:20px">Settings</h2>
     <div class="menu-item" onclick="closeMenu();openOv('sheetsOv')">
-      <div class="mi-icon">&#128202;</div><div><div class="mi-label">Google Sheets sync</div><div class="mi-desc" id="menuSyncDesc">Not connected</div></div>
+      <div class="mi-icon"><i class="ti ti-table"></i></div><div><div class="mi-label">Google Sheets sync</div><div class="mi-desc" id="menuSyncDesc">Not connected</div></div>
     </div>
     <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();openOv('bankOv')">
-      <div class="mi-icon">&#127974;</div><div><div class="mi-label">Import bank statement</div><div class="mi-desc">CBA, ANZ, NAB, Westpac CSV</div></div>
+      <div class="mi-icon"><i class="ti ti-building-bank"></i></div><div><div class="mi-label">Import bank statement</div><div class="mi-desc">CBA, ANZ, NAB, Westpac CSV</div></div>
     </div>
     <div class="menu-item" onclick="closeMenu();openOv('receiptOv')">
-      <div class="mi-icon">&#128247;</div><div><div class="mi-label">Scan receipt</div><div class="mi-desc">AI-powered, auto-fills details</div></div>
+      <div class="mi-icon"><i class="ti ti-camera"></i></div><div><div class="mi-label">Scan receipt</div><div class="mi-desc">AI-powered, auto-fills details</div></div>
     </div>
     <div class="menu-item" onclick="closeMenu();openOv('importOv')">
-      <div class="mi-icon">&#128229;</div><div><div class="mi-label">Import data</div><div class="mi-desc">Load from CSV or JSON</div></div>
+      <div class="mi-icon"><i class="ti ti-file-import"></i></div><div><div class="mi-label">Import data</div><div class="mi-desc">Load from CSV or JSON</div></div>
     </div>
     <div class="menu-item" onclick="closeMenu();openOv('exportOv')">
-      <div class="mi-icon">&#128228;</div><div><div class="mi-label">Export data</div><div class="mi-desc">Save as CSV or JSON</div></div>
+      <div class="mi-icon"><i class="ti ti-file-export"></i></div><div><div class="mi-label">Export data</div><div class="mi-desc">Save as CSV or JSON</div></div>
     </div>
     <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();openCatMgr()">
-      <div class="mi-icon">&#127991;&#65039;</div><div><div class="mi-label">Categories</div><div class="mi-desc">Add or remove custom categories</div></div>
+      <div class="mi-icon"><i class="ti ti-tags"></i></div><div><div class="mi-label">Categories</div><div class="mi-desc">Add or remove custom categories</div></div>
     </div>
     <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();openOv('benchmarksOv')">
-      <div class="mi-icon">&#128200;</div><div><div class="mi-label">Benchmarks</div><div class="mi-desc">Configure which ETFs track each index</div></div>
+      <div class="mi-icon"><i class="ti ti-chart-bar"></i></div><div><div class="mi-label">Benchmarks</div><div class="mi-desc">Configure which ETFs track each index</div></div>
     </div>
     <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();toggleTheme()">
-      <div class="mi-icon">&#127769;</div><div><div class="mi-label" id="themeToggleLabel">Switch to light theme</div><div class="mi-desc">Toggle between dark and light appearance</div></div>
+      <div class="mi-icon"><i class="ti ti-moon"></i></div><div><div class="mi-label" id="themeToggleLabel">Switch to light theme</div><div class="mi-desc">Toggle between dark and light appearance</div></div>
     </div>
     <div class="menu-div"></div>
     <div class="menu-item" onclick="closeMenu();confirmClear()">
-      <div class="mi-icon">&#128465;&#65039;</div><div><div class="mi-label" style="color:var(--expense)">Clear all data</div><div class="mi-desc">Delete all transactions permanently</div></div>
+      <div class="mi-icon"><i class="ti ti-trash" style="color:var(--expense)"></i></div><div><div class="mi-label" style="color:var(--expense)">Clear all data</div><div class="mi-desc">Delete all transactions permanently</div></div>
     </div>
   </div>
 </div>
@@ -1530,7 +1529,7 @@ input[type="file"]{display:none;}
     <h2>Google Sheets sync</h2>
     <div id="sheetsSetup">
       <p style="font-size:12px;color:var(--text3);line-height:1.8;margin-bottom:18px">Sync to your own Google Sheet — no third-party servers. Uses a free Apps Script running in your Google account.</p>
-      <div class="step-row"><span class="step-num">1</span><div><div class="step-title">Copy the script code</div><div class="step-desc">Click below to copy the Apps Script backend.</div><div class="code-block" id="gasCodeBlock"></div><button class="copy-btn" onclick="copyGAS()">&#128203; Copy script code</button></div></div>
+      <div class="step-row"><span class="step-num">1</span><div><div class="step-title">Copy the script code</div><div class="step-desc">Click below to copy the Apps Script backend.</div><div class="code-block" id="gasCodeBlock"></div><button class="copy-btn" onclick="copyGAS()"><i class="ti ti-clipboard" style="font-size:16px;vertical-align:middle"></i> Copy script code</button></div></div>
       <div class="step-row"><span class="step-num">2</span><div><div class="step-title">Create the Apps Script</div><div class="step-desc">Open your Google Sheet → Extensions → Apps Script → delete all → paste → Save.</div></div></div>
       <div class="step-row"><span class="step-num">3</span><div><div class="step-title">Deploy as Web App</div><div class="step-desc">Deploy → New Deployment → Type: Web App → Execute as: Me → Who has access: Anyone → Deploy → Authorise.</div></div></div>
       <div class="step-row"><span class="step-num">4</span><div><div class="step-title">Paste your URL below</div>
@@ -1539,7 +1538,7 @@ input[type="file"]{display:none;}
     </div>
     <div id="sheetsConnected" style="display:none">
       <div style="text-align:center;padding:10px 0 20px">
-        <div style="font-size:36px;margin-bottom:8px">&#128994;</div>
+        <div><i class="ti ti-circle-check" style="font-size:36px;color:#22c55e"></i></div>
         <div style="font-family:'Instrument Serif',serif;font-size:20px;margin-bottom:4px">Connected</div>
         <div style="font-size:12px;color:var(--text3)" id="connSheetName">Syncing to your Google Sheet</div>
       </div>
@@ -1551,8 +1550,8 @@ input[type="file"]{display:none;}
           <option value="open">On app open</option>
         </select>
       </div>
-      <button class="btn-primary acc-btn" onclick="doSync()">&#8635; Sync now</button>
-      <button class="btn-secondary" onclick="pullFromSheets()">&#8681; Pull from Sheets</button>
+      <button class="btn-primary acc-btn" onclick="doSync()"><i class="ti ti-refresh" style="font-size:16px;vertical-align:middle"></i> Sync now</button>
+      <button class="btn-secondary" onclick="pullFromSheets()"><i class="ti ti-download" style="font-size:16px;vertical-align:middle"></i> Pull from Sheets</button>
       <button class="btn-danger" onclick="disconnectSheets()">Disconnect</button>
     </div>
   </div>
@@ -1566,14 +1565,14 @@ input[type="file"]{display:none;}
     <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px">Export a CSV from your bank's app or website and import it here. Columns are mapped automatically per bank.</p>
     <div class="fg"><label>Select your bank</label>
       <div class="bank-grid">
-        <div class="bank-btn" data-bank="cba" onclick="selectBank(this)"><div style="font-size:24px">&#127462;&#127482;</div><div class="bank-name">CommBank</div><div class="bank-sub">CBA CSV export</div></div>
-        <div class="bank-btn" data-bank="anz" onclick="selectBank(this)"><div style="font-size:24px">&#127462;&#127482;</div><div class="bank-name">ANZ</div><div class="bank-sub">ANZ CSV export</div></div>
-        <div class="bank-btn" data-bank="nab" onclick="selectBank(this)"><div style="font-size:24px">&#127462;&#127482;</div><div class="bank-name">NAB</div><div class="bank-sub">NAB CSV export</div></div>
-        <div class="bank-btn" data-bank="wbc" onclick="selectBank(this)"><div style="font-size:24px">&#127462;&#127482;</div><div class="bank-name">Westpac</div><div class="bank-sub">Westpac CSV export</div></div>
+        <div class="bank-btn" data-bank="cba" onclick="selectBank(this)"><div style="font-size:24px"><i class="ti ti-building-bank" style="font-size:24px"></i></div><div class="bank-name">CommBank</div><div class="bank-sub">CBA CSV export</div></div>
+        <div class="bank-btn" data-bank="anz" onclick="selectBank(this)"><div style="font-size:24px"><i class="ti ti-building-bank" style="font-size:24px"></i></div><div class="bank-name">ANZ</div><div class="bank-sub">ANZ CSV export</div></div>
+        <div class="bank-btn" data-bank="nab" onclick="selectBank(this)"><div style="font-size:24px"><i class="ti ti-building-bank" style="font-size:24px"></i></div><div class="bank-name">NAB</div><div class="bank-sub">NAB CSV export</div></div>
+        <div class="bank-btn" data-bank="wbc" onclick="selectBank(this)"><div style="font-size:24px"><i class="ti ti-building-bank" style="font-size:24px"></i></div><div class="bank-name">Westpac</div><div class="bank-sub">Westpac CSV export</div></div>
       </div>
     </div>
     <div class="drop-zone" id="bankDropZone" onclick="document.getElementById('bankFileIn').click()">
-      <div class="dz-icon">&#128194;</div>
+      <div class="dz-icon"><i class="ti ti-file-upload"></i></div>
       <div>Tap to choose CSV file</div>
       <div style="font-size:10px;margin-top:5px;opacity:.6">Exported from your bank's website or app</div>
     </div>
@@ -1596,12 +1595,12 @@ input[type="file"]{display:none;}
     <h2>Scan receipt</h2>
     <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:12px">Take a photo of any receipt and AI will extract the amount, merchant, date and suggest a category.</p>
     <div class="receipt-preview" id="receiptPreview" onclick="document.getElementById('receiptFileIn').click()">
-      <div><div style="font-size:32px;margin-bottom:8px">&#128247;</div><div>Tap to take photo or choose image</div></div>
+      <div><div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-camera" style="font-size:32px"></i></div><div>Tap to take photo or choose image</div></div>
     </div>
     <input type="file" id="receiptFileIn" accept="image/*" capture="environment" onchange="handleReceiptFile(event)">
     <div id="scanResult" style="display:none"></div>
     <div id="scanLoading" style="display:none;text-align:center;padding:20px;color:var(--text3);font-size:13px">
-      <div style="font-size:28px;margin-bottom:8px">&#129302;</div>
+      <div style="font-size:28px;margin-bottom:8px;opacity:.5"><i class="ti ti-sparkles" style="font-size:28px"></i></div>
       Reading receipt...
     </div>
     <div class="fg" id="receiptApiKeyGroup">
@@ -1609,8 +1608,8 @@ input[type="file"]{display:none;}
       <input type="password" id="receiptApiKey" placeholder="sk-ant-..." autocomplete="off">
       <small>Your key is stored locally and never sent anywhere except Anthropic's API. Get one at console.anthropic.com</small>
     </div>
-    <button class="btn-primary acc-btn" id="scanBtn" onclick="doReceiptScan()" style="display:none">&#129302; Scan with AI</button>
-    <button class="btn-primary inc-btn" id="addScannedBtn" onclick="addScannedTx()" style="display:none">&#10003; Add transaction</button>
+    <button class="btn-primary acc-btn" id="scanBtn" onclick="doReceiptScan()" style="display:none"><i class="ti ti-sparkles" style="font-size:16px;vertical-align:middle"></i> Scan with AI</button>
+    <button class="btn-primary inc-btn" id="addScannedBtn" onclick="addScannedTx()" style="display:none"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Add transaction</button>
   </div>
 </div>
 
@@ -1642,8 +1641,8 @@ input[type="file"]{display:none;}
       </select>
     </div>
     <div class="fg" id="exportCountWrap" style="font-size:12px;color:var(--text3);padding:4px 0"></div>
-    <button class="btn-primary exp-btn" onclick="doExport('csv')" style="margin-bottom:8px">&#8681; Download CSV</button>
-    <button class="btn-secondary" onclick="doExport('json')">&#8681; Download JSON backup</button>
+    <button class="btn-primary exp-btn" onclick="doExport('csv')" style="margin-bottom:8px"><i class="ti ti-download" style="font-size:16px;vertical-align:middle"></i> Download CSV</button>
+    <button class="btn-secondary" onclick="doExport('json')"><i class="ti ti-download" style="font-size:16px;vertical-align:middle"></i> Download JSON backup</button>
   </div>
 </div>
 
@@ -1653,7 +1652,7 @@ input[type="file"]{display:none;}
     <div class="handle"></div><h2>Import data</h2>
     <p style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.7">Spendly JSON backup, or CSV with columns: <strong>date, amount, type, category, description</strong></p>
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
-      <div class="dz-icon">&#128194;</div><div>Tap to choose file</div>
+      <div class="dz-icon"><i class="ti ti-file-upload"></i></div><div>Tap to choose file</div>
       <div style="font-size:10px;margin-top:5px;opacity:.6">.json or .csv accepted</div>
     </div>
     <input type="file" id="fileIn" accept=".json,.csv" onchange="handleFile(event)">
@@ -1684,7 +1683,7 @@ input[type="file"]{display:none;}
     <div class="fg"><label>Icon</label><div class="emoji-picker" id="epicker"></div></div>
     <div class="fg"><label>Colour</label><div class="color-picker" id="cpicker"></div></div>
     <button class="btn-primary acc-btn" onclick="saveNewCat()">Create category</button>
-    <button class="btn-secondary" onclick="closeOv('newCatOv');openCatMgr()">&#8592; Back</button>
+    <button class="btn-secondary" onclick="closeOv('newCatOv');openCatMgr()"><i class="ti ti-arrow-left" style="font-size:16px;vertical-align:middle"></i> Back</button>
   </div>
 </div>
 
@@ -1749,7 +1748,7 @@ input[type="file"]{display:none;}
       <div class="fg" style="flex:1">
         <label>Category</label>
         <select id="pantryCategory">
-          <option value="pantry">🌍 Pantry</option>
+          <option value="pantry">🌾 Pantry</option>
           <option value="fridge">❄️ Fridge</option>
           <option value="cleaning">🧹 Cleaning</option>
           <option value="personal">🛁 Personal</option>
@@ -1847,22 +1846,22 @@ input[type="file"]{display:none;}
 
     <!-- Photo area -->
     <div class="receipt-preview" id="pantryReceiptPreview" onclick="document.getElementById('pantryReceiptIn').click()" style="margin-bottom:10px">
-      <div><div style="font-size:32px;margin-bottom:8px">&#128247;</div><div>Tap to take photo or choose image</div></div>
+      <div><div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-camera" style="font-size:32px"></i></div><div>Tap to take photo or choose image</div></div>
     </div>
     <input type="file" id="pantryReceiptIn" accept="image/*" capture="environment" onchange="handlePantryPhoto(event)">
 
     <div id="pantryScanLoading" style="display:none;text-align:center;padding:16px;color:var(--text3);font-size:13px">
-      <div style="font-size:28px;margin-bottom:8px">&#129302;</div>Reading receipt...
+      <div style="font-size:28px;margin-bottom:8px;opacity:.5"><i class="ti ti-sparkles" style="font-size:28px"></i></div>Reading receipt...
     </div>
 
     <!-- Matched items for selection -->
     <div id="pantryMatchResult" style="display:none">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Items found — select what to add to stock:</div>
       <div id="pantryMatchList"></div>
-      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:4px">&#10003; Update Selected Stock</button>
+      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:4px"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Update Selected Stock</button>
     </div>
 
-    <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none">&#129302; Scan with AI</button>
+    <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none"><i class="ti ti-sparkles" style="font-size:16px;vertical-align:middle"></i> Scan with AI</button>
   </div>
 </div>
 
@@ -1874,8 +1873,8 @@ input[type="file"]{display:none;}
     <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px">Select which ETFs track each index. Defaults are ASX-listed. Refresh benchmarks after changing.</p>
     <div id="benchTickerList"></div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn-primary acc-btn" onclick="saveBenchTickers()">&#10003; Save</button>
-      <button class="btn-secondary" onclick="resetBenchTickers()">&#8634; Reset defaults</button>
+      <button class="btn-primary acc-btn" onclick="saveBenchTickers()"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Save</button>
+      <button class="btn-secondary" onclick="resetBenchTickers()"><i class="ti ti-refresh-alert" style="font-size:16px;vertical-align:middle"></i> Reset defaults</button>
       <button class="btn-secondary" onclick="closeOv('benchmarksOv')">Cancel</button>
     </div>
   </div>
@@ -1992,7 +1991,7 @@ function renderPantry() {
         var expDays = item.expiry ? Math.ceil((new Date(item.expiry)-today)/86400000) : null;
         var label = days !== null && days <= 2 ? Math.round(days)+'d left' : expDays !== null ? 'exp '+expDays+'d' : 'empty';
         return '<div class="pantry-urgency-chip" onclick="openEditPantry('+item._idx+')">'+
-          (item.emoji||pantryDefaultEmoji(item.category))+' '+escH(item.name)+
+          emojiHtml(item.emoji||pantryDefaultEmoji(item.category),12)+' '+escH(item.name)+
           '<span class="chip-days">'+label+'</span>'+
         '</div>';
       }).join('');
@@ -2025,7 +2024,7 @@ function renderPantry() {
 
     html += '<div class="pantry-section">'+
       '<div class="pantry-section-header" onclick="togglePantrySection(\''+sec.key+'\')">'+
-        '<div class="pantry-section-title">'+sec.emoji+' '+sec.label.replace(/^[^\s]+\s/,'')+
+        '<div class="pantry-section-title">'+emojiHtml(sec.emoji,16)+' '+sec.label.replace(/^[^\s]+\s/,'')+
           '<span class="pantry-section-badge '+badgeClass+'">'+badgeLabel+'</span>'+
         '</div>'+
         '<span class="pantry-section-toggle'+(isCollapsed?' collapsed':'')+'">▼</span>'+
@@ -2038,7 +2037,7 @@ function renderPantry() {
   });
 
   if(!html) {
-    html = '<div class="empty" style="padding:40px 0"><div class="empty-icon">🏠</div><p>No items in this section.<br>Add items or scan a receipt.</p></div>';
+    html = '<div class="empty" style="padding:40px 0">'+ti('home',40)+'<p>No items in this section.<br>Add items or scan a receipt.</p></div>';
   }
 
   grid.innerHTML = html;
@@ -2065,20 +2064,20 @@ function pantryItemCard(item, today, warn7) {
     var bpct=item.containerSize?Math.min(100,(toBaseUnit(item.qty,item.unit)/toBaseUnit(item.containerSize,item.containerUnit))*100):Math.min(100,(days/30)*100);
     predictHtml='<div class="predict-bar-wrap">'+
       '<div class="predict-bar-track"><div class="predict-bar-fill" style="width:'+Math.round(bpct)+'%;background:'+barColor+'"></div></div>'+
-      '<div class="predict-days '+cls+'">'+(days<=0?'🚨 Run out':'⏱ ~'+Math.round(days)+'d left')+(buyDate&&days>0?' · buy '+formatDate(buyDate):'')+
-      ((item.confirmedCycles||0)>0?'<span class="pantry-cycles-badge">🧠 '+item.confirmedCycles+' cycle'+(item.confirmedCycles>1?'s':'')+'</span>':'')+'</div>'+
+      '<div class="predict-days '+cls+'">'+(days<=0?ti('alert-circle',12)+' Run out':ti('clock',12)+' ~'+Math.round(days)+'d left')+(buyDate&&days>0?' · buy '+formatDate(buyDate):'')+
+      ((item.confirmedCycles||0)>0?'<span class="pantry-cycles-badge">'+ti('brain',12)+' '+item.confirmedCycles+' cycle'+(item.confirmedCycles>1?'s':'')+'</span>':'')+'</div>'+
     '</div>';
   }
 
   return '<div class="pantry-item '+status+'" onclick="openEditPantry('+item._idx+')">'+
-    '<div class="pantry-icon">'+(item.emoji||pantryDefaultEmoji(item.category))+'</div>'+
+    '<div class="pantry-icon">'+emojiHtml(item.emoji||pantryDefaultEmoji(item.category),18)+'</div>'+
     '<div class="pantry-body">'+
       '<div class="pantry-name">'+escH(item.name)+(predictHtml?' <span style="font-size:9px;color:var(--text3);font-weight:400">'+escH(item.unit||'pcs')+'</span>':'')+'</div>'+
       expiryHtml+predictHtml+
       '<div class="pantry-adj" onclick="event.stopPropagation()">'+
-        '<button class="pantry-adj-btn" onclick="adjustPantry('+item._idx+',-1)">&#8722;</button>'+
+        '<button class="pantry-adj-btn" onclick="adjustPantry('+item._idx+',-1)">'+ti('minus',14)+'</button>'+
         '<div class="pantry-adj-qty">'+item.qty+'</div>'+
-        '<button class="pantry-adj-btn" onclick="adjustPantry('+item._idx+',1)">&#43;</button>'+
+        '<button class="pantry-adj-btn" onclick="adjustPantry('+item._idx+',1)">'+ti('plus',14)+'</button>'+
         '<span style="font-size:10px;color:var(--text3);margin-left:2px">'+escH(item.unit||'pcs')+'</span>'+
       '</div>'+
     '</div>'+
@@ -2114,7 +2113,7 @@ function pantryStatusLevel(item, today, warn7) {
 }
 
 function pantryDefaultEmoji(cat) {
-  return {fridge:'❄️',pantry:'🌾',cleaning:'🧹',personal:'🛁',other:'📦'}[cat]||'📦';
+  return {fridge:'snowflake',pantry:'wheat',cleaning:'broom',personal:'bathtub',other:'package'}[cat]||'package';
 }
 function pantryCategLabel(cat) {
   return {fridge:'Fridge',pantry:'Pantry Shelf',cleaning:'Cleaning',personal:'Bathroom',other:'Other'}[cat]||cat;
@@ -2155,7 +2154,7 @@ function renderProjects() {
 
   var filtered = projects.filter(function(p){ return projFilter==='all' || p.status===projFilter; });
   if(!filtered.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">🧳</div><p>No projects here.<br>Tap <strong>+ New Project</strong> to create one.</p></div>';
+    list.innerHTML='<div class="empty">'+ti('luggage',40)+'<p>No projects here.<br>Tap <strong>+ New Project</strong> to create one.</p></div>';
     return;
   }
 
@@ -2177,7 +2176,7 @@ function renderProjects() {
     return '<div class="project-card" onclick="openProjectDetail(\''+p.id+'\')">'+
       '<div class="project-card-header">'+
         '<div>'+
-          '<div class="project-card-name">'+(p.emoji||'📁')+' '+escH(p.name)+'</div>'+
+          '<div class="project-card-name">'+emojiHtml(p.emoji||'folder',16)+' '+escH(p.name)+'</div>'+
           (p.start||p.end ? '<div class="project-card-dates">'+(p.start||'')+(p.end?' → '+p.end:'')+'</div>' : '')+
           (p.desc ? '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+escH(p.desc)+'</div>' : '')+
         '</div>'+
@@ -2185,14 +2184,14 @@ function renderProjects() {
           '<div class="project-total '+(over?'neg':'')+'">$'+fmt(spent)+'</div>'+
           (budget?'<div style="font-size:10px;color:var(--text3)">of $'+fmt(budget)+'</div>':'')+
           '<span class="project-status '+p.status+'" style="display:inline-block;margin-top:4px">'+
-            (p.status==='active'?'🟢 Active':p.status==='planned'?'📅 Planned':'✓ Done')+
+            (p.status==='active'?ti('circle-check',14)+' Active':p.status==='planned'?ti('calendar',14)+' Planned':ti('check',14)+' Done')+
           '</span>'+
         '</div>'+
       '</div>'+
       (budget ? '<div class="project-budget-bar"><div class="project-budget-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div>' : '')+
       (topCats.length ? '<div class="project-cat-row">'+topCats.map(function(cat){
         var c = catById(cat);
-        return '<span class="project-cat-pill">'+c.emoji+' '+c.label+' $'+fmt(catBreakdown[cat])+'</span>';
+        return '<span class="project-cat-pill">'+emojiHtml(c.emoji,12)+' '+c.label+' $'+fmt(catBreakdown[cat])+'</span>';
       }).join('')+'</div>' : '')+
       '<div style="font-size:10px;color:var(--text3);margin-top:8px">'+txList.length+' transaction'+(txList.length!==1?'s':'')+
         (p.catBudgets&&p.catBudgets.length ? ' · '+p.catBudgets.length+' category budgets' : '')+
@@ -2308,7 +2307,7 @@ function populateProjectDropdown() {
   if(!sel) return;
   sel.innerHTML = '<option value="">— None —</option>'+
     projects.filter(function(p){ return p.status!=='done'; }).map(function(p){
-      return '<option value="'+p.id+'">'+(p.emoji||'📁')+' '+escH(p.name)+'</option>';
+      return '<option value="'+p.id+'">'+emojiHtml(p.emoji||'folder',14)+' '+escH(p.name)+'</option>';
     }).join('');
 }
 
@@ -2750,11 +2749,11 @@ function renderPantryMatches(items, meta) {
         (meta.store?'<span>🏪 <strong>'+escH(meta.store)+'</strong></span>':'')+
         (meta.total?'<span style="font-family:\'Instrument Serif\',serif;font-size:18px">$'+parseFloat(meta.total).toFixed(2)+'</span>':'')+
       '</div>'+
-      (meta.date?'<div style="font-size:10px;color:var(--text3);margin-top:2px">📅 '+meta.date+'</div>':'')+
+      (meta.date?'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+ti('calendar',12)+' '+meta.date+'</div>':'')+
       '<div style="margin-top:8px">'+
         '<label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">Category</label>'+
         '<select id="receiptExpCat" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text);font-size:12px;font-family:inherit">'+
-          BUILTIN.expense.map(function(c){ return '<option value="'+c.id+'"'+(c.id===meta.category?' selected':'')+'>'+c.emoji+' '+c.label+'</option>'; }).join('')+
+          BUILTIN.expense.map(function(c){ return '<option value="'+c.id+'"'+(c.id===meta.category?' selected':'')+'>'+emojiHtml(c.emoji,14)+' '+c.label+'</option>'; }).join('')+
         '</select>'+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
@@ -2768,7 +2767,7 @@ function renderPantryMatches(items, meta) {
     var existing = pantryItems.find(function(p){ return p.name.toLowerCase() === item.name.toLowerCase(); });
     var matchNote = existing ? ' <span style="font-size:9px;color:var(--income);font-weight:700">IN PANTRY</span>' : '';
     return '<div class="scan-match-item selected" id="pmatch_'+i+'" onclick="togglePantryMatch(this)">'+
-      '<div class="scan-match-check">&#10003;</div>'+
+      '<div class="scan-match-check">'+ti('check',14)+'</div>'+
       '<div style="flex:1;min-width:0">'+
         '<div style="font-weight:500;font-size:13px">'+escH(item.name)+matchNote+'</div>'+
         '<div style="font-size:11px;color:var(--text3)">Bought: '+item.qty+' '+escH(item.unit)+(existing?' · current stock: '+existing.qty+' '+existing.unit:'')+'</div>'+
@@ -2785,7 +2784,7 @@ function renderPantryMatches(items, meta) {
 function togglePantryMatch(el) {
   el.classList.toggle('selected');
   var check = el.querySelector('.scan-match-check');
-  if(check) check.innerHTML = el.classList.contains('selected') ? '&#10003;' : '';
+  if(check) check.innerHTML = el.classList.contains('selected') ? ti('check',14) : '';
 }
 
 function applyPantryMatches() {
@@ -2855,16 +2854,83 @@ const CAT_ICONS = {
 CAT_ICONS['bills'] = CAT_ICONS['bills'];
 
 // Helper to render a category icon — returns SVG string or emoji fallback
+// Emoji → Tabler icon mapping (used instead of literal emoji throughout the UI)
+var EMOJI_MAP = {
+  '🛒':'shopping-cart','🚇':'bus','❤️':'heart','🛍':'shopping-bag','▶️':'player-play',
+  '📄':'file-text','🍽️':'dining','🗺️':'map','⋯':'dots','💳':'credit-card',
+  '💻':'device-laptop','📊':'chart-bar','⭐':'star','↑':'arrow-up',
+  '📦':'package','🛁':'bath','🧹':'broom','🌾':'plant','❄️':'snowflake',
+  '🏠':'home','🎯':'target','✈️':'plane','🚗':'car','💍':'diamond','🎓':'school',
+  '🏖️':'umbrella','💰':'coin','🏋️':'barbell','🎮':'device-gamepad','🏪':'building-store',
+  '🧾':'receipt','⏱':'clock','🧠':'brain','📷':'camera','🤖':'robot','⚠️':'alert-triangle',
+  '✅':'check','❌':'x','🔄':'refresh','➕':'plus','➖':'minus','✏️':'pencil','🗑️':'trash',
+  '🔍':'search','🔔':'bell','⚙️':'settings','🔗':'link','📅':'calendar','💵':'currency-dollar',
+  '📈':'chart-line','🌍':'globe','🏷️':'tag','🚀':'rocket','🧺':'basket','🥛':'milk',
+  '🧴':'bottle','🧀':'cheese','🥩':'meat','🌿':'leaf','💎':'diamond','🏡':'home',
+  '📚':'books','🎵':'music','🐾':'paw','🏨':'building','🍕':'pizza','🍺':'beer',
+  '☕':'coffee','🍷':'wine','🎨':'palette','💇':'scissors','📱':'device-mobile',
+  '🔧':'tools','🏥':'hospital','🏡':'home','🏖️':'beach','🏋️':'barbell',
+  '🎯':'target','🎓':'school','⚽':'ball-football','👶':'baby','🌿':'leaf',
+  '🖥️':'monitor','📊':'chart-bar','💎':'diamond','🇦🇺':'flag-au','🇹🇭':'flag-th',
+  '🇺🇸':'flag-us','🇯🇵':'flag-jp','🇪🇺':'flag-eu','🇬🇧':'flag-gb','🇳🇿':'flag-nz',
+  '🏪':'building-store','⏱':'clock','🧠':'brain','🥃':'mug','🧂':'salt',
+  '🍳':'egg','🥬':'leafy-green','🥕':'carrot','🧅':'onion','🧄':'garlic',
+  '🥫':'can','🍝':'pasta','🥜':'peanuts','🧈':'butter','🥚':'egg',
+  '🍞':'bread','🧊':'ice-cube','🥤':'cup','🧃':'bottle','🥛':'milk-bottle',
+  '🧉':'cup','☂️':'umbrella','📌':'pin','📆':'calendar','🕐':'clock',
+  '🔐':'lock','🔓':'lock-open','🔑':'key','📋':'clipboard','📝':'notes',
+  '📎':'paperclip','🖇️':'paperclip','📏':'ruler','✂️':'scissors','🔒':'lock',
+  '🔴':'circle','🟢':'circle','🟡':'circle','🟠':'circle','🟣':'circle',
+  '🔵':'circle','⚪':'circle','⚫':'circle','🔶':'circle','🔷':'circle',
+  '🔸':'circle','🔹':'circle','🔺':'triangle','🔻':'triangle','💬':'message',
+  '🗨️':'message','💡':'bulb','🔦':'bulb','💸':'cash','💳':'credit-card',
+  '🧾':'receipt','📃':'file-text','📑':'file-text','📜':'scroll','📖':'book',
+  '📕':'book','📗':'book','📘':'book','📙':'book','📓':'book',
+  '📔':'book','📒':'notebook','📰':'news','📱':'device-mobile','📲':'device-mobile',
+  '☎️':'phone','📞':'phone','📟':'device-watch','📠':'fax','💽':'disc',
+  '💾':'floppy-disk','💿':'disc','📀':'disc','🎥':'video','🎬':'video',
+  '📺':'tv','📻':'radio','🎙️':'microphone','🎚️':'sliders','🎛️':'sliders',
+  '🎤':'microphone','🎧':'headphones','🎼':'music','🎹':'piano','🥁':'drum',
+  '🎷':'saxophone','🎺':'trumpet','🎸':'guitar','🎻':'violin','🎲':'dice',
+  '♟️':'chess','🎯':'target','🎳':'bowling','🎽':'running','🥋':'martial-art',
+  '🥊':'boxing','⛸️':'skate','🚲':'bicycle','🛴':'scooter','🛵':'motorcycle',
+  '🏍️':'motorcycle','🚙':'car','🚌':'bus','🚎':'bus','🏎️':'car',
+  '🚓':'car','🚑':'ambulance','🚒':'firetruck','🚐':'van','🚚':'truck',
+  '🚛':'truck','🚜':'tractor','🛩️':'plane','🚁':'helicopter','🚀':'rocket',
+  '🛸':'ufo','🚢':'ship','🛳️':'ship','⛵':'sailboat','🚤':'speedboat',
+  '🛶':'canoe','🚉':'train','🚊':'train','🚝':'train','🚄':'train',
+  '🚅':'train','🚈':'train','🚞':'train','🚋':'train','🚃':'train',
+  '🗼':'building','🗽':'building','🗿':'building','🏰':'castle','🏯':'castle',
+  '🎠':'horse','🎡':'ferris-wheel','🎢':'rollercoaster','🎪':'circus','🎭':'theater',
+  '🎨':'palette','🎬':'video','🎤':'microphone','🎧':'headphones','🎼':'music',
+  '🎹':'piano','🥁':'drum','🎷':'saxophone','🎺':'trumpet','🎸':'guitar',
+  '🎻':'violin','🎲':'dice','♟️':'chess','🎯':'target','🎳':'bowling',
+};
+
+function ti(name, size) {
+  if(!name) return '';
+  size = size || 18;
+  return '<i class="ti ti-'+name+'" style="font-size:'+size+'px;vertical-align:middle"></i>';
+}
+
+function emojiHtml(e, size) {
+  if(!e) return '';
+  // If it's a Tabler icon name (ASCII, multi-char, contains a hyphen or is a single ASCII word), use directly
+  if(/^[a-z][a-z0-9-]+$/.test(e)) return ti(e, size || 14);
+  var name = EMOJI_MAP[e] || null;
+  if(name) return ti(name, size || 14);
+  return '<span style="font-size:'+(size||14)+'px">'+e+'</span>';
+}
+
 function catIcon(cat, size) {
   size = size || 22;
-  // Built-in cats use custom SVG
   if(CAT_ICONS[cat.id]) {
     return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 28 28" fill="none">'+CAT_ICONS[cat.id]+'</svg>';
   }
-  // Custom categories — show emoji as text, centered
-  var emoji = cat.emoji || '📦';
-  var fontSize = Math.round(size * 0.75);
-  return '<span style="font-size:'+fontSize+'px;line-height:1;display:flex;align-items:center;justify-content:center;">'+emoji+'</span>';
+  var iconName = cat.emoji || 'package';
+  // If it's still an emoji character (not a tabler name), try mapping
+  if(iconName.length > 1 || iconName.charCodeAt(0) > 255) iconName = EMOJI_MAP[iconName] || 'package';
+  return ti(iconName, size);
 }
 
 // Gradient backgrounds per category
@@ -2890,25 +2956,26 @@ function catGradient(cat) {
 
 const BUILTIN = {
   expense:[
-    {id:'food',emoji:'🛒',label:'Food',color:'#f97316'},
-    {id:'transport',emoji:'🚇',label:'Transport',color:'#3b82f6'},
-    {id:'health',emoji:'❤️',label:'Health',color:'#ec4899'},
-    {id:'shopping',emoji:'🛍',label:'Shopping',color:'#8b5cf6'},
-    {id:'entertainment',emoji:'▶️',label:'Fun',color:'#06b6d4'},
-    {id:'bills',emoji:'📄',label:'Bills',color:'#f59e0b'},
-    {id:'dining',emoji:'🍽️',label:'Dining',color:'#fb923c'},
-    {id:'travel',emoji:'🗺️',label:'Travel',color:'#38bdf8'},
-    {id:'other',emoji:'⋯',label:'Other',color:'#6b7280'},
+    {id:'food',emoji:'shopping-cart',label:'Food',color:'#f97316'},
+    {id:'transport',emoji:'bus',label:'Transport',color:'#3b82f6'},
+    {id:'health',emoji:'heart',label:'Health',color:'#ec4899'},
+    {id:'shopping',emoji:'shopping-bag',label:'Shopping',color:'#8b5cf6'},
+    {id:'entertainment',emoji:'player-play',label:'Fun',color:'#06b6d4'},
+    {id:'bills',emoji:'file-text',label:'Bills',color:'#f59e0b'},
+    {id:'dining',emoji:'dining',label:'Dining',color:'#fb923c'},
+    {id:'travel',emoji:'map',label:'Travel',color:'#38bdf8'},
+    {id:'other',emoji:'dots',label:'Other',color:'#6b7280'},
   ],
   income:[
-    {id:'salary',emoji:'💳',label:'Salary',color:'#22d3a0'},
-    {id:'freelance',emoji:'💻',label:'Freelance',color:'#34d399'},
-    {id:'investment',emoji:'📊',label:'Investment',color:'#818cf8'},
-    {id:'gift',emoji:'⭐',label:'Gift',color:'#a3e635'},
-    {id:'other_inc',emoji:'↑',label:'Other',color:'#6ee7b7'},
+    {id:'salary',emoji:'credit-card',label:'Salary',color:'#22d3a0'},
+    {id:'freelance',emoji:'device-laptop',label:'Freelance',color:'#34d399'},
+    {id:'investment',emoji:'chart-bar',label:'Investment',color:'#818cf8'},
+    {id:'gift',emoji:'star',label:'Gift',color:'#a3e635'},
+    {id:'other_inc',emoji:'arrow-up',label:'Other',color:'#6ee7b7'},
   ]
 };
-const EMOJIS=['☕','🍺','🍕','✈️','🏨','📚','🎵','🐾','🏠','💰','🏋️','🧴','🌿','🖥️','👶','🚗','⚽','🎨','🏖️','🍷','💇','🧹','📱','🔧','🎓','🏥','🎯','🛒','🏡','💎'];
+// Tabler icon names for custom category picker
+const CAT_ICON_NAMES=['coffee','beer','pizza','plane','building','books','music','paw','home','coin','barbell','bottle','leaf','monitor','baby','car','ball-football','palette','umbrella','wine','scissors','broom','device-mobile','tools','school','hospital','target','shopping-cart','home','diamond'];
 const COLORS=['#f97316','#60a5fa','#f472b6','#a78bfa','#22d3ee','#22d3a0','#fbbf24','#34d399','#f87171','#818cf8','#a3e635','#fb923c','#38bdf8','#e879f9','#86efac','#c084fc'];
 
 // Bank format definitions
@@ -2937,7 +3004,7 @@ let autoInvest   = (function(){ try { var a = JSON.parse(localStorage.getItem('s
 let dividends    = (function(){ try { var d = JSON.parse(localStorage.getItem('sply_divs') || '[]'); return Array.isArray(d) ? d : []; } catch(e){ return []; } })();
 let savingsGoals = (function(){ try { var s = JSON.parse(localStorage.getItem('sply_goals') || '[]'); return Array.isArray(s) ? s : []; } catch(e){ return []; } })();
 let debts = (function(){ try { var d = JSON.parse(localStorage.getItem('sply_debts') || '[]'); return Array.isArray(d) ? d : []; } catch(e){ return []; } })();
-let selEmoji=EMOJIS[0], selColor=COLORS[0];
+let selEmoji=CAT_ICON_NAMES[0], selColor=COLORS[0];
 let viewMonth=new Date(); viewMonth.setDate(1);
 let selectedBank='cba', bankParsed=[], scannedTxData=null;
 let editingId=null;
@@ -2983,7 +3050,7 @@ const catsFor = type => {
   return [...b,...c];
 };
 const allCats  = () => [...BUILTIN.expense,...BUILTIN.income,...customCats];
-const catById  = id => allCats().find(c=>c.id===id)||{id:id,emoji:'📦',label:id,color:'#6b7280'};
+const catById  = id => allCats().find(c=>c.id===id)||{id:id,emoji:'package',label:id,color:'#6b7280'};
 
 // ── DATE UTILS ────────────────────────────────────────────────────────
 function parseDate(d) {
@@ -3162,7 +3229,7 @@ function renderBillReminders() {
   container.style.display='block';
   dueBills.sort(function(a,b){ return a.days - b.days; });
   container.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:12px 14px;">'+
-    '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">&#128276; Upcoming bills</div>'+
+    '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">'+ti('bell',14)+' Upcoming bills</div>'+
     dueBills.map(function(b){
       var c = catById(b.recur.cat);
       var daysLabel = b.days===0 ? 'Today' : b.days===1 ? 'Tomorrow' : 'In '+b.days+' days';
@@ -3182,7 +3249,7 @@ function renderHomeGoals() {
   var top = savingsGoals.slice(0,3);
   var today = new Date(); today.setHours(0,0,0,0);
   container.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:12px 14px;cursor:pointer" onclick="switchView(\'budget\');setTimeout(function(){ switchYnabTab(\'goals\',document.getElementById(\'ynab-tab-goals\')); },100)">'+
-    '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">&#127942; Savings goals <span style="float:right;font-weight:400;color:var(--accent)">Edit &rarr;</span></div>'+
+    '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">'+ti('trophy',14)+' Savings goals <span style="float:right;font-weight:400;color:var(--accent)">Edit &rarr;</span></div>'+
     top.map(function(g){
       var pct = g.target > 0 ? Math.min(g.current/g.target*100,100) : 0;
       var remaining = Math.max(0,(g.target||0)-(g.current||0));
@@ -3197,18 +3264,18 @@ function renderHomeGoals() {
           var daysLeft = Math.round((td-today)/86400000);
           dateNote = daysLeft < 30 ? daysLeft+'d left' : monthsLeft+'mo left';
         } else if(monthsLeft <= 0 && remaining > 0) {
-          dateNote = '⚠️ Overdue';
+          dateNote = ti('alert-triangle',14)+' Overdue';
         }
       }
       var barColor = pct >= 100 ? 'var(--income)' : pct >= 75 ? 'var(--accent)' : pct >= 50 ? 'var(--accent2)' : 'var(--accent)';
       return '<div style="margin-bottom:8px">'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:3px">'+
-          '<span style="font-weight:500">'+(g.emoji||'🎯')+' '+escH(g.name)+'</span>'+
+          '<span style="font-weight:500">'+emojiHtml(g.emoji||'target',14)+' '+escH(g.name)+'</span>'+
           '<span style="color:var(--text3);font-size:10px">'+fmt(g.current)+' <span style="opacity:.6">/ '+fmt(g.target)+'</span></span>'+
         '</div>'+
         '<div style="height:5px;background:var(--s4);border-radius:99px;overflow:hidden;margin-bottom:3px"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:99px;transition:width .5s"></div></div>'+
         (monthlyNeed||dateNote ? '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3)">'+
-          '<span>'+(monthlyNeed?'📅 '+monthlyNeed:'')+'</span>'+
+          '<span>'+(monthlyNeed?ti('calendar',11)+' '+monthlyNeed:'')+'</span>'+
           '<span>'+(dateNote?dateNote:'')+'</span>'+
         '</div>' : '')+
       '</div>';
@@ -3220,9 +3287,9 @@ function renderCatScroll() {
   const usedIds=[...new Set(mt.map(t=>t.cat))];
   const usedCats=usedIds.map(id=>catById(id));
   let h='<div class="chip '+(curFilter==='all'?'active':'')+'" onclick="setFilter(\'all\',this)">All</div>';
-  h+='<div class="chip '+(curFilter==='income'?'active':'')+'" onclick="setFilter(\'income\',this)">&#128154; Income</div>';
-  h+='<div class="chip '+(curFilter==='expense'?'active':'')+'" onclick="setFilter(\'expense\',this)">&#10084;&#65039; Expense</div>';
-  usedCats.forEach(c=>{h+='<div class="chip '+(curFilter===c.id?'active':'')+'" onclick="setFilter(\''+c.id+'\',this)">'+c.emoji+' '+c.label+'</div>';});
+  h+='<div class="chip '+(curFilter==='income'?'active':'')+'" onclick="setFilter(\'income\',this)">'+ti('trending-up',14)+' Income</div>';
+  h+='<div class="chip '+(curFilter==='expense'?'active':'')+'" onclick="setFilter(\'expense\',this)">'+ti('trending-down',14)+' Expense</div>';
+  usedCats.forEach(c=>{h+='<div class="chip '+(curFilter===c.id?'active':'')+'" onclick="setFilter(\''+c.id+'\',this)">'+emojiHtml(c.emoji,14)+' '+escH(c.label)+'</div>';});
   document.getElementById('catScroll').innerHTML=h;
 }
 
@@ -3233,7 +3300,7 @@ function txCard(t,delay) {
   var projTag='';
   if(t.projectId){
     var proj=projects.find(function(p){return p.id===t.projectId;});
-    if(proj) projTag='<span class="tx-project-tag">'+(proj.emoji||'📁')+' '+escH(proj.name)+'</span>';
+    if(proj) projTag='<span class="tx-project-tag">'+emojiHtml(proj.emoji||'folder',12)+' '+escH(proj.name)+'</span>';
   }
   return '<div class="tx-item" style="animation-delay:'+delay+'ms" onclick="openEditTx(\''+t.id+'\')" >'+
     '<div class="tx-icon" style="background:'+catGradient(c)+'">'+catIcon(c,20)+'</div>'+
@@ -3253,7 +3320,7 @@ function renderLists() {
     if (!db) return -1;
     return curSort === 'oldest' ? da - db : db - da;
   });
-  const empty='<div class="empty"><div class="empty-icon">&#128202;</div><p>No transactions yet.<br>Tap <strong>&#43; Income</strong> or <strong>&#8722; Expense</strong> below.</p></div>';
+  const empty='<div class="empty">'+ti('chart-bar',40)+'<p>No transactions yet.<br>Tap <strong>+ Income</strong> or <strong>− Expense</strong> below.</p></div>';
   // Overview always shows newest first
   const overviewList = filteredTx().slice().sort(function(a,b){
     const da=parseDate(a.date),db=parseDate(b.date);
@@ -3263,7 +3330,7 @@ function renderLists() {
   document.getElementById('txList').innerHTML=raw.length?raw.map(function(t,i){return txCard(t,i*20);}).join(''):empty;
   // Update sort button label
   var btn = document.getElementById('sortToggleBtn');
-  if (btn) btn.innerHTML = '&#8597; ' + (curSort === 'oldest' ? 'Oldest' : 'Newest');
+  if (btn) btn.innerHTML = ti('arrows-sort',16) + ' ' + (curSort === 'oldest' ? 'Oldest' : 'Newest');
 }
 
 // ── BUDGET ALERTS ─────────────────────────────────────────────────────
@@ -3342,7 +3409,7 @@ function renderAnalytics() {
   var expByCat = catsFor("expense").map(function(c){
     return Object.assign({},c,{val:mt.filter(function(t){return t.type==="expense"&&t.cat===c.id;}).reduce(function(s,t){return s+t.amount;},0)});
   }).filter(function(d){return d.val>0;}).sort(function(a,b){return b.val-a.val;});
-  if(expByCat.length){ document.getElementById("topCat").textContent=expByCat[0].emoji; document.getElementById("topCatName").textContent=expByCat[0].label; }
+  if(expByCat.length){ document.getElementById("topCat").innerHTML=emojiHtml(expByCat[0].emoji,16); document.getElementById("topCatName").textContent=expByCat[0].label; }
   else { document.getElementById("topCat").textContent="--"; document.getElementById("topCatName").textContent="No data"; }
   var expTx = mt.filter(function(t){return t.type==="expense";});
   var avgEl = document.getElementById("avgTx");
@@ -3365,7 +3432,7 @@ function renderAnalytics() {
       scales:{x:{grid:{display:false},ticks:{font:{size:11},color:"#6b6b8a"}},y:{grid:{color:"rgba(128,128,128,0.1)"},ticks:{font:{size:11},color:"#6b6b8a",callback:function(v){return "$"+v.toLocaleString();}}}}}
   });
   buildDonutWithBars("expPie","expLegend","expBarsNew",
-    expByCat.map(function(d){return d.emoji+" "+d.label;}),
+    expByCat.map(function(d){return d.label;}),
     expByCat.map(function(d){return d.val;}),
     expByCat.map(function(d){return d.color;})
   );
@@ -3373,7 +3440,7 @@ function renderAnalytics() {
     return Object.assign({},c,{val:mt.filter(function(t){return t.type==="income"&&t.cat===c.id;}).reduce(function(s,t){return s+t.amount;},0)});
   }).filter(function(d){return d.val>0;}).sort(function(a,b){return b.val-a.val;});
   buildDonutWithBars("incPie","incLegend","incBarsNew",
-    incData.map(function(d){return d.emoji+" "+d.label;}),
+    incData.map(function(d){return d.label;}),
     incData.map(function(d){return d.val;}),
     incData.map(function(d){return d.color;})
   );
@@ -3398,10 +3465,10 @@ function renderPie(svgId,legendId,data) {
     angle+=slice;
   });
   const top=sorted[0];
-  paths+='<text x="65" y="61" text-anchor="middle" font-size="16" font-family="sans-serif">'+top.emoji+'</text>';
+  paths+='<foreignObject x="34" y="34" width="62" height="62"><div style="display:flex;align-items:center;justify-content:center;height:100%">'+emojiHtml(top.emoji,20)+'</div></foreignObject>';
   paths+='<text x="65" y="75" text-anchor="middle" fill="var(--text3)" font-size="9" font-family="sans-serif">'+Math.round(top.val/total*100)+'%</text>';
   svg.innerHTML=paths;
-  legend.innerHTML=sorted.slice(0,5).map(d=>'<div class="leg-row"><div class="leg-dot" style="background:'+d.color+'"></div><div class="leg-name">'+d.emoji+' '+d.label+'</div><div class="leg-val">'+fmt(d.val)+'</div></div>').join('');
+  legend.innerHTML=sorted.slice(0,5).map(d=>'<div class="leg-row"><div class="leg-dot" style="background:'+d.color+'"></div><div class="leg-name">'+emojiHtml(d.emoji,12)+' '+d.label+'</div><div class="leg-val">'+fmt(d.val)+'</div></div>').join('');
 }
 
 // ── BUDGET GOALS VIEW ─────────────────────────────────────────────────
@@ -3412,7 +3479,7 @@ function renderBudgetView() {
   const mt = monthTx();
 
   if (!budgets || !budgets.length) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.<br>Tap the button below to set limits.</p></div>';
+    list.innerHTML = '<div class="empty">'+ti('target',40)+'<p>No budget goals yet.<br>Tap the button below to set limits.</p></div>';
     return;
   }
 
@@ -3431,17 +3498,17 @@ function renderBudgetView() {
       var color = pct >= 100 ? 'var(--expense)' : pct >= 80 ? 'var(--warn)' : c.color;
       html += '<div class="budget-card">';
       html += '<div class="budget-header">';
-      html += '<div class="budget-icon">' + c.emoji + '</div>';
+      html += '<div class="budget-icon">' + emojiHtml(c.emoji, 20) + '</div>';
       html += '<div class="budget-title">' + escH(c.label) + '</div>';
       html += '<div class="budget-pct" style="color:' + color + '">' + Math.round(pct) + '%</div>';
-      html += '<button class="del-budget-btn" data-cat="' + escH(b.cat) + '" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
+      html += '<button class="del-budget-btn" data-cat="' + escH(b.cat) + '" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">'+ti('x',14)+'</button>';
       html += '</div>';
       html += '<div class="budget-track"><div class="budget-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
       html += '<div class="budget-amounts"><span>' + fmt(spent) + ' spent</span><span>' + fmt(b.limit) + ' limit</span></div>';
       html += '</div>';
     } catch(e) { console.warn('Budget render error for',b.cat,e); }
   }
-  list.innerHTML = html || '<div class="empty"><div class="empty-icon">&#127919;</div><p>No budget goals yet.</p></div>';
+  list.innerHTML = html || '<div class="empty">'+ti('target',40)+'<p>No budget goals yet.</p></div>';
 
   list.querySelectorAll('.del-budget-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ deleteBudget(this.dataset.cat); });
@@ -3451,7 +3518,7 @@ function renderBudgetView() {
 function openNewBudget() {
   // Always populate selector fresh when opening
   const sel = document.getElementById('budgetCatSel');
-  sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>').join('');
+  sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+emojiHtml(c.emoji,14)+' '+c.label+'</option>').join('');
   document.getElementById('budgetAmount').value = '';
   _openOv('newBudgetOv');
 }
@@ -3464,7 +3531,7 @@ function saveBudgetGoal() {
 
   // Debug: repopulate if selector somehow empty
   if (!cat && sel) {
-    sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>').join('');
+    sel.innerHTML = catsFor('expense').map(c => '<option value="'+c.id+'">'+emojiHtml(c.emoji,14)+' '+c.label+'</option>').join('');
     showToast('Please select a category','err'); return;
   }
   if (!cat) { showToast('No category found -- try again','err'); return; }
@@ -3710,7 +3777,7 @@ function writeCustomCats(cats) {
   const newRows = [];
   cats.forEach(function(c) {
     if (!c.id) return;
-    const row = [String(c.id), c.emoji||'📦', c.label||'', c.color||'#6b7280', c.type||'both'];
+    const row = [String(c.id), c.emoji||'package', c.label||'', c.color||'#6b7280', c.type||'both'];
     if (existingIds[String(c.id)]) {
       // Update existing row
       sh.getRange(existingIds[String(c.id)], 1, 1, 5).setValues([row]);
@@ -3729,7 +3796,7 @@ function readCustomCats() {
   if (!sh || sh.getLastRow() < 2) return [];
   return sh.getRange(2,1,sh.getLastRow()-1,5).getValues()
     .filter(r => r[0])
-    .map(r => ({ id:String(r[0]), emoji:r[1]||'📦', label:String(r[2]), color:r[3]||'#6b7280', type:r[4]||'both' }));
+    .map(r => ({ id:String(r[0]), emoji:r[1]||'package', label:String(r[2]), color:r[3]||'#6b7280', type:r[4]||'both' }));
 }
 
 function writeHoldings(holdings) {
@@ -3933,7 +4000,7 @@ function updateSyncUI() {
     [dot,dot2].forEach(d=>{if(d)d.className='sync-dot on';});
     document.getElementById('syncTitle').textContent='Google Sheets connected';
     document.getElementById('syncSub').textContent=lastSync?'Last synced '+new Date(lastSync).toLocaleString('en-AU',{timeStyle:'short',dateStyle:'short'}):'Never synced';
-    menuDesc.textContent='Connected &#10003;';
+    menuDesc.innerHTML='Connected '+ti('check',12);
   } else {
     bar.style.display='none';
     [dot,dot2].forEach(d=>{if(d)d.className='sync-dot';});
@@ -3982,7 +4049,7 @@ async function doSync(silent=false){
   if(!navigator.onLine){offlineQ.push({action:'sync',ts:Date.now()});save();showToast('Offline -- queued for later','info');return;}
   if(!silent)showToast('Syncing...','info');
   setSyncAnim(true);
-  try{await pushToSheets();if(!silent)showToast('&#10003; Synced to Google Sheets','ok');}
+  try{await pushToSheets();if(!silent)showToast('Synced to Google Sheets','ok');}
   catch(e){showToast('Sync failed: '+e.message,'err');document.getElementById('syncBar').className='sync-bar err';}
   setSyncAnim(false);
 }
@@ -4018,7 +4085,7 @@ async function pullFromSheets(){
         var sheetCatIds = incoming.map(function(c){ return String(c.id); });
         var localOnly = customCats.filter(function(c){ return sheetCatIds.indexOf(c.id) === -1; });
         customCats = incoming.map(function(rc){
-          return {id:String(rc.id),emoji:String(rc.emoji||'📦'),label:String(rc.label||'Custom'),color:String(rc.color||'#6b7280'),type:String(rc.type||'both')};
+          return {id:String(rc.id),emoji:String(rc.emoji||'package'),label:String(rc.label||'Custom'),color:String(rc.color||'#6b7280'),type:String(rc.type||'both')};
         }).concat(localOnly);
       } else {
         // Sheet has no custom cats -- keep local ones
@@ -4196,7 +4263,7 @@ async function callGAS(url,body){
   return res.json();
 }
 function setSyncAnim(on){const dot=document.getElementById('syncDot'),dot2=document.getElementById('syncDot2');[dot,dot2].forEach(d=>{if(d)d.className='sync-dot'+(on?' syncing':gasUrl?' on':'');});}
-function copyGAS(){navigator.clipboard.writeText(GAS_CODE).then(()=>showToast('&#10003; Code copied','ok')).catch(()=>{const t=document.createElement('textarea');t.value=GAS_CODE;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('&#10003; Code copied','ok');});}
+function copyGAS(){navigator.clipboard.writeText(GAS_CODE).then(()=>showToast('Code copied','ok')).catch(()=>{const t=document.createElement('textarea');t.value=GAS_CODE;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('Code copied','ok');});}
 
 // ── BANK STATEMENT IMPORT ──────────────────────────────────────────────
 function selectBank(el){selectedBank=el.dataset.bank;document.querySelectorAll('.bank-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');}
@@ -4357,7 +4424,7 @@ function addScannedTx(){
   save();render();closeOv('receiptOv');
   showToast('Receipt added!','ok');
   receiptBase64=null;scannedTxData=null;
-  document.getElementById('receiptPreview').innerHTML='<div><div style="font-size:32px;margin-bottom:8px">&#128247;</div><div>Tap to take photo or choose image</div></div>';
+  document.getElementById('receiptPreview').innerHTML='<div><div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-camera" style="font-size:32px"></i></div><div>Tap to take photo or choose image</div></div>';
   document.getElementById('scanBtn').style.display='none';
   document.getElementById('addScannedBtn').style.display='none';
   document.getElementById('scanResult').style.display='none';
@@ -4421,13 +4488,13 @@ bdz.addEventListener('drop',e=>{e.preventDefault();bdz.classList.remove('dg');co
 
 // ── CATEGORIES MANAGEMENT ──────────────────────────────────────────────
 function openCatMgr(){
-  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn">'+c.label+'</span><span style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px">BUILT-IN</span></div>').join('');
+  document.getElementById('builtinList').innerHTML=[...BUILTIN.expense,...BUILTIN.income].map(c=>'<div class="ccat-item"><span class="ci">'+emojiHtml(c.emoji,16)+'</span><span class="cn">'+c.label+'</span><span style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px">BUILT-IN</span></div>').join('');
   renderCustomList();openOv('catOv');
 }
 function renderCustomList(){
   const el=document.getElementById('customList');
   el.innerHTML=customCats.length
-    ?customCats.map(c=>'<div class="ccat-item"><span class="ci">'+c.emoji+'</span><span class="cn" style="color:'+c.color+'">'+c.label+'</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-right:8px;text-transform:uppercase;letter-spacing:1px">'+c.type+'</span><button class="cd del-cat-btn" data-id="'+c.id+'">&#x2715;</button></div>').join('')
+    ?customCats.map(c=>'<div class="ccat-item"><span class="ci">'+emojiHtml(c.emoji,16)+'</span><span class="cn" style="color:'+c.color+'">'+c.label+'</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-right:8px;text-transform:uppercase;letter-spacing:1px">'+c.type+'</span><button class="cd del-cat-btn" data-id="'+c.id+'">'+ti('x',14)+'</button></div>').join('')
     :'<div style="font-size:12px;color:var(--text3);padding:8px 0">No custom categories yet.</div>';
   el.querySelectorAll('.del-cat-btn').forEach(btn=>{
     btn.addEventListener('click',function(){delCat(this.dataset.id);});
@@ -4436,7 +4503,7 @@ function renderCustomList(){
 function delCat(id){if(!confirm('Delete category? Transactions move to Other.'))return;txns.forEach(t=>{if(t.cat===id)t.cat=t.type==='income'?'other_inc':'other';});customCats=customCats.filter(c=>c.id!==id);save();render();renderCustomList();showToast('Category deleted');}
 function openNewCat(){
   closeOv('catOv');selEmoji=EMOJIS[0];selColor=COLORS[0];
-  document.getElementById('epicker').innerHTML=EMOJIS.map((e,i)=>'<div class="ep '+(i===0?'selected':'')+'" onclick="pickEmoji(this,\''+e+'\')">'+e+'</div>').join('');
+  document.getElementById('epicker').innerHTML=CAT_ICON_NAMES.map((e,i)=>'<div class="ep '+(i===0?'selected':'')+'" onclick="pickEmoji(this,\''+e+'\')">'+ti(e,18)+'</div>').join('');
   document.getElementById('cpicker').innerHTML=COLORS.map((c,i)=>'<div class="cp '+(i===0?'selected':'')+'" style="background:'+c+'" onclick="pickColor(this,\''+c+'\')"></div>').join('');
   document.getElementById('ncName').value='';openOv('newCatOv');
 }
@@ -4528,7 +4595,7 @@ function switchView(v){
   if(v==='projects'){ populateProjectDropdown(); renderProjects(); }
   if(v==='budget'){
     var sel=document.getElementById('budgetCatSel');
-    if(sel) sel.innerHTML=catsFor('expense').map(function(c){ return '<option value="'+c.id+'">'+c.emoji+' '+c.label+'</option>'; }).join('');
+    if(sel) sel.innerHTML=catsFor('expense').map(function(c){ return '<option value="'+c.id+'">'+emojiHtml(c.emoji,14)+' '+c.label+'</option>'; }).join('');
     renderBudgetView();
     switchYnabTab(curYnabTab, document.getElementById('ynab-tab-'+curYnabTab));
   }
@@ -4577,7 +4644,7 @@ if(!txns.length && !seededFlag){
     {id:'e10',type:'expense',amount:320,desc:'Tokyo flights',cat:'travel',date:`${y}-${m}-13`},
   ];
   budgets=[{cat:'food',limit:300},{cat:'dining',limit:150},{cat:'entertainment',limit:100}];
-  savingsGoals=[{name:'Japan trip',target:3000,current:850,targetDate:'2026-12-01',emoji:'✈️'},{name:'Emergency fund',target:10000,current:4200,targetDate:'2027-06-01',emoji:'🏦'}];
+  savingsGoals=[{name:'Japan trip',target:3000,current:850,targetDate:'2026-12-01',emoji:'plane'},{name:'Emergency fund',target:10000,current:4200,targetDate:'2027-06-01',emoji:'building-bank'}];
   debts=[{name:'Credit card',balance:2400,original:5000,minPayment:150,interest:19.99}];
   holdings=[
     {ticker:'VGS',  name:'Vanguard MSCI Index Intl ETF',       units:50,  avgPrice:105.20, currentPrice:118.40, color:'#818cf8'},
@@ -4713,7 +4780,7 @@ function renderCGT() {
         '<span style="font-weight:600;color:'+(r.gain>=0?'var(--income)':'var(--expense)')+'">$'+r.gain.toFixed(2)+'</span>'+
       '</div>';
     }).join('')+
-    '<div style="font-size:11px;color:var(--text3);margin-top:10px;padding:8px;background:var(--s3);border-radius:8px;line-height:1.6">&#9432; 50% CGT discount applies if held 12+ months. This is unrealised only — no tax until you sell. Not financial advice.</div>';
+    '<div style="font-size:11px;color:var(--text3);margin-top:10px;padding:8px;background:var(--s3);border-radius:8px;line-height:1.6">'+ti('info-circle',14)+' 50% CGT discount applies if held 12+ months. This is unrealised only — no tax until you sell. Not financial advice.</div>';
 }
 
 // ── BENCHMARK ─────────────────────────────────────────────────────────
@@ -4909,33 +4976,33 @@ function generateInsights() {
     var lastSpend = lastMt.filter(function(t){ return t.type==='expense'&&t.cat===c.id; }).reduce(function(s,t){return s+t.amount;},0);
     if(lastSpend>10 && thisSpend>lastSpend*1.5 && thisSpend>50){
       var pct = Math.round((thisSpend-lastSpend)/lastSpend*100);
-      insights.push({type:'alert',icon:'&#9888;&#65039;',title:c.emoji+' '+c.label+' spend up '+pct+'%',body:'You spent $'+thisSpend.toFixed(0)+' on '+c.label+' this month vs $'+lastSpend.toFixed(0)+' last month. That\'s $'+(thisSpend-lastSpend).toFixed(0)+' more.'});
+      insights.push({type:'alert',icon:ti('alert-triangle',16),title:emojiHtml(c.emoji,14)+' '+c.label+' spend up '+pct+'%',body:'You spent $'+thisSpend.toFixed(0)+' on '+c.label+' this month vs $'+lastSpend.toFixed(0)+' last month. That\'s $'+(thisSpend-lastSpend).toFixed(0)+' more.'});
     }
     if(lastSpend>50 && thisSpend<lastSpend*0.5){
-      insights.push({type:'positive',icon:'&#127881;',title:'Great job on '+c.label+'!',body:'You cut '+c.label+' spend from $'+lastSpend.toFixed(0)+' to $'+thisSpend.toFixed(0)+' — saving $'+(lastSpend-thisSpend).toFixed(0)+' this month.'});
+      insights.push({type:'positive',icon:ti('mood-happy',16),title:'Great job on '+c.label+'!',body:'You cut '+c.label+' spend from $'+lastSpend.toFixed(0)+' to $'+thisSpend.toFixed(0)+' — saving $'+(lastSpend-thisSpend).toFixed(0)+' this month.'});
     }
   });
 
   // Savings rate
   var sr = income>0 ? (income-expense)/income*100 : 0;
-  if(sr>=30){ insights.push({type:'positive',icon:'&#128176;',title:'Excellent savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving $'+(income-expense).toFixed(0)+' this month — '+sr.toFixed(0)+'% of income. Keep it up!'}); }
-  else if(sr<0){ insights.push({type:'alert',icon:'&#128680;',title:'Spending exceeds income',body:'You spent $'+(-income+expense).toFixed(0)+' more than you earned this month. Review your largest expense categories.'}); }
-  else if(sr<15){ insights.push({type:'info',icon:'&#128202;',title:'Savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving '+sr.toFixed(0)+'% of income. The general recommendation is 20%+. Try cutting $'+((income*0.2)-( income-expense)).toFixed(0)+' more.'}); }
+  if(sr>=30){ insights.push({type:'positive',icon:ti('piggy-bank',16),title:'Excellent savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving $'+(income-expense).toFixed(0)+' this month — '+sr.toFixed(0)+'% of income. Keep it up!'}); }
+  else if(sr<0){ insights.push({type:'alert',icon:ti('alert-circle',16),title:'Spending exceeds income',body:'You spent $'+(-income+expense).toFixed(0)+' more than you earned this month. Review your largest expense categories.'}); }
+  else if(sr<15){ insights.push({type:'info',icon:ti('chart-line',16),title:'Savings rate: '+sr.toFixed(0)+'%',body:'You\'re saving '+sr.toFixed(0)+'% of income. The general recommendation is 20%+. Try cutting $'+((income*0.2)-( income-expense)).toFixed(0)+' more.'}); }
 
   // Investment consistency
   var investThisMonth = mt.filter(function(t){ return t.type==='expense'&&t.cat==='investment'; }).reduce(function(s,t){return s+t.amount;},0);
-  if(investThisMonth>0){ insights.push({type:'positive',icon:'&#128200;',title:'Invested $'+investThisMonth.toFixed(0)+' this month',body:'Great consistency! Your total invested to date is $'+txns.filter(function(t){return t.type==="expense"&&t.cat==="investment";}).reduce(function(s,t){return s+t.amount;},0).toFixed(0)+'.'}); }
-  else { insights.push({type:'info',icon:'&#128200;',title:'No investments recorded this month',body:'You have auto-invest set up — make sure to log it after your Betashares Direct purchase.'}); }
+  if(investThisMonth>0){ insights.push({type:'positive',icon:ti('trending-up',16),title:'Invested $'+investThisMonth.toFixed(0)+' this month',body:'Great consistency! Your total invested to date is $'+txns.filter(function(t){return t.type==="expense"&&t.cat==="investment";}).reduce(function(s,t){return s+t.amount;},0).toFixed(0)+'.'}); }
+  else { insights.push({type:'info',icon:ti('trending-up',16),title:'No investments recorded this month',body:'You have auto-invest set up — make sure to log it after your Betashares Direct purchase.'}); }
 
   // Top merchant anomaly
   var descMap = {};
   mt.filter(function(t){return t.type==='expense'&&t.desc;}).forEach(function(t){ descMap[t.desc]=(descMap[t.desc]||0)+t.amount; });
   var topMerchant = Object.keys(descMap).sort(function(a,b){return descMap[b]-descMap[a];})[0];
   if(topMerchant && descMap[topMerchant]>100){
-    insights.push({type:'info',icon:'&#128269;',title:'Top merchant: '+topMerchant,body:'You spent $'+descMap[topMerchant].toFixed(0)+' at '+topMerchant+' this month — your single largest merchant.'});
+    insights.push({type:'info',icon:ti('building-store',16),title:'Top merchant: '+topMerchant,body:'You spent $'+descMap[topMerchant].toFixed(0)+' at '+topMerchant+' this month — your single largest merchant.'});
   }
 
-  if(!insights.length) insights.push({type:'info',icon:'&#128202;',title:'Looking good!',body:'No unusual patterns detected this month. Keep tracking consistently for better insights.'});
+  if(!insights.length) insights.push({type:'info',icon:ti('check-circle',16),title:'Looking good!',body:'No unusual patterns detected this month. Keep tracking consistently for better insights.'});
 
   var list = document.getElementById('insightsList');
   if(list) list.innerHTML = insights.map(function(ins){
@@ -5022,7 +5089,7 @@ function renderRecurring() {
   var list = document.getElementById('recurringList');
   if(!list) return;
   if(!recurringTxns.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">&#128260;</div><p>No recurring transactions yet.<br>Add subscriptions, rent, salary etc.</p></div>';
+    list.innerHTML='<div class="empty">'+ti('repeat',40)+'<p>No recurring transactions yet.<br>Add subscriptions, rent, salary etc.</p></div>';
   } else {
     var today = new Date(); today.setHours(0,0,0,0);
     list.innerHTML = recurringTxns.map(function(r,i){
@@ -5227,7 +5294,7 @@ function renderAutoInvestCard() {
 
   if (!autoInvest) {
     card.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:16px;text-align:center;">' +
-      '<div style="font-size:28px;margin-bottom:8px">&#129297;</div>' +
+      '<div style="font-size:28px;margin-bottom:8px;opacity:.5">'+ti('coin',28)+'</div>' +
       '<div style="font-size:13px;color:var(--text2);margin-bottom:4px;font-weight:500">No auto-invest plan set up</div>' +
       '<div style="font-size:11px;color:var(--text3)">Tap Setup to create your fortnightly investment plan</div>' +
       '</div>';
@@ -5264,8 +5331,8 @@ function renderAutoInvestCard() {
 
   html += '<div class="ai-total"><span style="color:var(--text3)">Every 14 days</span><span style="font-weight:600">$' + total.toFixed(2) + ' total</span></div>';
   html += '<div class="ai-actions">';
-  html += '<button class="ai-btn ai-btn-primary" id="executeInvestBtn">&#128200; Invest Now</button>';
-  html += '<button class="ai-btn ai-btn-secondary" id="editAutoInvestBtn">&#9998; Edit</button>';
+  html += '<button class="ai-btn ai-btn-primary" id="executeInvestBtn">'+ti('trending-up',16)+' Invest Now</button>';
+  html += '<button class="ai-btn ai-btn-secondary" id="editAutoInvestBtn">'+ti('edit',16)+' Edit</button>';
   html += '</div></div>';
   card.innerHTML = html;
 
@@ -5655,7 +5722,7 @@ function renderHoldings() {
   var totalValue = holdings.reduce(function(s,h){ return s + (h.units||0)*(h.currentPrice||0); }, 0);
 
   if(!holdings.length) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">&#128200;</div><p>No holdings yet.<br>Tap below to add your first ETF.</p></div>';
+    list.innerHTML = '<div class="empty">'+ti('trending-up',40)+'<p>No holdings yet.<br>Tap below to add your first ETF.</p></div>';
     return;
   }
 
@@ -5694,7 +5761,7 @@ function renderDividends() {
   var list = document.getElementById('dividendsList');
   if(!list) return;
   if(!dividends.length) {
-    list.innerHTML = '<div class="empty" style="padding:20px 0"><div class="empty-icon" style="font-size:24px">&#127808;</div><p>No dividends recorded yet.</p></div>';
+    list.innerHTML = '<div class="empty" style="padding:20px 0">'+ti('coin',24)+'<p>No dividends recorded yet.</p></div>';
     return;
   }
   var sorted = dividends.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
@@ -5926,7 +5993,7 @@ function renderAssign() {
     var available = assigned - spent;
     var availColor = available < 0 ? 'var(--expense)' : available === 0 ? 'var(--text3)' : 'var(--income)';
     html += '<div class="tbg-row">';
-    html += '<div class="tbg-left"><span>'+c.emoji+'</span><span class="tbg-cat">'+escH(c.label)+'</span></div>';
+    html += '<div class="tbg-left"><span>'+emojiHtml(c.emoji,14)+'</span><span class="tbg-cat">'+escH(c.label)+'</span></div>';
     html += '<div class="tbg-right">';
     html += '<input type="number" class="tbg-input alloc-input" data-cat="'+c.id+'" value="'+(assigned||'')+'" placeholder="0" min="0" step="1">';
     html += '<span class="tbg-avail" style="color:'+availColor+'">'+(available>=0?'':'-')+fmt(available)+'</span>';
@@ -5997,7 +6064,7 @@ function renderGoals() {
   var list = document.getElementById('goalsList');
   if(!list) return;
   if(!savingsGoals.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">&#127942;</div><p>No savings goals yet.<br>Tap the button below to create one.</p><p style="font-size:11px;color:var(--text3);margin-top:8px">You can also see goals from <a href="#" style="color:var(--accent);text-decoration:underline" onclick="switchView(\'overview\');return false">the home page</a>.</p></div>';
+    list.innerHTML='<div class="empty">'+ti('trophy',40)+'<p>No savings goals yet.<br>Tap the button below to create one.</p><p style="font-size:11px;color:var(--text3);margin-top:8px">You can also see goals from <a href="#" style="color:var(--accent);text-decoration:underline" onclick="switchView(\'overview\');return false">the home page</a>.</p></div>';
     return;
   }
   var html = '';
@@ -6019,14 +6086,14 @@ function renderGoals() {
     }
     html += '<div class="goal-progress">';
     html += '<div class="goal-header">';
-    html += '<div class="goal-emoji">'+(g.emoji||'🎯')+'</div>';
+    html += '<div class="goal-emoji">'+emojiHtml(g.emoji||'target',22)+'</div>';
     html += '<div class="goal-info"><div class="goal-name">'+escH(g.name)+'</div>';
     if(daysLeft) html += '<div class="goal-date">'+daysLeft+monthsLeft+'</div>';
     html += '</div>';
     html += '<div style="text-align:right"><div class="goal-amount">'+fmt(g.current)+' / '+fmt(g.target)+'</div>';
     html += '<div class="goal-pct">'+Math.round(pct)+'%</div></div>';
-    html += '<button class="edit-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;padding:4px">&#9998;</button>';
-    html += '<button class="del-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
+    html += '<button class="edit-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;padding:4px">'+ti('edit',14)+'</button>';
+    html += '<button class="del-goal-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">'+ti('x',14)+'</button>';
     html += '</div>';
     html += '<div class="goal-track"><div class="goal-fill" style="width:'+pct+'%"></div></div>';
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
@@ -6083,9 +6150,10 @@ function editGoal(idx) {
   document.getElementById('goalCurrent').value = g.current||'';
   document.getElementById('goalDate').value = g.targetDate||'';
   var picker = document.getElementById('goalEmojiPicker');
-  if(picker) picker.innerHTML = ['🎯','🏠','✈️','🚗','💍','🎓','🏖️','💰','🏋️','🎮'].map(function(e,i){
+  var goalIcons = ['target','home','plane','car','diamond','school','umbrella','coin','barbell','gamepad'];
+  if(picker) picker.innerHTML = goalIcons.map(function(e,i){
     var sel = g.emoji === e ? 'selected' : '';
-    return '<div class="ep '+sel+'" data-emoji="'+e+'">'+e+'</div>';
+    return '<div class="ep '+sel+'" data-emoji="'+e+'">'+ti(e,18)+'</div>';
   }).join('');
   if(picker) picker.querySelectorAll('.ep').forEach(function(ep){
     ep.addEventListener('click', function(){
@@ -6103,7 +6171,7 @@ function saveGoal() {
   var date = document.getElementById('goalDate').value;
   var selEmoji = document.querySelector('#goalEmojiPicker .ep.selected');
   if(!name||target<=0){ showToast('Enter name and target amount','err'); return; }
-  var g = {name:name,target:target,current:current,targetDate:date,emoji:selEmoji?selEmoji.dataset.emoji:'🎯'};
+  var g = {name:name,target:target,current:current,targetDate:date,emoji:selEmoji?selEmoji.dataset.emoji:'target'};
   if(_editingGoal >= 0) {
     savingsGoals[_editingGoal] = g;
     save(); closeOv('newGoalOv'); renderGoals(); showToast('"'+name+'" updated','ok');
@@ -6122,7 +6190,7 @@ function renderDebts() {
   var list = document.getElementById('debtsList');
   if(!list) return;
   if(!debts.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">&#128196;</div><p>No debts tracked yet.<br>Tap the button below to add one.</p></div>';
+    list.innerHTML='<div class="empty">'+ti('file-text',40)+'<p>No debts tracked yet.<br>Tap the button below to add one.</p></div>';
     return;
   }
   var totalDebt = debts.reduce(function(s,d){ return s+(d.balance||0); },0);
@@ -6137,7 +6205,7 @@ function renderDebts() {
     html += '<div class="debt-icon">💳</div>';
     html += '<div class="debt-title">'+escH(d.name)+'</div>';
     html += '<div class="debt-balance">'+fmt(d.balance)+'</div>';
-    html += '<button class="del-debt-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">&#x2715;</button>';
+    html += '<button class="del-debt-btn" data-idx="'+i+'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">'+ti('x',14)+'</button>';
     html += '</div>';
     if(d.original > 0){
       html += '<div class="debt-track"><div class="debt-fill" style="width:'+paidOff+'%;background:var(--income)"></div></div>';
@@ -6294,7 +6362,7 @@ function renderCatCmp() {
     }
 
     var color = c.color || catColors[ci % catColors.length];
-    return { label: c.emoji + ' ' + c.label, data: vals, borderColor: color, backgroundColor: color.startsWith('#') ? color+'22' : color, fill: false, tension: 0.35, pointRadius: 4, pointBackgroundColor: color, borderWidth: 2, color: color };
+    return { label: c.label + ' ($)', data: vals, borderColor: color, backgroundColor: color.startsWith('#') ? color+'22' : color, fill: false, tension: 0.35, pointRadius: 4, pointBackgroundColor: color, borderWidth: 2, color: color };
   });
 
   destroyChart('catCmpChart');
@@ -6400,7 +6468,7 @@ function setCatCmpDrill(month, selectedIds, cats, catColors) {
       var pct = totalExp > 0 ? (x.val/totalExp*100).toFixed(1) : 0;
       return '<div class="catcmp-drill-row">'+
         '<div class="catcmp-drill-dot" style="background:'+x.color+'"></div>'+
-        '<div class="catcmp-drill-name">'+x.cat.emoji+' '+escH(x.cat.label)+'</div>'+
+        '<div class="catcmp-drill-name">'+emojiHtml(x.cat.emoji,14)+' '+escH(x.cat.label)+'</div>'+
         '<div class="catcmp-drill-bar-wrap"><div class="catcmp-drill-bar" style="width:'+Math.round(x.val/maxVal*100)+'%;background:'+x.color+'"></div></div>'+
         '<div style="font-size:11px;color:var(--text3);width:32px;text-align:right;flex-shrink:0">'+pct+'%</div>'+
         '<div class="catcmp-drill-val" style="width:54px;text-align:right;flex-shrink:0">$'+x.val.toFixed(0)+'</div>'+
@@ -6418,9 +6486,9 @@ function openCatCmpSelector() {
     var total = txns.filter(function(t){ return t.type==='expense' && t.cat===c.id; }).reduce(function(s,t){ return s+t.amount; }, 0);
     return '<div class="catcmp-sel-item'+(isSel?' selected':'')+'" data-cat="'+c.id+'" onclick="toggleCatCmpSel(this)">'+
       '<div class="catcmp-sel-item-icon" style="background:'+catGradient(c)+'">'+catIcon(c,16)+'</div>'+
-      '<div class="catcmp-sel-item-label">'+c.emoji+' '+escH(c.label)+'</div>'+
+      '<div class="catcmp-sel-item-label">'+emojiHtml(c.emoji,14)+' '+escH(c.label)+'</div>'+
       '<div style="font-size:11px;color:var(--text3);margin-right:8px">$'+total.toFixed(0)+'</div>'+
-      '<div class="catcmp-sel-check">'+(isSel?'&#10003;':'')+'</div>'+
+      '<div class="catcmp-sel-check">'+(isSel?ti('check',14):'')+'</div>'+
     '</div>';
   }).join('');
   document.getElementById('catCmpSelOv').classList.add('open');
@@ -6432,7 +6500,7 @@ function toggleCatCmpSel(el) {
   if (!isSelected && selected.length >= 6) { showToast('Max 6 categories', 'err'); return; }
   el.classList.toggle('selected');
   var check = el.querySelector('.catcmp-sel-check');
-  if (check) check.innerHTML = el.classList.contains('selected') ? '&#10003;' : '';
+  if (check) check.innerHTML = el.classList.contains('selected') ? ti('check',14) : '';
 }
 
 function saveCatCmpSelection() {
