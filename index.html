@@ -2410,12 +2410,31 @@ function handlePantryPhoto(e) {
   var file = e.target.files[0]; if(!file) return;
   var reader = new FileReader();
   reader.onload = function(ev){
-    pantryReceiptBase64 = ev.target.result.split(',')[1];
-    pantryReceiptMime = file.type || 'image/jpeg';
-    document.getElementById('pantryReceiptPreview').innerHTML =
-      '<img src="'+ev.target.result+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain">';
-    document.getElementById('pantryScanBtn').style.display = 'block';
-    document.getElementById('pantryMatchResult').style.display = 'none';
+    var img = new Image();
+    img.onload = function(){
+      var MAX = 1400;
+      var w = img.width, h = img.height;
+      if(w > MAX || h > MAX){
+        if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var quality = 0.82;
+      var dataUrl = c.toDataURL('image/jpeg', quality);
+      var sizeKB = Math.round(dataUrl.length * 3/4 / 1024);
+      if(sizeKB > 900){ quality = 0.65; dataUrl = c.toDataURL('image/jpeg', quality); sizeKB = Math.round(dataUrl.length * 3/4 / 1024); }
+      pantryReceiptBase64 = dataUrl.split(',')[1];
+      pantryReceiptMime = 'image/jpeg';
+      document.getElementById('pantryReceiptPreview').innerHTML =
+        '<img src="'+dataUrl+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain">'+
+        '<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px">'+sizeKB+'KB ready to scan</div>';
+      document.getElementById('pantryScanBtn').style.display = 'block';
+      document.getElementById('pantryMatchResult').style.display = 'none';
+    };
+    img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
   e.target.value='';
