@@ -1987,7 +1987,7 @@ async function scanWithGemini() {
   var prompt = 'List every grocery/household item on this receipt. For each item return name (short common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Respond ONLY with a JSON array like: [{"name":"Rice","qty":1,"unit":"kg"}]. No extra text.';
   // Support both new AQ. auth keys and legacy AIza keys
   var isAuthKey = key.startsWith('AQ.');
-  var model = isAuthKey ? 'gemini-2.0-flash' : 'gemini-2.0-flash';
+  var model = isAuthKey ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash-lite';
   var url = isAuthKey
     ? 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent'
     : 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
@@ -3942,7 +3942,7 @@ async function fetchBenchmarks() {
     var b = BENCHMARKS[i];
     var actualTicker = benchTicker(b);
     var price = await fetchASXPrice(actualTicker.replace('.AX',''));
-    if(!price) continue;
+    if(price === null) continue;
     prices[b.ticker] = price;
     var prevPx = prev && prev[b.ticker] ? prev[b.ticker] : null;
     result[b.ticker] = prevPx ? (price - prevPx) / prevPx * 100 : null;
@@ -4645,7 +4645,7 @@ async function fetchASXPrice(ticker) {
       var price2 = raw2.quoteSummary && raw2.quoteSummary.result && raw2.quoteSummary.result[0]
         ? raw2.quoteSummary.result[0].price.regularMarketPrice.raw
         : null;
-      if (price2) return Number(price2);
+      if (price2 !== null) return Number(price2);
     }
   } catch(e) {
     console.warn('Fallback failed for ' + ticker + ':', e.message);
