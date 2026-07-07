@@ -201,10 +201,10 @@ html.light-theme body::before{opacity:.12;}
 /* ── OVERLAY / SHEET ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s;}
 .overlay.open{opacity:1;pointer-events:all;}
-.sheet{background:var(--s1);border-radius:var(--sheet-r) var(--sheet-r) 0 0;padding:22px 18px calc(28px + var(--safe-bottom));width:100%;max-width:430px;margin:0 auto;transform:translateY(28px);transition:transform .3s cubic-bezier(.4,0,.2,1);border-top:1px solid var(--border);max-height:92vh;overflow-y:auto;}
+.sheet{background:var(--s1);border-radius:var(--sheet-r) var(--sheet-r) 0 0;padding:8px 18px calc(24px + var(--safe-bottom));width:100%;max-width:430px;margin:0 auto;transform:translateY(28px);transition:transform .3s cubic-bezier(.4,0,.2,1);border-top:1px solid var(--border);max-height:96vh;overflow-y:auto;}
 .overlay.open .sheet{transform:translateY(0);}
-.handle{width:36px;height:4px;background:var(--border2);border-radius:99px;margin:0 auto 20px;}
-.sheet h2{font-family:'Instrument Serif',serif;font-size:22px;letter-spacing:-.3px;margin-bottom:18px;}
+.handle{width:36px;height:4px;background:var(--border2);border-radius:99px;margin:0 auto 10px;}
+.sheet h2{font-family:'Instrument Serif',serif;font-size:20px;letter-spacing:-.3px;margin-bottom:12px;}
 
 /* Form elements */
 .fg{margin-bottom:12px;}
