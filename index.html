@@ -4502,7 +4502,7 @@ function renderCustomList(){
 }
 function delCat(id){if(!confirm('Delete category? Transactions move to Other.'))return;txns.forEach(t=>{if(t.cat===id)t.cat=t.type==='income'?'other_inc':'other';});customCats=customCats.filter(c=>c.id!==id);save();render();renderCustomList();showToast('Category deleted');}
 function openNewCat(){
-  closeOv('catOv');selEmoji=EMOJIS[0];selColor=COLORS[0];
+  closeOv('catOv');selEmoji=CAT_ICON_NAMES[0];selColor=COLORS[0];
   document.getElementById('epicker').innerHTML=CAT_ICON_NAMES.map((e,i)=>'<div class="ep '+(i===0?'selected':'')+'" onclick="pickEmoji(this,\''+e+'\')">'+ti(e,18)+'</div>').join('');
   document.getElementById('cpicker').innerHTML=COLORS.map((c,i)=>'<div class="cp '+(i===0?'selected':'')+'" style="background:'+c+'" onclick="pickColor(this,\''+c+'\')"></div>').join('');
   document.getElementById('ncName').value='';openOv('newCatOv');
