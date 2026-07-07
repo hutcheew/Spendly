@@ -577,6 +577,14 @@ input[type="file"]{display:none;}
 .pantry-section-items.collapsed{display:none;}
 .pantry-divider{height:1px;background:var(--border);margin:6px 18px;}
 
+/* ── PANTRY CONSUMPTION PREDICTION ── */
+.predict-bar-wrap{margin:6px 0 2px;}
+.predict-bar-track{height:4px;background:var(--s4);border-radius:99px;overflow:hidden;margin-bottom:3px;}
+.predict-bar-fill{height:100%;border-radius:99px;transition:width .5s;}
+.predict-days{font-size:10px;font-weight:500;line-height:1.3;}
+.predict-days.urgent{color:var(--expense)}.predict-days.warn{color:var(--warn)}.predict-days.ok{color:var(--income)}
+.pantry-cycles-badge{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(124,106,255,.12);color:var(--accent);margin-left:4px;vertical-align:middle;}
+
 /* ── PROJECTS / TRIPS ── */
 .project-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
 .project-card:hover{border-color:var(--border2);}
@@ -1753,6 +1761,47 @@ input[type="file"]{display:none;}
       <label>Notes</label>
       <input type="text" id="pantryNotes" placeholder="e.g. Woolworths brand">
     </div>
+    <div style="margin:12px 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3)">⏱ Consumption prediction</div>
+    <div style="display:flex;gap:10px;">
+      <div class="fg" style="flex:1">
+        <label>Container size</label>
+        <input type="number" id="pantryContainerSize" placeholder="e.g. 350" min="0" step="0.1" inputmode="decimal" oninput="previewPrediction()">
+      </div>
+      <div class="fg" style="flex:1">
+        <label>Unit</label>
+        <select id="pantryContainerUnit" onchange="previewPrediction()">
+          <option value="mL">mL</option>
+          <option value="L">L</option>
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="pcs">pcs</option>
+          <option value="bottle">bottle</option>
+          <option value="box">box</option>
+          <option value="pack">pack</option>
+          <option value="can">can</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <div class="fg" style="flex:1">
+        <label>Daily usage</label>
+        <input type="number" id="pantryDailyUsage" placeholder="e.g. 4" min="0" step="0.1" inputmode="decimal" oninput="previewPrediction()">
+      </div>
+      <div class="fg" style="flex:1">
+        <label>Unit</label>
+        <select id="pantryDailyUsageUnit" onchange="previewPrediction()">
+          <option value="mL">mL</option>
+          <option value="L">L</option>
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="pcs">pcs</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin:4px 0 10px">
+      <div id="pantryPredictionPreview" style="font-size:11px;color:var(--text3);flex:1"></div>
+      <button class="btn-secondary" style="margin:0;padding:5px 10px;font-size:11px" onclick="aiSuggestUsage()" type="button">✨ AI Suggest</button>
+    </div>
     <button class="btn-primary acc-btn" onclick="savePantryItem()">Save Item</button>
     <button class="btn-danger" id="deletePantryBtn" style="display:none" onclick="deletePantryItem()">Delete Item</button>
   </div>
@@ -2006,20 +2055,21 @@ function pantryItemCard(item, today, warn7) {
 
   var predictHtml='';
   if(days!==null){
-    var cls=days<=2?'urgent':days<=7?'soon':'ok';
-    var clr=cls==='urgent'?'var(--expense)':cls==='soon'?'var(--warn)':'var(--income)';
+    var cls=days<=2?'urgent':days<=7?'warn':'ok';
+    var clr=cls==='urgent'?'var(--expense)':cls==='warn'?'var(--warn)':'var(--income)';
     var buyDate=predictBuyDate(item);
     var bpct=item.containerSize?Math.min(100,(toBaseUnit(item.qty,item.unit)/toBaseUnit(item.containerSize,item.containerUnit))*100):Math.min(100,(days/30)*100);
     predictHtml='<div class="predict-bar-wrap">'+
       '<div class="predict-bar-track"><div class="predict-bar-fill" style="width:'+Math.round(bpct)+'%;background:'+barColor+'"></div></div>'+
-      '<div class="predict-days" style="color:'+clr+'">'+(days<=0?'🚨 Run out':'⏱ ~'+Math.round(days)+'d left')+(buyDate&&days>0?' · buy '+formatDate(buyDate):'')+'</div>'+
+      '<div class="predict-days '+cls+'">'+(days<=0?'🚨 Run out':'⏱ ~'+Math.round(days)+'d left')+(buyDate&&days>0?' · buy '+formatDate(buyDate):'')+
+      ((item.confirmedCycles||0)>0?'<span class="pantry-cycles-badge">🧠 '+item.confirmedCycles+' cycle'+(item.confirmedCycles>1?'s':'')+'</span>':'')+'</div>'+
     '</div>';
   }
 
   return '<div class="pantry-item '+status+'" onclick="openEditPantry('+item._idx+')">'+
     '<div class="pantry-icon">'+(item.emoji||pantryDefaultEmoji(item.category))+'</div>'+
     '<div class="pantry-body">'+
-      '<div class="pantry-name">'+escH(item.name)+'</div>'+
+      '<div class="pantry-name">'+escH(item.name)+(predictHtml?' <span style="font-size:9px;color:var(--text3);font-weight:400">'+escH(item.unit||'pcs')+'</span>':'')+'</div>'+
       expiryHtml+predictHtml+
       '<div class="pantry-adj" onclick="event.stopPropagation()">'+
         '<button class="pantry-adj-btn" onclick="adjustPantry('+item._idx+',-1)">&#8722;</button>'+
@@ -2260,12 +2310,134 @@ function populateProjectDropdown() {
 
 
 
+function previewPrediction() {
+  var el = document.getElementById('pantryPredictionPreview');
+  if(!el) return;
+  var dailyUsage = parseFloat(document.getElementById('pantryDailyUsage').value)||0;
+  var containerSize = parseFloat(document.getElementById('pantryContainerSize').value)||0;
+  var qty = parseFloat(document.getElementById('pantryQty').value)||0;
+  var unit = document.getElementById('pantryUnit').value;
+  var dailyUnit = document.getElementById('pantryDailyUsageUnit').value;
+  var containerUnit = document.getElementById('pantryContainerUnit').value;
+  if(!dailyUsage || !containerSize){ el.textContent=''; return; }
+  var conv = {mL:1,L:1000,g:1,kg:1000,pcs:1,bottle:1,box:1,pack:1,can:1,bag:1,bunch:1};
+  var qtyBase = qty * (conv[unit]||1);
+  var contBase = containerSize * (conv[containerUnit]||1);
+  var pct = contBase > 0 ? Math.min(qtyBase/contBase*100,100) : 0;
+  var usageBase = dailyUsage * (conv[dailyUnit]||1);
+  var days = usageBase > 0 ? Math.max(0, qtyBase / usageBase) : null;
+  var fill = pct+'%';
+  var barColor = days !== null ? (days<=2?'var(--expense)':days<=7?'var(--warn)':'var(--income)') : 'var(--accent)';
+  var buyDate = days !== null && days > 2 ? new Date(Date.now() + (Math.round(days)-2)*86400000) : null;
+  var dateLabel = '';
+  if(buyDate) {
+    var dd = Math.round((buyDate - new Date())/86400000);
+    dateLabel = dd<=0?'today':dd===1?'tomorrow':dd<7?'in '+dd+' days':buyDate.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+  }
+  el.innerHTML = '<div style="height:4px;background:var(--s4);border-radius:99px;overflow:hidden;margin-bottom:3px"><div style="width:'+fill+';height:100%;background:'+barColor+';border-radius:99px"></div></div>'+
+    (days !== null ? '<span style="color:'+barColor+'">⏱ ~'+Math.round(days)+' days left'+(days>0?' · buy '+dateLabel:'')+'</span>' : '');
+}
+
+function aiSuggestUsage() {
+  var name = document.getElementById('pantryName').value.trim();
+  if(!name){ showToast('Enter item name first','err'); return; }
+  var suggestions = {
+    'milk':{size:1,unit:'L',usage:250,usageUnit:'mL'},
+    'bread':{size:1,unit:'pcs',usage:2,usageUnit:'pcs'},
+    'eggs':{size:12,unit:'pcs',usage:1,usageUnit:'pcs'},
+    'butter':{size:250,unit:'g',usage:10,usageUnit:'g'},
+    'cheese':{size:250,unit:'g',usage:15,usageUnit:'g'},
+    'yogurt':{size:1,unit:'kg',usage:100,usageUnit:'g'},
+    'rice':{size:1,unit:'kg',usage:50,usageUnit:'g'},
+    'pasta':{size:500,unit:'g',usage:100,usageUnit:'g'},
+    'pasta sauce':{size:400,unit:'mL',usage:100,usageUnit:'mL'},
+    'olive oil':{size:500,unit:'mL',usage:10,usageUnit:'mL'},
+    'cooking oil':{size:500,unit:'mL',usage:10,usageUnit:'mL'},
+    'soy sauce':{size:250,unit:'mL',usage:5,usageUnit:'mL'},
+    'tomato sauce':{size:400,unit:'mL',usage:15,usageUnit:'mL'},
+    'bbq sauce':{size:400,unit:'mL',usage:10,usageUnit:'mL'},
+    'mayonnaise':{size:300,unit:'mL',usage:10,usageUnit:'mL'},
+    'peanut butter':{size:375,unit:'g',usage:15,usageUnit:'g'},
+    'jam':{size:300,unit:'g',usage:10,usageUnit:'g'},
+    'honey':{size:250,unit:'g',usage:10,usageUnit:'g'},
+    'sugar':{size:1,unit:'kg',usage:10,usageUnit:'g'},
+    'flour':{size:1,unit:'kg',usage:50,usageUnit:'g'},
+    'salt':{size:500,unit:'g',usage:3,usageUnit:'g'},
+    'pepper':{size:50,unit:'g',usage:1,usageUnit:'g'},
+    'coffee':{size:200,unit:'g',usage:10,usageUnit:'g'},
+    'tea':{size:50,unit:'pcs',usage:2,usageUnit:'pcs'},
+    'cereal':{size:500,unit:'g',usage:40,usageUnit:'g'},
+    'oatmeal':{size:500,unit:'g',usage:50,usageUnit:'g'},
+    'muesli':{size:500,unit:'g',usage:50,usageUnit:'g'},
+    'tuna':{size:95,unit:'g',usage:95,usageUnit:'g'},
+    'chicken':{size:500,unit:'g',usage:150,usageUnit:'g'},
+    'mince':{size:500,unit:'g',usage:150,usageUnit:'g'},
+    'shampoo':{size:350,unit:'mL',usage:4,usageUnit:'mL'},
+    'conditioner':{size:350,unit:'mL',usage:4,usageUnit:'mL'},
+    'body wash':{size:350,unit:'mL',usage:4,usageUnit:'mL'},
+    'liquid soap':{size:350,unit:'mL',usage:4,usageUnit:'mL'},
+    'hand soap':{size:250,unit:'mL',usage:2,usageUnit:'mL'},
+    'toothpaste':{size:100,unit:'g',usage:1,usageUnit:'g'},
+    'dish soap':{size:450,unit:'mL',usage:3,usageUnit:'mL'},
+    'laundry detergent':{size:1,unit:'L',usage:30,usageUnit:'mL'},
+    'fabric softener':{size:1,unit:'L',usage:20,usageUnit:'mL'},
+    'surface cleaner':{size:500,unit:'mL',usage:5,usageUnit:'mL'},
+    'toilet paper':{size:48,unit:'pcs',usage:8,usageUnit:'pcs'},
+    'paper towel':{size:6,unit:'pcs',usage:1,usageUnit:'pcs'},
+    'tissues':{size:6,unit:'box',usage:1,usageUnit:'box'},
+    'dishwasher tablets':{size:30,unit:'pcs',usage:1,usageUnit:'pcs'},
+    'cling wrap':{size:30,unit:'m',usage:0.5,usageUnit:'m'},
+    'aluminium foil':{size:10,unit:'m',usage:0.3,usageUnit:'m'},
+  };
+  var key = name.toLowerCase().trim();
+  var match = suggestions[key] || suggestions[Object.keys(suggestions).find(function(k){ return key.includes(k); })];
+  if(!match){ showToast('No typical data for "'+name+'" — enter manually','err'); return; }
+  var csEl = document.getElementById('pantryContainerSize');
+  var cuEl = document.getElementById('pantryContainerUnit');
+  var duEl = document.getElementById('pantryDailyUsage');
+  var duuEl = document.getElementById('pantryDailyUsageUnit');
+  if(csEl) csEl.value = match.size;
+  if(cuEl) cuEl.value = match.unit;
+  if(duEl) duEl.value = match.usage;
+  if(duuEl) duuEl.value = match.usageUnit;
+  previewPrediction();
+  showToast('✨ Suggested: ~'+match.usage+' '+match.usageUnit+'/day — adjust if needed','ok');
+}
+
 function adjustPantry(idx, delta) {
   var item = pantryItems[idx];
   if(!item) return;
-  var newQty = Math.max(0, (item.qty||0) + delta);
+  var prevQty = item.qty||0;
+  var newQty = Math.max(0, prevQty + delta);
   if(item.max && newQty > item.max){ showToast('Already at max stock ('+item.max+' '+item.unit+')','err'); return; }
   item.qty = Math.round(newQty*10)/10;
+  // Self-tuning: when item runs out (hits zero), learn from the cycle
+  if(prevQty > 0 && newQty <= 0 && item.dailyUsage > 0 && item.lastRefillDate) {
+    var today = new Date().toISOString().split('T')[0];
+    var refillDate = new Date(item.lastRefillDate);
+    var runoutDate = new Date(today);
+    var actualDays = Math.round((runoutDate - refillDate) / 86400000);
+    if(actualDays > 0 && item.lastRefillQty > 0) {
+      var realDailyUsage = item.lastRefillQty * toBaseUnit(1,item.unit||'pcs') / actualDays;
+      var realUsageInItemUnit = realDailyUsage / toBaseUnit(1,item.unit||'pcs');
+      // Weighted average: 30% new data, 70% existing
+      var currentRate = toBaseUnit(item.dailyUsage, item.dailyUsageUnit||'mL');
+      var newRate = currentRate * 0.7 + realDailyUsage * 0.3;
+      // Convert back to item's dailyUsageUnit
+      var conv = {mL:1,L:1000,g:1,kg:1000,pcs:1,bottle:1,box:1,pack:1,can:1,bag:1,bunch:1};
+      var unitFactor = conv[item.dailyUsageUnit||'mL']||1;
+      item.dailyUsage = Math.round(newRate / unitFactor * 10) / 10;
+      item.confirmedCycles = (item.confirmedCycles||0) + 1;
+      if(!item.usageLog) item.usageLog = [];
+      item.usageLog.push({refillDate:item.lastRefillDate, runoutDate:today, refillQty:item.lastRefillQty, actualDays:actualDays, predictedRate:currentRate, realRate:realDailyUsage});
+      showToast('📊 Usage rate updated from real data! ('+Math.round(actualDays)+'d cycle)','ok');
+    }
+  }
+  // Track refill when restocking
+  if(delta > 0 && item.dailyUsage > 0) {
+    item.lastRefillDate = new Date().toISOString().split('T')[0];
+    item.lastRefillQty = newQty;
+  }
   savePantryState();
   syncPantry();
   renderPantry();
@@ -2286,6 +2458,11 @@ function openEditPantry(idx) {
   document.getElementById('pantryCategory').value = item.category||'pantry';
   document.getElementById('pantryExpiry').value = item.expiry||'';
   document.getElementById('pantryNotes').value = item.notes||'';
+  document.getElementById('pantryContainerSize').value = item.containerSize||'';
+  document.getElementById('pantryContainerUnit').value = item.containerUnit||'mL';
+  document.getElementById('pantryDailyUsage').value = item.dailyUsage||'';
+  document.getElementById('pantryDailyUsageUnit').value = item.dailyUsageUnit||'mL';
+  previewPrediction();
   document.getElementById('deletePantryBtn').style.display = 'block';
   _openOv('addPantryOv');
 }
@@ -2367,6 +2544,11 @@ function openAddPantryItem() {
   document.getElementById('pantryCategory').value='pantry';
   document.getElementById('pantryExpiry').value='';
   document.getElementById('pantryNotes').value='';
+  document.getElementById('pantryContainerSize').value='';
+  document.getElementById('pantryContainerUnit').value='mL';
+  document.getElementById('pantryDailyUsage').value='';
+  document.getElementById('pantryDailyUsageUnit').value='mL';
+  document.getElementById('pantryPredictionPreview').textContent='';
   document.getElementById('deletePantryBtn').style.display='none';
   _openOv('addPantryOv');
 }
@@ -2375,6 +2557,7 @@ function openAddPantryItem() {
 var pantryReceiptBase64 = null;
 var pantryReceiptMime = 'image/jpeg';
 var pantryScannedItems = [];
+var pantryReceiptMeta = null;
 var pantryApiProvider = localStorage.getItem('sply_pantry_api')||'claude';
 
 function openPantryScan() {
@@ -2385,6 +2568,7 @@ function openPantryScan() {
   if(claudeKey) document.getElementById('pantryClaudeKey').value = claudeKey;
   if(geminiKey) document.getElementById('pantryGeminiKey').value = geminiKey;
   if(ocrKey)    document.getElementById('pantryOcrKey').value = ocrKey;
+  pantryReceiptMeta = null;
   setPantryApi(pantryApiProvider, document.querySelector('#pantryApiToggle .api-toggle-btn'));
   document.getElementById('pantryMatchResult').style.display='none';
   document.getElementById('pantryScanBtn').style.display='none';
@@ -2446,12 +2630,20 @@ async function doPantryScan() {
   document.getElementById('pantryScanBtn').style.display='none';
   document.getElementById('pantryMatchResult').style.display='none';
   try {
-    var items = [];
-    if(pantryApiProvider==='claude') items = await scanWithClaude();
-    else if(pantryApiProvider==='gemini') items = await scanWithGemini();
-    else items = await scanWithOCR();
+    var items = [], meta = {};
+    if(pantryApiProvider==='claude'){
+      var r = await scanWithClaude();
+      items = r.items || r; meta = {store:r.store, total:r.total, date:r.date, category:r.category};
+    } else if(pantryApiProvider==='gemini'){
+      var r = await scanWithGemini();
+      items = r.items || r; meta = {store:r.store, total:r.total, date:r.date, category:r.category};
+    } else {
+      items = await scanWithOCR();
+      meta = {store:null, total:null, date:null, category:null};
+    }
     pantryScannedItems = items;
-    renderPantryMatches(items);
+    pantryReceiptMeta = meta;
+    renderPantryMatches(items, meta);
   } catch(e) {
     showToast('Scan failed: '+e.message,'err');
     document.getElementById('pantryScanBtn').style.display='block';
@@ -2463,7 +2655,7 @@ async function scanWithClaude() {
   var key = document.getElementById('pantryClaudeKey').value.trim();
   if(!key){ throw new Error('Enter your Claude API key'); }
   localStorage.setItem('sply_api_key', key);
-  var prompt = 'List every grocery/household item on this receipt. For each item return: name (short, common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Respond ONLY with JSON array: [{"name":"Rice","qty":1,"unit":"kg"},{"name":"Milk","qty":2,"unit":"bottle"},...]. No extra text.';
+  var prompt = 'List every grocery/household item on this receipt. For each item return: name (short, common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Also extract the store name, total amount, receipt date (YYYY-MM-DD), and best category (food/transport/health/shopping/entertainment/bills/dining/travel/other). Respond ONLY with JSON: {"store":"Coles","total":47.85,"date":"2026-07-07","category":"food","items":[{"name":"Rice","qty":1,"unit":"kg"},...]}. No extra text.';
   var res = await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
@@ -2482,7 +2674,7 @@ async function scanWithGemini() {
   var key = document.getElementById('pantryGeminiKey').value.trim();
   if(!key){ throw new Error('Enter your Gemini API key'); }
   localStorage.setItem('sply_gemini_key', key);
-  var prompt = 'List every grocery/household item on this receipt. For each item return name (short common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Respond ONLY with a JSON array like: [{"name":"Rice","qty":1,"unit":"kg"}]. No extra text.';
+  var prompt = 'List every grocery/household item on this receipt. For each item return name (short common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Also extract the store name, total amount, receipt date (YYYY-MM-DD), and best category (food/transport/health/shopping/entertainment/bills/dining/travel/other). Respond ONLY with JSON: {"store":"Coles","total":47.85,"date":"2026-07-07","category":"food","items":[{"name":"Rice","qty":1,"unit":"kg"},...]}. No extra text.';
   // Support both new AQ. auth keys and legacy AIza keys
   var isAuthKey = key.startsWith('AQ.');
   var model = isAuthKey ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash-lite';
@@ -2541,11 +2733,34 @@ function parseOCRText(text) {
   return items;
 }
 
-function renderPantryMatches(items) {
+function renderPantryMatches(items, meta) {
   var listEl = document.getElementById('pantryMatchList');
   if(!items.length){ showToast('No items found on receipt','err'); return; }
+  // Receipt metadata header
+  var metaHtml = '';
+  if(meta && (meta.store || meta.total || meta.date)) {
+    var catLabel = 'food';
+    if(meta.category) { var c = catById(meta.category); if(c) catLabel = c.label; }
+    metaHtml = '<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px">'+
+      '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">'+
+        (meta.store?'<span>🏪 <strong>'+escH(meta.store)+'</strong></span>':'')+
+        (meta.total?'<span style="font-family:\'Instrument Serif\',serif;font-size:18px">$'+parseFloat(meta.total).toFixed(2)+'</span>':'')+
+      '</div>'+
+      (meta.date?'<div style="font-size:10px;color:var(--text3);margin-top:2px">📅 '+meta.date+'</div>':'')+
+      '<div style="margin-top:8px">'+
+        '<label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">Category</label>'+
+        '<select id="receiptExpCat" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text);font-size:12px;font-family:inherit">'+
+          BUILTIN.expense.map(function(c){ return '<option value="'+c.id+'"'+(c.id===meta.category?' selected':'')+'>'+c.emoji+' '+c.label+'</option>'; }).join('')+
+        '</select>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
+        '<input type="checkbox" id="receiptAddExpense" checked>'+
+        '<label for="receiptAddExpense" style="font-size:12px">Also log as $'+(meta.total?parseFloat(meta.total).toFixed(2):'XX')+' expense</label>'+
+      '</div>'+
+    '</div>';
+  }
   // For each scanned item, check if we track it already
-  listEl.innerHTML = items.map(function(item, i){
+  listEl.innerHTML = metaHtml + items.map(function(item, i){
     var existing = pantryItems.find(function(p){ return p.name.toLowerCase() === item.name.toLowerCase(); });
     var matchNote = existing ? ' <span style="font-size:9px;color:var(--income);font-weight:700">IN PANTRY</span>' : '';
     return '<div class="scan-match-item selected" id="pmatch_'+i+'" onclick="togglePantryMatch(this)">'+
@@ -2594,10 +2809,25 @@ function applyPantryMatches() {
       added++;
     }
   });
+  // Create expense transaction if toggled on
+  var addExpense = document.getElementById('receiptAddExpense');
+  if(addExpense && addExpense.checked && pantryReceiptMeta && pantryReceiptMeta.total) {
+    var total = parseFloat(pantryReceiptMeta.total);
+    if(total > 0) {
+      var catEl = document.getElementById('receiptExpCat');
+      var cat = catEl ? catEl.value : 'food';
+      var desc = pantryReceiptMeta.store || 'Grocery receipt';
+      var date = pantryReceiptMeta.date || new Date().toISOString().split('T')[0];
+      var amtAUD = total;
+      txns.push({id:Date.now().toString(), type:'expense', amount:total, desc:desc, cat:cat, date:date, currency:'AUD', amountAUD:amtAUD});
+      save();
+      showToast('🧾 Added $'+total.toFixed(2)+' expense for '+desc,'ok');
+      if(typeof gasUrl!=='undefined'&&gasUrl) setTimeout(function(){ pushToSheets(); },800);
+    }
+  }
   savePantryState();
   closeOv('pantryScanOv');
-  renderPantry();
-  showToast('Updated '+updated+' items, added '+added+' new','ok');
+  render();
   syncPantry();
 }
 
