@@ -1061,7 +1061,11 @@ input[type="file"]{display:none;}
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:12px;">vs Benchmarks</div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Your portfolio return vs major indices. Prices fetched live.</p>
       <div id="benchmarkList"></div>
-      <button class="btn-secondary" id="fetchBenchBtn" style="margin-top:8px">&#8635; Fetch Benchmark Prices</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-secondary" id="fetchBenchBtn" style="flex:1">&#8635; Fetch Prices</button>
+        <button class="btn-secondary" id="setBaselineBtn" style="flex:1">📌 Set Baseline</button>
+      </div>
+      <div id="baselineInfo" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center"></div>
     </div>
   </div>
 
@@ -4717,8 +4721,10 @@ var benchmarkData = (function(){ try {
   var d = JSON.parse(localStorage.getItem('sply_bench')||'null');
   if(d && !localStorage.getItem('sply_bench_prices')) { localStorage.removeItem('sply_bench'); return null; }
   return d;
-} catch(e){ return null; } })();
+} catch(e){ return null; }})();
 var benchmarkPrices = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_prices')||'null'); } catch(e){ return null; } })();
+var benchmarkBaseline = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_baseline_prices')||'null'); } catch(e){ return null; } })();
+var benchmarkBaselineDate = localStorage.getItem('sply_bench_baseline_date')||null;
 var benchTickers = (function(){ try { return JSON.parse(localStorage.getItem('sply_bench_tickers')||'null'); } catch(e){ return null; } })()||{};
 function benchTicker(b){ return benchTickers[b.ticker]||b.ticker; }
 var BENCHMARKS = [
@@ -4728,6 +4734,16 @@ var BENCHMARKS = [
   {name:'Global (VGS)',ticker:'VGS.AX',color:'#818cf8'},
 ];
 
+function setBenchmarkBaseline() {
+  if(!benchmarkPrices || !Object.keys(benchmarkPrices).length){ showToast('Fetch prices first before setting baseline','err'); return; }
+  benchmarkBaseline = JSON.parse(JSON.stringify(benchmarkPrices));
+  benchmarkBaselineDate = new Date().toISOString().split('T')[0];
+  localStorage.setItem('sply_bench_baseline_prices', JSON.stringify(benchmarkBaseline));
+  localStorage.setItem('sply_bench_baseline_date', benchmarkBaselineDate);
+  renderBenchmark();
+  showToast('📌 Baseline set to prices from '+benchmarkBaselineDate,'ok');
+}
+
 function renderBenchmark() {
   var list = document.getElementById('benchmarkList');
   if(!list) return;
@@ -4735,12 +4751,23 @@ function renderBenchmark() {
   var totalCost  = holdings.reduce(function(s,h){ return s+(h.units||0)*(h.avgPrice||0); },0);
   var portfolioReturn = totalCost>0 ? (totalValue-totalCost)/totalCost*100 : 0;
 
+  // Show baseline info
+  var baselineInfo = document.getElementById('baselineInfo');
+  if(baselineInfo) {
+    baselineInfo.textContent = benchmarkBaselineDate ? '📌 Baseline: '+benchmarkBaselineDate+' · since last fetch shown as %, baseline % in (parentheses)' : '';
+  }
+
   var allItems = [{name:'My Portfolio',ticker:'PORTFOLIO',color:'var(--accent)',returnPct:portfolioReturn}];
   if(benchmarkData) {
     BENCHMARKS.forEach(function(b){
       if(benchmarkData[b.ticker] !== undefined) {
         var item = Object.assign({},b,{returnPct:benchmarkData[b.ticker]});
         if(benchmarkPrices && benchmarkPrices[b.ticker]) item.price = benchmarkPrices[b.ticker];
+        // Baseline change
+        item.baselinePct = null;
+        if(benchmarkBaseline && benchmarkBaseline[b.ticker] && benchmarkPrices && benchmarkPrices[b.ticker]) {
+          item.baselinePct = (benchmarkPrices[b.ticker] - benchmarkBaseline[b.ticker]) / benchmarkBaseline[b.ticker] * 100;
+        }
         allItems.push(item);
       }
     });
@@ -4752,20 +4779,24 @@ function renderBenchmark() {
   list.innerHTML = allItems.map(function(item){
     var pct = item.returnPct;
     var actTicker = item.ticker!=='PORTFOLIO' ? benchTicker(item) : '';
-    // Show custom ticker on second line to avoid collision with price
     var customTickerLine = (actTicker && actTicker!==item.ticker)
       ? '<div style="font-size:9px;color:var(--text3);line-height:1.2;margin-top:1px">via '+actTicker+'</div>' : '';
     if(pct===null) {
       var px = item.price ? ' $'+item.price.toFixed(2) : '';
-      return '<div class="bench-row"><div class="bench-lbl"><div>'+escH(item.name)+(px?'<span style="color:var(--text3);font-weight:400"> '+px+'</span>':'')+'</div>'+customTickerLine+'</div><div style="flex:1;font-size:11px;color:var(--text3)">Baseline set — fetch again for change %</div></div>';
+      return '<div class="bench-row"><div class="bench-lbl"><div>'+escH(item.name)+(px?'<span style="color:var(--text3);font-weight:400"> '+px+'</span>':'')+'</div>'+customTickerLine+'</div><div style="flex:1;font-size:11px;color:var(--text3)">Fetch prices to see change</div></div>';
     }
     var pctVal = pct||0;
     var barW = Math.abs(pctVal)/maxR*100;
-    var suffix = item.price ? '<span style="color:var(--text3);font-weight:400;font-size:11px"> $'+item.price.toFixed(2)+'</span>' : '';
+    var suffix = item.price ? ' <span style="color:var(--text3);font-weight:400;font-size:11px">$'+item.price.toFixed(2)+'</span>' : '';
+    var baselineStr = '';
+    if(item.baselinePct !== null) {
+      var bc = item.baselinePct >= 0 ? 'var(--income)' : 'var(--expense)';
+      baselineStr = ' <span style="font-size:9px;color:'+bc+'">('+(item.baselinePct>=0?'+':'')+item.baselinePct.toFixed(2)+'%)</span>';
+    }
     return '<div class="bench-row">'+
       '<div class="bench-lbl" style="font-weight:'+(item.ticker==='PORTFOLIO'?'700':'400')+'"><div>'+escH(item.name)+suffix+'</div>'+customTickerLine+'</div>'+
       '<div class="bench-bar-wrap"><div class="bench-bar" style="width:'+barW+'%;background:'+(pctVal>=0?item.color:'var(--expense)')+'"></div></div>'+
-      '<div class="bench-val" style="color:'+(pctVal>=0?'var(--income)':'var(--expense)')+'">'+(pctVal>=0?'+':'')+pctVal.toFixed(2)+'%</div>'+
+      '<div class="bench-val" style="color:'+(pctVal>=0?'var(--income)':'var(--expense)')+'">'+(pctVal>=0?'+':'')+pctVal.toFixed(2)+'%'+baselineStr+'</div>'+
     '</div>';
   }).join('');
 }
@@ -6472,6 +6503,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if(saveTargetsEl) saveTargetsEl.addEventListener('click', saveTargets);
   var fetchBenchEl = document.getElementById('fetchBenchBtn');
   if(fetchBenchEl) fetchBenchEl.addEventListener('click', fetchBenchmarks);
+  var setBaselineEl = document.getElementById('setBaselineBtn');
+  if(setBaselineEl) setBaselineEl.addEventListener('click', setBenchmarkBaseline);
   var fetchFxEl = document.getElementById('fetchFxBtn');
   if(fetchFxEl) fetchFxEl.addEventListener('click', fetchFXRates);
   var convertFxEl = document.getElementById('convertFxBtn');
