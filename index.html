@@ -4162,7 +4162,10 @@ async function connectSheets(){
       updateSyncUI();showToast('Connected! Pushing data...','ok');
       await pushToSheets();
     } else { showToast('Connection failed: '+(res.error||'unknown'),'err'); }
-  }catch(e){showToast('Could not reach script -- check URL & deployment','err');}
+  }catch(e){
+    console.error('GAS connect error:', e);
+    showToast('Could not reach script: '+e.message,'err');
+  }
   setSyncAnim(false);
 }
 
@@ -4380,9 +4383,26 @@ async function pullFromSheets(){
 function disconnectSheets(){if(!confirm('Disconnect? Local data stays intact.'))return;gasUrl='';lastSync='';saveSyncCfg();updateSyncUI();closeOv('sheetsOv');showToast('Disconnected');}
 function saveAutoSync(){autoSync=document.getElementById('autoSyncSel').value;saveSyncCfg();showToast('Auto-sync preference saved');}
 
-async function callGAS(url,body){
-  const res=await fetch(url,{method:'POST',body:JSON.stringify(body),headers:{'Content-Type':'text/plain'}});
-  return res.json();
+async function callGAS(url, body) {
+  // Google Apps Script requires no-cors for POST from browser
+  // Use no-cors mode and handle the opaque response
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'text/plain' },
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error('Invalid response from script: ' + text.substring(0,100)); }
+  } catch(e) {
+    // Re-throw with cleaner message
+    if(e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      throw new Error('Network error — check your internet connection');
+    }
+    throw e;
+  }
 }
 function setSyncAnim(on){const dot=document.getElementById('syncDot'),dot2=document.getElementById('syncDot2');[dot,dot2].forEach(d=>{if(d)d.className='sync-dot'+(on?' syncing':gasUrl?' on':'');});}
 function copyGAS(){navigator.clipboard.writeText(GAS_CODE).then(()=>showToast('Code copied','ok')).catch(()=>{const t=document.createElement('textarea');t.value=GAS_CODE;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('Code copied','ok');});}
