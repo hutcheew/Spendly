@@ -1866,7 +1866,37 @@ input[type="file"]{display:none;}
     <div id="pantryMatchResult" style="display:none">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Items found — select what to add to stock:</div>
       <div id="pantryMatchList"></div>
-      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:4px"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Update Selected Stock</button>
+
+      <!-- EXPENSE PROMPT -->
+      <div style="background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="receiptAddExpense" checked style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0">
+          <label for="receiptAddExpense" style="font-size:13px;font-weight:600;color:var(--text)">💳 Log as expense</label>
+        </div>
+        <div id="receiptExpenseFields">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Store</div>
+              <input type="text" id="receiptStoreName" placeholder="e.g. Coles" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+            </div>
+            <div style="width:110px">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Total ($) <span id="receiptAutoTotal" style="display:none;color:var(--income);font-size:9px;font-weight:700">AUTO</span></div>
+              <input type="number" id="receiptTotalAmt" placeholder="0.00" step="0.01" inputmode="decimal" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Category</div>
+          <select id="receiptExpCat" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+            <option value="food">🛒 Groceries</option>
+            <option value="health">💊 Health / Pharmacy</option>
+            <option value="shopping">🛍️ Shopping</option>
+            <option value="dining">🍽️ Dining</option>
+            <option value="transport">🚗 Transport / Fuel</option>
+            <option value="other">📦 Other</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary acc-btn" onclick="applyPantryMatches()" style="margin-top:10px"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Update Stock &amp; Log Expense</button>
     </div>
 
     <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none"><i class="ti ti-sparkles" style="font-size:16px;vertical-align:middle"></i> Scan with AI</button>
@@ -2568,8 +2598,70 @@ function openAddPantryItem() {
 var pantryReceiptBase64 = null;
 var pantryReceiptMime = 'image/jpeg';
 var pantryScannedItems = [];
-var pantryReceiptMeta = null;
-var pantryApiProvider = localStorage.getItem('sply_pantry_api')||'claude';
+var pantryReceiptMeta = {};
+var lastOCRRawText = '';
+var lastDetectedStore = null;
+var lastDetectedTotal = null;
+
+var KNOWN_STORES = {
+  'coles':{'name':'Coles','cat':'food'},'woolworths':{'name':'Woolworths','cat':'food'},
+  'woolies':{'name':'Woolworths','cat':'food'},'aldi':{'name':'Aldi','cat':'food'},
+  'iga':{'name':'IGA','cat':'food'},'costco':{'name':'Costco','cat':'shopping'},
+  'harris farm':{'name':'Harris Farm','cat':'food'},'foodworks':{'name':'Foodworks','cat':'food'},
+  'chemist warehouse':{'name':'Chemist Warehouse','cat':'health'},'priceline':{'name':'Priceline','cat':'health'},
+  'bunnings':{'name':'Bunnings','cat':'shopping'},'kmart':{'name':'Kmart','cat':'shopping'},
+  'target':{'name':'Target','cat':'shopping'},'big w':{'name':'Big W','cat':'shopping'},
+  'officeworks':{'name':'Officeworks','cat':'shopping'},'7-eleven':{'name':'7-Eleven','cat':'food'},
+  'bp':{'name':'BP','cat':'transport'},'shell':{'name':'Shell','cat':'transport'},
+  'caltex':{'name':'Caltex','cat':'transport'},'ampol':{'name':'Ampol','cat':'transport'},
+};
+
+function detectStoreFromText(text) {
+  if(!text) return null;
+  var lower = text.toLowerCase().substring(0,400);
+  for(var key in KNOWN_STORES){ if(lower.includes(key)) return KNOWN_STORES[key]; }
+  return null;
+}
+
+function detectTotalFromText(text) {
+  if(!text) return null;
+  var patterns = [
+    /total\s*due[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /amount\s*due[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /grand\s*total[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /balance\s*due[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+    /^total[:\s]*\$?\s*([\d,]+\.\d{2})/im,
+    /total\s*\$?\s*([\d,]+\.\d{2})/i,
+    /transaction\s*total[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+  ];
+  for(var i=0;i<patterns.length;i++){
+    var m=text.match(patterns[i]);
+    if(m){ var v=parseFloat(m[1].replace(/,/g,'')); if(v>0&&v<9999) return v; }
+  }
+  var all=text.match(/\$?\s*(\d{1,4}\.\d{2})/g)||[];
+  var amounts=all.map(function(a){return parseFloat(a.replace(/[$,\s]/g,''));}).filter(function(v){return v>0&&v<9999;});
+  if(amounts.length) return Math.max.apply(null,amounts);
+  return null;
+}
+
+function populateExpensePrompt() {
+  var store = lastDetectedStore ? {name:lastDetectedStore,cat:'food'} : detectStoreFromText(lastOCRRawText);
+  var total = lastDetectedTotal || detectTotalFromText(lastOCRRawText);
+  pantryReceiptMeta = {
+    store: store ? store.name : '',
+    total: total || 0,
+    date: new Date().toISOString().split('T')[0],
+    category: store ? store.cat : 'food'
+  };
+  var storeEl = document.getElementById('receiptStoreName');
+  var totalEl = document.getElementById('receiptTotalAmt');
+  var catEl   = document.getElementById('receiptExpCat');
+  var badge   = document.getElementById('receiptAutoTotal');
+  if(storeEl) storeEl.value = pantryReceiptMeta.store;
+  if(totalEl && total) { totalEl.value = total.toFixed(2); if(badge) badge.style.display='inline'; }
+  if(catEl && pantryReceiptMeta.category) catEl.value = pantryReceiptMeta.category;
+  lastDetectedStore = null; lastDetectedTotal = null;
+}
 
 function openPantryScan() {
   // Pre-fill known keys
@@ -2678,7 +2770,13 @@ async function scanWithClaude() {
   if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Claude API error '+res.status);}
   var data = await res.json();
   var text = data.content[0].text.trim().replace(/```json|```/g,'').trim();
-  return JSON.parse(text);
+  var parsed = JSON.parse(text);
+  if(parsed.items) {
+    if(parsed.store) lastDetectedStore = parsed.store;
+    if(parsed.total) lastDetectedTotal = parsed.total;
+    return parsed.items;
+  }
+  return parsed;
 }
 
 async function scanWithGemini() {
@@ -2705,7 +2803,13 @@ async function scanWithGemini() {
   if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Gemini API error '+res.status);}
   var data = await res.json();
   var text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g,'').trim();
-  return JSON.parse(text);
+  var parsed = JSON.parse(text);
+  if(parsed.items) {
+    if(parsed.store) lastDetectedStore = parsed.store;
+    if(parsed.total) lastDetectedTotal = parsed.total;
+    return parsed.items;
+  }
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 async function scanWithOCR() {
@@ -2722,7 +2826,7 @@ async function scanWithOCR() {
   var data = await res.json();
   var text = data.ParsedResults && data.ParsedResults[0] ? data.ParsedResults[0].ParsedText : '';
   if(!text) throw new Error('No text extracted from image');
-  // Parse raw OCR text into item list — look for lines with quantities/prices
+  lastOCRRawText = text;
   return parseOCRText(text);
 }
 
@@ -2787,6 +2891,7 @@ function renderPantryMatches(items, meta) {
     '</div>';
   }).join('');
   document.getElementById('pantryMatchResult').style.display='block';
+  populateExpensePrompt();
 }
 
 function togglePantryMatch(el) {
@@ -2820,20 +2925,32 @@ function applyPantryMatches() {
       added++;
     }
   });
-  // Create expense transaction if toggled on
+  // Log expense if checkbox ticked
   var addExpense = document.getElementById('receiptAddExpense');
-  if(addExpense && addExpense.checked && pantryReceiptMeta && pantryReceiptMeta.total) {
-    var total = parseFloat(pantryReceiptMeta.total);
+  if(addExpense && addExpense.checked) {
+    var storeEl = document.getElementById('receiptStoreName');
+    var totalEl = document.getElementById('receiptTotalAmt');
+    var catEl   = document.getElementById('receiptExpCat');
+    var total = totalEl ? parseFloat(totalEl.value)||0 : 0;
+    var store = storeEl ? storeEl.value.trim() : '';
+    var cat   = catEl   ? catEl.value : 'food';
     if(total > 0) {
-      var catEl = document.getElementById('receiptExpCat');
-      var cat = catEl ? catEl.value : 'food';
-      var desc = pantryReceiptMeta.store || 'Grocery receipt';
-      var date = pantryReceiptMeta.date || new Date().toISOString().split('T')[0];
-      var amtAUD = total;
-      txns.push({id:Date.now().toString(), type:'expense', amount:total, desc:desc, cat:cat, date:date, currency:'AUD', amountAUD:amtAUD});
+      var desc = store || 'Grocery receipt';
+      txns.push({
+        id: Date.now().toString(),
+        type: 'expense',
+        amount: total,
+        desc: desc,
+        cat: cat,
+        date: new Date().toISOString().split('T')[0],
+        currency: 'AUD',
+        amountAUD: total
+      });
       save();
-      showToast('🧾 Added $'+total.toFixed(2)+' expense for '+desc,'ok');
+      showToast('💳 $'+total.toFixed(2)+' logged — '+desc,'ok');
       if(typeof gasUrl!=='undefined'&&gasUrl) setTimeout(function(){ pushToSheets(); },800);
+    } else {
+      showToast('Enter a total amount to log expense','err');
     }
   }
   savePantryState();
@@ -3750,7 +3867,7 @@ function writeBudgets(budgets) {
     sh.getRange(1,1,1,2).setFontWeight('bold').setBackground('#f3f3f3');
   }
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   if (budgets.length) {
     sh.getRange(2,1,budgets.length,2).setValues(budgets.map(b=>[b.cat, b.limit]));
   }
@@ -3817,7 +3934,7 @@ function writeHoldings(holdings) {
     sh.getRange(1,1,1,6).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   if (holdings.length) {
     sh.getRange(2,1,holdings.length,6).setValues(
       holdings.map(function(h){ return [h.ticker||'', h.name||'', Number(h.units)||0, Number(h.avgPrice)||0, Number(h.currentPrice)||0, h.color||'#818cf8']; })
@@ -3845,7 +3962,7 @@ function writeDividends(divs) {
     sh.setFrozenRows(1);
   }
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   if (divs.length) {
     sh.getRange(2,1,divs.length,4).setValues(
       divs.map(function(d){ return [d.ticker||'', Number(d.amount)||0, d.date||'', d.notes||'']; })
@@ -3876,7 +3993,7 @@ function writeRecurring(items) {
     sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   if (items.length) {
     sh.getRange(2,1,items.length,7).setValues(
       items.map(function(r){ return [r.name||'', r.type||'expense', Number(r.amount)||0, r.cat||'other', r.freq||'monthly', r.startDate||'', r.currency||'AUD']; })
@@ -3907,7 +4024,7 @@ function writeAutoInvest(plan) {
     sh.getRange(1,1,1,2).setFontWeight('bold').setBackground('#f3f3f3');
   }
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   const splitsJson = JSON.stringify(plan.splits || []);
   sh.getRange(2,1,4,2).setValues([
     ['totalAmount', Number(plan.totalAmount)||0],
@@ -3940,7 +4057,7 @@ function writePantry(items) {
     sh.getRange(1,1,1,9).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   if (items.length) {
     sh.getRange(2,1,items.length,9).setValues(
       items.map(function(p){ return [p.name||'', p.emoji||'', Number(p.qty)||0, p.unit||'pcs', Number(p.min)||1, Number(p.max)||0, p.category||'pantry', p.expiry||'', p.notes||'']; })
@@ -3969,7 +4086,7 @@ function writeProjects(items) {
   const headers = ['id','emoji','name','desc','start','end','budget','status','catBudgets'];
   sh.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1a1a2e').setFontColor('#c8a96e');
   const last = sh.getLastRow();
-  if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
   sh.getRange(2,1,items.length,headers.length).setValues(
     items.map(function(p){ return [
       String(p.id||''), String(p.emoji||''), String(p.name||''), String(p.desc||''),
