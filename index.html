@@ -174,6 +174,18 @@ html.light-theme body::before{opacity:.12;}
 /* ── FABs ── */
 .fab-wrap{position:fixed;bottom:calc(76px + var(--safe-bottom));left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100;transition:opacity .2s,transform .2s;}
 .fab-wrap.hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(12px);}
+.fab-scan{background:rgba(124,106,255,.18);color:var(--accent);border:1px solid rgba(124,106,255,.35);}
+.fab-scan:hover{background:rgba(124,106,255,.28);box-shadow:0 8px 32px rgba(124,106,255,.25);}
+/* Quick action strip */
+.home-quick-strip{display:flex;gap:8px;padding:10px 18px 0;}
+.home-quick-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 8px;background:var(--s2);border:1px solid var(--border);border-radius:14px;cursor:pointer;transition:all .15s;color:var(--text3);}
+.home-quick-btn:hover,.home-quick-btn:active{background:var(--s3);border-color:var(--border2);}
+.home-quick-btn i{font-size:22px;}
+.home-quick-btn span{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.home-quick-btn.scan{color:var(--accent);border-color:rgba(124,106,255,.25);background:rgba(124,106,255,.06);}
+.home-quick-btn.pantry{color:#34d399;border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.06);}
+.home-quick-btn.expense{color:var(--expense);border-color:rgba(242,92,122,.25);background:rgba(242,92,122,.06);}
+.home-quick-btn.income{color:var(--income);border-color:rgba(34,211,160,.25);background:rgba(34,211,160,.06);}
 /* ── SEARCH ── */
 .search-bar-wrap{padding:10px 18px 0;display:flex;gap:8px;align-items:center;}
 .search-bar{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:10px 14px 10px 36px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;position:relative;}
@@ -747,6 +759,26 @@ input[type="file"]{display:none;}
 
   <!-- Bill reminders -->
   <div id="homeBillReminders" style="display:none;margin:8px 18px 0;"></div>
+
+  <!-- Quick action strip -->
+  <div class="home-quick-strip">
+    <div class="home-quick-btn scan" onclick="openPantryScan()">
+      <i class="ti ti-camera"></i>
+      <span>Scan</span>
+    </div>
+    <div class="home-quick-btn pantry" onclick="switchView('pantry')">
+      <i class="ti ti-fridge"></i>
+      <span>Pantry</span>
+    </div>
+    <div class="home-quick-btn expense" onclick="openTxModal('expense')">
+      <i class="ti ti-minus"></i>
+      <span>Expense</span>
+    </div>
+    <div class="home-quick-btn income" onclick="openTxModal('income')">
+      <i class="ti ti-plus"></i>
+      <span>Income</span>
+    </div>
+  </div>
 
   <!-- Savings goals widget -->
   <div id="homeSavingsGoals" style="display:none;margin:8px 18px 0;"></div>
@@ -1437,6 +1469,7 @@ input[type="file"]{display:none;}
 <!-- FABs -->
 <div class="fab-wrap">
   <button class="fab fab-exp" onclick="openTxModal('expense')"><i class="ti ti-minus" style="font-size:18px"></i> Expense</button>
+  <button class="fab fab-scan" onclick="openPantryScan()"><i class="ti ti-camera" style="font-size:18px"></i> Scan</button>
   <button class="fab fab-inc" onclick="openTxModal('income')"><i class="ti ti-plus" style="font-size:18px"></i> Income</button>
 </div>
 <div class="toast" id="toast"></div>
@@ -3786,7 +3819,7 @@ const GAS_CODE = `// Spendly Pro -- Apps Script Backend
 //    Execute as: Me | Who has access: Anyone
 // 4. Copy the /exec URL into Spendly
 
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; // Replace this!
+const SPREADSHEET_ID = '1IUfA7f4o8QoZ6LZqwaLpLfj16v39psGY3oQp04OKcVA';
 const SHEET_NAME = 'Spendly';
 
 function doGet(e) { return handleRequest(e); }
@@ -3814,7 +3847,6 @@ function getSheet() {
     sh = ss.insertSheet(SHEET_NAME);
     sh.appendRow(['id','date','type','amount','category','description','synced_at']);
     sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
-    sh.setFrozenRows(1);
   }
   return sh;
 }
@@ -3867,7 +3899,7 @@ function writeBudgets(budgets) {
     sh.getRange(1,1,1,2).setFontWeight('bold').setBackground('#f3f3f3');
   }
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   if (budgets.length) {
     sh.getRange(2,1,budgets.length,2).setValues(budgets.map(b=>[b.cat, b.limit]));
   }
@@ -3891,7 +3923,6 @@ function writeCustomCats(cats) {
     sh.appendRow(['id','emoji','label','color','type']);
     sh.getRange(1,1,1,5).setFontWeight('bold').setBackground('#f3f3f3');
   }
-  // Read existing IDs so we don't duplicate
   const last = sh.getLastRow();
   const existingIds = {};
   if (last > 1) {
@@ -3904,7 +3935,6 @@ function writeCustomCats(cats) {
     if (!c.id) return;
     const row = [String(c.id), c.emoji||'package', c.label||'', c.color||'#6b7280', c.type||'both'];
     if (existingIds[String(c.id)]) {
-      // Update existing row
       sh.getRange(existingIds[String(c.id)], 1, 1, 5).setValues([row]);
     } else {
       newRows.push(row);
@@ -3934,7 +3964,7 @@ function writeHoldings(holdings) {
     sh.getRange(1,1,1,6).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   if (holdings.length) {
     sh.getRange(2,1,holdings.length,6).setValues(
       holdings.map(function(h){ return [h.ticker||'', h.name||'', Number(h.units)||0, Number(h.avgPrice)||0, Number(h.currentPrice)||0, h.color||'#818cf8']; })
@@ -3959,10 +3989,9 @@ function writeDividends(divs) {
     sh = ss.insertSheet('Spendly_Dividends');
     sh.appendRow(['ticker','amount','date','notes']);
     sh.getRange(1,1,1,4).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
-    sh.setFrozenRows(1);
   }
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   if (divs.length) {
     sh.getRange(2,1,divs.length,4).setValues(
       divs.map(function(d){ return [d.ticker||'', Number(d.amount)||0, d.date||'', d.notes||'']; })
@@ -3993,7 +4022,7 @@ function writeRecurring(items) {
     sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   if (items.length) {
     sh.getRange(2,1,items.length,7).setValues(
       items.map(function(r){ return [r.name||'', r.type||'expense', Number(r.amount)||0, r.cat||'other', r.freq||'monthly', r.startDate||'', r.currency||'AUD']; })
@@ -4024,7 +4053,7 @@ function writeAutoInvest(plan) {
     sh.getRange(1,1,1,2).setFontWeight('bold').setBackground('#f3f3f3');
   }
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   const splitsJson = JSON.stringify(plan.splits || []);
   sh.getRange(2,1,4,2).setValues([
     ['totalAmount', Number(plan.totalAmount)||0],
@@ -4057,7 +4086,7 @@ function writePantry(items) {
     sh.getRange(1,1,1,9).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   if (items.length) {
     sh.getRange(2,1,items.length,9).setValues(
       items.map(function(p){ return [p.name||'', p.emoji||'', Number(p.qty)||0, p.unit||'pcs', Number(p.min)||1, Number(p.max)||0, p.category||'pantry', p.expiry||'', p.notes||'']; })
@@ -4082,11 +4111,11 @@ function writeProjects(items) {
   if (!items || !items.length) return;
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sh = ss.getSheetByName('Spendly_Projects');
-  if (!sh) { sh = ss.insertSheet('Spendly_Projects'); sh.setFrozenRows(1); }
+  if (!sh) { sh = ss.insertSheet('Spendly_Projects'); }
   const headers = ['id','emoji','name','desc','start','end','budget','status','catBudgets'];
   sh.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1a1a2e').setFontColor('#c8a96e');
   const last = sh.getLastRow();
-  sh.setFrozenRows(1); if (last > 1) sh.deleteRows(2, last - 1);
+  sh.setFrozenRows(0); if (last > 1) sh.deleteRows(2, last - 1);
   sh.getRange(2,1,items.length,headers.length).setValues(
     items.map(function(p){ return [
       String(p.id||''), String(p.emoji||''), String(p.name||''), String(p.desc||''),
@@ -4110,7 +4139,8 @@ function readProjects() {
         desc:String(r[3]||''), start:String(r[4]||''), end:String(r[5]||''),
         budget:Number(r[6])||0, status:String(r[7]||'planned'), catBudgets:catBudgets };
     });
-}`;
+}
+`;
 
 function updateSyncUI() {
   const bar=document.getElementById('syncBar');
@@ -4721,7 +4751,13 @@ function switchView(v){
     if(el) el.style.display=n===v?'block':'none';
   });
   var fabWrap=document.querySelector('.fab-wrap');
-  if(fabWrap) fabWrap.classList.toggle('hidden', v!=='overview'&&v!=='transactions');
+  if(fabWrap) fabWrap.classList.toggle('hidden', false); // always visible
+  // Hide expense/income FABs on non-transactional views, keep scan visible
+  var fabExp=document.querySelector('.fab-exp');
+  var fabInc=document.querySelector('.fab-inc');
+  var showExpInc = v==='overview'||v==='transactions';
+  if(fabExp) fabExp.style.display = showExpInc?'':'none';
+  if(fabInc) fabInc.style.display = showExpInc?'':'none';
   if(v!=='transactions'&&txSearchQuery){ clearTxSearch(); }
   ['overview','transactions','analytics','budget','portfolio'].forEach(function(n){
     var navEl=document.getElementById('nav-'+n);
