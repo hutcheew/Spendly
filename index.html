@@ -3027,6 +3027,8 @@ function showDuplicateWarning(matches, onKeep, onSkip) {
   document.getElementById('dupKeepBtn').onclick = function(){ container.style.display='none'; onKeep(); };
 }
 
+function calcExpiryDate(days) { if(!days||days<=0) return ''; var d=new Date(); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+
 function applyPantryMatches() {
   var selected = document.querySelectorAll('.scan-match-item.selected');
   if(!selected.length){ showToast('Select at least one item','err'); return; }
