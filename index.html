@@ -4060,11 +4060,19 @@ function writeAll(txns) {
   const sh = getSheet(); const last = sh.getLastRow();
   const ts = new Date().toLocaleString();
   const existingIds = {};
-  if (last > 1) sh.getRange(2,1,last-1,1).getValues().forEach((r,i) => { if (r[0]) existingIds[String(r[0])] = i+2; });
+  const existingLineItems = {};
+  if (last > 1) {
+    sh.getRange(2,1,last-1,8).getValues().forEach((r,i) => {
+      if (r[0]) { existingIds[String(r[0])] = i+2; existingLineItems[String(r[0])] = r[7] || ''; }
+    });
+  }
   const newRows = []; let updated = 0;
   txns.forEach(t => {
     if (!t.id || !t.amount) return;
-    const lineItemsJson = t.lineItems && t.lineItems.length ? JSON.stringify(t.lineItems) : '';
+    let lineItemsJson = t.lineItems && t.lineItems.length ? JSON.stringify(t.lineItems) : '';
+    // If this push doesn't carry line items for a row that already has them saved (e.g. another
+    // device hasn't pulled them down yet), keep what's already in the sheet -- never blank it out.
+    if (!lineItemsJson && existingLineItems[String(t.id)]) lineItemsJson = existingLineItems[String(t.id)];
     const row = [String(t.id), (t.date||'').slice(0,10), t.type||'expense', Number(t.amount)||0, t.cat||'other', t.desc||'', ts, lineItemsJson];
     if (existingIds[String(t.id)]) { sh.getRange(existingIds[String(t.id)],1,1,8).setValues([row]); updated++; }
     else newRows.push(row);
@@ -4451,6 +4459,11 @@ async function pullFromSheets(){
     // STEP 2: Map transactions -- now allCats() includes the custom ones from step 1
     const rawTxns = Array.isArray(res.txns) ? res.txns : [];
     const allC = allCats();
+    // Preserve any line items we already have locally, in case the deployed Apps Script
+    // is an older version that isn't saving/returning them yet -- a pull should never be
+    // able to destroy richer local data than what the (possibly stale) sheet has.
+    const localLineItemsById = {};
+    txns.forEach(function(t){ if(t.lineItems && t.lineItems.length) localLineItemsById[String(t.id)] = t.lineItems; });
     txns = rawTxns.map(function(t){
       try {
         let cat = String(t.cat||'other');
@@ -4460,9 +4473,14 @@ async function pullFromSheets(){
           const byLabel = allC.find(function(c){ return c.label.toLowerCase()===cat.toLowerCase(); });
           cat = byLabel ? byLabel.id : (t.type==='income'?'other_inc':'other');
         }
-        return {id:String(t.id||Date.now()),type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat:cat,date:normDate(t.date),lineItems:(Array.isArray(t.lineItems)&&t.lineItems.length)?t.lineItems:undefined};
+        const id = String(t.id||Date.now());
+        const pulledLineItems = Array.isArray(t.lineItems)&&t.lineItems.length ? t.lineItems : null;
+        const lineItems = pulledLineItems || localLineItemsById[id] || undefined;
+        return {id:id,type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat:cat,date:normDate(t.date),lineItems:lineItems};
       } catch(e){ return null; }
     }).filter(Boolean);
+    var preservedCount = Object.keys(localLineItemsById).filter(function(id){ return txns.some(function(t){return t.id===id && t.lineItems;}); }).length;
+    if(preservedCount) console.log('Preserved local line items for', preservedCount, 'transaction(s) not yet returned by Sheets');
 
     // STEP 3: Apply budgets
     try {
