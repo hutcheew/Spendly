@@ -108,6 +108,26 @@ html.light-theme body::before{opacity:.12;}
 .tx-list{display:flex;flex-direction:column;gap:6px;}
 .tx-item{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:slideIn .3s ease both;}
 .tx-item:hover,.tx-item:active{background:var(--s3);border-color:var(--border2);}
+
+/* ── SUB-TRANSACTIONS / RECEIPT LINE ITEMS ── */
+.tx-receipt-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(124,106,255,.12);color:var(--accent);border:1px solid rgba(124,106,255,.2);margin-left:5px;vertical-align:middle;}
+.receipt-detail-wrap{background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;}
+.receipt-detail-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.receipt-line-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.receipt-line-item:last-child{border-bottom:none;}
+.receipt-line-name{flex:1;color:var(--text);}
+.receipt-line-qty{font-size:11px;color:var(--text3);margin:0 8px;}
+.receipt-line-price{font-weight:500;color:var(--text);font-variant-numeric:tabular-nums;}
+.receipt-line-total{display:flex;align-items:center;justify-content:space-between;padding-top:8px;margin-top:4px;border-top:1px solid rgba(255,255,255,.1);font-weight:700;}
+
+/* ── DUPLICATE WARNING ── */
+.dup-warning{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:12px;margin-bottom:10px;}
+.dup-warning-title{font-size:11px;font-weight:700;color:var(--warn);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.dup-tx-item{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px;}
+.dup-actions{display:flex;gap:8px;margin-top:8px;}
+.dup-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text3);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center;}
+.dup-btn.primary{background:rgba(242,92,122,.12);color:var(--expense);border-color:rgba(242,92,122,.3);}
+.dup-btn.secondary{background:var(--s3);color:var(--text);}
 @keyframes slideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .tx-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .tx-body{flex:1;min-width:0;}
@@ -1511,6 +1531,8 @@ input[type="file"]{display:none;}
     </div>
     <button class="btn-primary exp-btn" id="txSubmitBtn" onclick="submitTx()">Add expense</button>
     <button class="btn-danger" id="txDeleteBtn" style="display:none"><i class="ti ti-trash" style="font-size:16px;vertical-align:middle"></i> Delete transaction</button>
+    <!-- Receipt line items (shown when editing a receipt transaction) -->
+    <div id="txLineItems" style="display:none"></div>
   </div>
 </div>
 
@@ -2933,32 +2955,122 @@ function togglePantryMatch(el) {
   if(check) check.innerHTML = el.classList.contains('selected') ? ti('check',14) : '';
 }
 
+// ── RECEIPT LINE ITEMS ────────────────────────────────────────────────
+function renderReceiptLineItems(lineItems, total, storeName) {
+  var itemsTotal = lineItems.reduce(function(s,i){ return s+(i.price||0)*i.qty; },0);
+  return '<div class="receipt-detail-wrap">'+
+    '<div class="receipt-detail-title">'+
+      '<span>🧾 Receipt — '+(storeName||'')+'</span>'+
+      '<span style="font-size:9px;color:var(--text3)">'+lineItems.length+' items</span>'+
+    '</div>'+
+    lineItems.map(function(item){
+      return '<div class="receipt-line-item">'+
+        '<span class="receipt-line-name">'+(item.emoji||'')+' '+escH(item.name)+'</span>'+
+        '<span class="receipt-line-qty">×'+item.qty+' '+escH(item.unit||'pcs')+'</span>'+
+        '<span class="receipt-line-price">'+(item.price?'$'+item.price.toFixed(2):'—')+'</span>'+
+      '</div>';
+    }).join('')+
+    '<div class="receipt-line-total">'+
+      '<span>Total</span>'+
+      '<span>$'+(total||itemsTotal||0).toFixed(2)+'</span>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── DUPLICATE DETECTION ───────────────────────────────────────────────
+function checkDuplicate(amount, date, desc) {
+  var today = new Date(date);
+  var yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  var tomorrow  = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  var toDateStr = function(d){ return d.toISOString().split('T')[0]; };
+  var dateRange = [toDateStr(yesterday), date, toDateStr(tomorrow)];
+
+  // Normalise store names for fuzzy match
+  var normDesc = function(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]/g,''); };
+  var descNorm = normDesc(desc);
+
+  return txns.filter(function(t){
+    if(t.type !== 'expense') return false;
+    if(Math.abs(t.amount - amount) > 0.01) return false; // must be same amount
+    if(!dateRange.includes(t.date)) return false; // must be within ±1 day
+    return true;
+  }).map(function(t){
+    // Score the match
+    var score = 2; // amount + date already matched
+    var tNorm = normDesc(t.desc);
+    if(descNorm && tNorm && (descNorm.includes(tNorm) || tNorm.includes(descNorm))) score++;
+    return { tx:t, score:score };
+  }).filter(function(m){ return m.score >= 2; })
+    .sort(function(a,b){ return b.score-a.score; });
+}
+
+function showDuplicateWarning(matches, onKeep, onSkip) {
+  var container = document.getElementById('receiptDupWarning');
+  if(!container) return onKeep(); // no warning element — just proceed
+  container.style.display = 'block';
+  container.innerHTML = '<div class="dup-warning">'+
+    '<div class="dup-warning-title">⚠️ Possible duplicate detected</div>'+
+    matches.slice(0,2).map(function(m){
+      var t = m.tx;
+      return '<div class="dup-tx-item">'+
+        '<div><div style="font-weight:600">'+escH(t.desc||'')+'</div>'+
+        '<div style="font-size:10px;color:var(--text3)">'+t.date+'</div></div>'+
+        '<div style="font-weight:700;color:var(--expense)">$'+t.amount.toFixed(2)+'</div>'+
+      '</div>';
+    }).join('')+
+    '<div class="dup-actions">'+
+      '<button class="dup-btn primary" id="dupSkipBtn">Skip — already logged</button>'+
+      '<button class="dup-btn secondary" id="dupKeepBtn">Log anyway</button>'+
+    '</div>'+
+  '</div>';
+  document.getElementById('dupSkipBtn').onclick = function(){ container.style.display='none'; onSkip(); };
+  document.getElementById('dupKeepBtn').onclick = function(){ container.style.display='none'; onKeep(); };
+}
+
 function applyPantryMatches() {
   var selected = document.querySelectorAll('.scan-match-item.selected');
   if(!selected.length){ showToast('Select at least one item','err'); return; }
   var added=0, updated=0;
-  selected.forEach(function(el, i){
+
+  // Collect line items from ALL scanned items (not just selected) for receipt record
+  var lineItems = pantryScannedItems.map(function(item){
+    return {
+      name: item.name, emoji: item.emoji||'', qty: item.qty,
+      unit: item.unit||'pcs', price: item.price||0,
+      category: item.category||'', storage: item.storage||''
+    };
+  });
+
+  selected.forEach(function(el){
     var idx = parseInt(el.querySelector('.pmatch-qty').dataset.idx);
     var item = pantryScannedItems[idx];
     if(!item) return;
     var qty = parseFloat(el.querySelector('.pmatch-qty').value)||item.qty;
-    // Find existing pantry item (case-insensitive)
     var existingIdx = pantryItems.findIndex(function(p){ return p.name.toLowerCase()===item.name.toLowerCase(); });
     if(existingIdx>=0){
       var newQty = pantryItems[existingIdx].qty + qty;
       if(pantryItems[existingIdx].max && newQty > pantryItems[existingIdx].max){
-        showToast('"'+item.name+'" would exceed max stock — capped','err');
         newQty = pantryItems[existingIdx].max;
+        showToast('"'+item.name+'" capped at max','err');
       }
       pantryItems[existingIdx].qty = Math.round(newQty*10)/10;
+      if(item.emoji && !pantryItems[existingIdx].emoji) pantryItems[existingIdx].emoji = item.emoji;
       updated++;
     } else {
-      // New item not yet tracked — add it
-      pantryItems.push({name:item.name,emoji:'',qty:qty,unit:item.unit||'pcs',min:1,max:0,category:'pantry',expiry:'',notes:'Added from receipt'});
+      pantryItems.push({
+        name:item.name, emoji:item.emoji||'', qty:qty, unit:item.unit||'pcs',
+        min:1, max:0, category:normalisePantryCategory(item.storage||item.category||'pantry'),
+        expiry:calcExpiryDate(item.estimatedExpiryDays||0), notes:'Added from receipt',
+        typicalUsageDays:item.typicalUsageDays||0, storage:item.storage||'pantry'
+      });
       added++;
     }
   });
-  // Log expense if checkbox ticked
+
+  savePantryState();
+  syncPantry();
+
+  // Handle expense logging
   var addExpense = document.getElementById('receiptAddExpense');
   if(addExpense && addExpense.checked) {
     var storeEl = document.getElementById('receiptStoreName');
@@ -2967,29 +3079,55 @@ function applyPantryMatches() {
     var total = totalEl ? parseFloat(totalEl.value)||0 : 0;
     var store = storeEl ? storeEl.value.trim() : '';
     var cat   = catEl   ? catEl.value : 'food';
+    var today = new Date().toISOString().split('T')[0];
+
     if(total > 0) {
       var desc = store || 'Grocery receipt';
-      txns.push({
-        id: Date.now().toString(),
-        type: 'expense',
-        amount: total,
-        desc: desc,
-        cat: cat,
-        date: new Date().toISOString().split('T')[0],
-        currency: 'AUD',
-        amountAUD: total
-      });
-      save();
-      showToast('💳 $'+total.toFixed(2)+' logged — '+desc,'ok');
-      if(typeof gasUrl!=='undefined'&&gasUrl) setTimeout(function(){ pushToSheets(); },800);
+      // Check for duplicates first
+      var dupes = checkDuplicate(total, today, desc);
+      var doLog = function(){
+        var tx = {
+          id: Date.now().toString(), type:'expense', amount:total,
+          desc:desc, cat:cat, date:today, currency:'AUD', amountAUD:total,
+          lineItems: lineItems // attach line items to transaction
+        };
+        txns.push(tx);
+        save(); render();
+        showToast('💳 $'+total.toFixed(2)+' logged — '+desc+(added||updated?' + pantry updated':''),'ok');
+        if(typeof gasUrl!=='undefined'&&gasUrl) setTimeout(function(){ pushToSheets(); },800);
+        closeOv('pantryScanOv');
+        renderPantry();
+      };
+      var doSkip = function(){
+        showToast('Expense skipped — pantry updated ✓','ok');
+        closeOv('pantryScanOv');
+        renderPantry();
+      };
+      if(dupes.length) {
+        // Show warning inline in scan modal
+        var warnEl = document.getElementById('receiptDupWarning');
+        if(!warnEl) {
+          // Create warning area dynamically
+          warnEl = document.createElement('div');
+          warnEl.id = 'receiptDupWarning';
+          var matchResult = document.getElementById('pantryMatchResult');
+          if(matchResult) matchResult.insertBefore(warnEl, matchResult.firstChild);
+        }
+        showDuplicateWarning(dupes, doLog, doSkip);
+      } else {
+        doLog();
+      }
     } else {
-      showToast('Enter a total amount to log expense','err');
+      // No total — just update pantry
+      showToast('Pantry updated: +'+added+' new, '+updated+' restocked','ok');
+      closeOv('pantryScanOv');
+      renderPantry();
     }
+  } else {
+    showToast('Pantry updated: +'+added+' new, '+updated+' restocked','ok');
+    closeOv('pantryScanOv');
+    renderPantry();
   }
-  savePantryState();
-  closeOv('pantryScanOv');
-  render();
-  syncPantry();
 }
 
 // SVG icon paths for each category
@@ -3460,9 +3598,13 @@ function txCard(t,delay) {
     var proj=projects.find(function(p){return p.id===t.projectId;});
     if(proj) projTag='<span class="tx-project-tag">'+emojiHtml(proj.emoji||'folder',12)+' '+escH(proj.name)+'</span>';
   }
+  var receiptBadge = '';
+  if(t.lineItems && t.lineItems.length) {
+    receiptBadge = '<span class="tx-receipt-badge">🧾 '+t.lineItems.length+' items</span>';
+  }
   return '<div class="tx-item" style="animation-delay:'+delay+'ms" onclick="openEditTx(\''+t.id+'\')" >'+
     '<div class="tx-icon" style="background:'+catGradient(c)+'">'+catIcon(c,20)+'</div>'+
-    '<div class="tx-body"><div class="tx-name">'+escH(t.desc||c.label)+projTag+'</div>'+
+    '<div class="tx-body"><div class="tx-name">'+escH(t.desc||c.label)+projTag+receiptBadge+'</div>'+
     '<div class="tx-meta">'+c.label+' &middot; '+dateStr+'</div></div>'+
     '<div class="tx-right"><div class="tx-amt '+(isInc?'inc':'exp')+'">'+(isInc?'+':'-')+fmt(t.amount)+'</div>'+
     '<span class="tx-badge '+(isInc?'inc':'exp')+'">'+(isInc?'income':'expense')+'</span></div></div>';
@@ -3745,6 +3887,8 @@ function openTxModal(type) {
   document.getElementById('inDesc').value='';
   document.getElementById('inDate').valueAsDate=new Date();
   document.getElementById('txDeleteBtn').style.display='none';
+  var liEl = document.getElementById('txLineItems');
+  if(liEl) liEl.style.display='none';
   var curSel = document.getElementById('inCurrency');
   if(curSel) curSel.value = 'AUD';
   var hint = document.getElementById('txAudHint');
@@ -3770,6 +3914,16 @@ function openEditTx(id) {
   populateProjectDropdown();
   var ps = document.getElementById('inProject'); if(ps) ps.value = t.projectId||'';
   curType=t.type; setType(t.type); renderTxCatGrid(t.cat);
+  // Show line items if receipt transaction
+  var liEl = document.getElementById('txLineItems');
+  if(liEl) {
+    if(t.lineItems && t.lineItems.length) {
+      liEl.style.display='block';
+      liEl.innerHTML = renderReceiptLineItems(t.lineItems, t.amount, t.desc);
+    } else {
+      liEl.style.display='none';
+    }
+  }
   openOv('txModal');
 }
 
@@ -3870,23 +4024,28 @@ function writeAll(txns) {
   const newRows = []; let updated = 0;
   txns.forEach(t => {
     if (!t.id || !t.amount) return;
-    const row = [String(t.id), (t.date||'').slice(0,10), t.type||'expense', Number(t.amount)||0, t.cat||'other', t.desc||'', ts];
-    if (existingIds[String(t.id)]) { sh.getRange(existingIds[String(t.id)],1,1,7).setValues([row]); updated++; }
+    const lineItemsJson = t.lineItems && t.lineItems.length ? JSON.stringify(t.lineItems) : '';
+    const row = [String(t.id), (t.date||'').slice(0,10), t.type||'expense', Number(t.amount)||0, t.cat||'other', t.desc||'', ts, lineItemsJson];
+    if (existingIds[String(t.id)]) { sh.getRange(existingIds[String(t.id)],1,1,8).setValues([row]); updated++; }
     else newRows.push(row);
   });
-  if (newRows.length) sh.getRange(sh.getLastRow()+1,1,newRows.length,7).setValues(newRows);
+  if (newRows.length) sh.getRange(sh.getLastRow()+1,1,newRows.length,8).setValues(newRows);
   const fl = sh.getLastRow();
-  if (fl > 1) sh.getRange(2,1,fl-1,7).sort({ column: 2, ascending: false });
+  if (fl > 1) sh.getRange(2,1,fl-1,8).sort({ column: 2, ascending: false });
   return { written: newRows.length, updated };
 }
 
 function readAll() {
   const sh = getSheet(); const last = sh.getLastRow();
   if (last < 2) return [];
-  return sh.getRange(2,1,last-1,7).getValues().filter(r => r[0]).map(r => {
+  return sh.getRange(2,1,last-1,8).getValues().filter(r => r[0]).map(r => {
     let d = r[1];
     if (d instanceof Date) { d = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-    return { id: String(r[0]), date: String(d), type: r[2], amount: Number(r[3]), cat: r[4], desc: r[5] };
+    var lineItems = [];
+    try { if(r[7]) lineItems = JSON.parse(r[7]); } catch(e){}
+    var tx = { id: String(r[0]), date: String(d), type: r[2], amount: Number(r[3]), cat: r[4], desc: r[5] };
+    if(lineItems.length) tx.lineItems = lineItems;
+    return tx;
   });
 }
 
