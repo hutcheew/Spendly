@@ -1533,6 +1533,7 @@ input[type="file"]{display:none;}
     <button class="btn-danger" id="txDeleteBtn" style="display:none"><i class="ti ti-trash" style="font-size:16px;vertical-align:middle"></i> Delete transaction</button>
     <!-- Receipt line items (shown when editing a receipt transaction) -->
     <div id="txLineItems" style="display:none"></div>
+    <button class="btn-secondary" onclick="closeOv('txModal')"><i class="ti ti-arrow-left" style="font-size:16px;vertical-align:middle"></i> Return</button>
   </div>
 </div>
 
@@ -3956,7 +3957,9 @@ async function submitTx() {
   var curEl = document.getElementById('inCurrency');
   if(curEl) currency = curEl.value;
   var amountAUD = currency === 'AUD' ? amount : (fxRatesCache ? amount / (fxRatesCache[currency]||1) : amount);
+  var original = editingId ? txns.find(t=>t.id===editingId) : null;
   const tx={id,type:curType,amount,desc,cat,date,currency,amountAUD};
+  if(original && original.lineItems) tx.lineItems = original.lineItems;
   var projSel = document.getElementById('inProject');
   if(projSel && projSel.value) tx.projectId = projSel.value;
   if(editingId){
