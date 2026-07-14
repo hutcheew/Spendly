@@ -1571,6 +1571,9 @@ input[type="file"]{display:none;}
       <div class="mi-icon"><i class="ti ti-moon"></i></div><div><div class="mi-label" id="themeToggleLabel">Switch to light theme</div><div class="mi-desc">Toggle between dark and light appearance</div></div>
     </div>
     <div class="menu-div"></div>
+    <div class="menu-item" onclick="closeMenu();cleanupDuplicateTxns()">
+      <div class="mi-icon"><i class="ti ti-copy-off"></i></div><div><div class="mi-label">Remove duplicate transactions</div><div class="mi-desc">Clean up doubled recurring entries</div></div>
+    </div>
     <div class="menu-item" onclick="closeMenu();confirmClear()">
       <div class="mi-icon"><i class="ti ti-trash" style="color:var(--expense)"></i></div><div><div class="mi-label" style="color:var(--expense)">Clear all data</div><div class="mi-desc">Delete all transactions permanently</div></div>
     </div>
@@ -2038,6 +2041,15 @@ function formatDate(d) {
   if(days === 1) return 'tomorrow';
   if(days < 7) return 'in ' + days + ' days';
   return d.toLocaleDateString('en-AU', {day:'numeric', month:'short'});
+}
+
+// Returns a YYYY-MM-DD expiry date `daysFromNow` days out, or '' if no estimate given.
+function calcExpiryDate(daysFromNow) {
+  var days = Number(daysFromNow) || 0;
+  if(days <= 0) return '';
+  var d = new Date();
+  d.setDate(d.getDate() + Math.round(days));
+  return d.toISOString().split('T')[0];
 }
 
 function normalisePantryCategory(cat) {
@@ -3027,8 +3039,6 @@ function showDuplicateWarning(matches, onKeep, onSkip) {
   document.getElementById('dupKeepBtn').onclick = function(){ container.style.display='none'; onKeep(); };
 }
 
-function calcExpiryDate(days) { if(!days||days<=0) return ''; var d=new Date(); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
-
 function applyPantryMatches() {
   var selected = document.querySelectorAll('.scan-match-item.selected');
   if(!selected.length){ showToast('Select at least one item','err'); return; }
@@ -3458,6 +3468,10 @@ function updateExportCount(){
   el.textContent=n+' transaction'+(n!==1?'s':'')+' will be exported';
 }
 const escH=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function simpleHash(str){var h=0;str=String(str);for(var i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}return Math.abs(h).toString(36);}
+// Deterministic id for a recurring item's occurrence on a given date -- same on every device,
+// so pushing to Sheets updates the same row instead of creating a duplicate.
+function recurTxId(r, dateStr){ return 'recur_'+simpleHash((r.name||'')+'|'+(r.freq||'')+'|'+(r.amount||'')+'|'+(r.cat||''))+'_'+dateStr; }
 
 // ── RENDER ─────────────────────────────────────────────────────────────
 function render() {
@@ -3967,6 +3981,30 @@ function deleteTx(id) {
 }
 function confirmClear(){if(confirm('Delete ALL transactions?')){txns.forEach(t=>{if(!deletedIds.includes(t.id))deletedIds.push(t.id);});txns=[];save();render();showToast('All data cleared');}}
 
+// Finds transactions that are exact duplicates (same type+date+amount+desc+cat) -- the pattern
+// left behind by the old non-deterministic recurring-transaction id bug -- and removes the extras,
+// keeping the earliest-added one of each group. Queues removed ids for deletion from Sheets too.
+function findDuplicateTxns(){
+  var seen = {}, dupes = [];
+  txns.forEach(function(t){
+    var key = [t.type, t.date, Number(t.amount).toFixed(2), (t.desc||'').trim().toLowerCase(), t.cat].join('|');
+    if(seen[key]) dupes.push(t.id);
+    else seen[key] = t.id;
+  });
+  return dupes;
+}
+function cleanupDuplicateTxns(){
+  var dupeIds = findDuplicateTxns();
+  if(!dupeIds.length){ showToast('No duplicate transactions found','ok'); return; }
+  if(!confirm('Found '+dupeIds.length+' duplicate transaction'+(dupeIds.length>1?'s':'')+' (same date, amount, description & category). Remove the extras?')) return;
+  var dupeSet = new Set(dupeIds);
+  txns = txns.filter(function(t){ return !dupeSet.has(t.id); });
+  dupeIds.forEach(function(id){ if(!deletedIds.includes(id)) deletedIds.push(id); });
+  save(); render();
+  showToast('Removed '+dupeIds.length+' duplicate transaction'+(dupeIds.length>1?'s':''),'ok');
+  if(gasUrl) setTimeout(function(){ pushToSheets(); },600);
+}
+
 // ── GOOGLE SHEETS SYNC ─────────────────────────────────────────────────
 const GAS_CODE = `// Spendly Pro -- Apps Script Backend
 // 1. Open your Google Sheet → Extensions → Apps Script
@@ -4001,8 +4039,8 @@ function getSheet() {
   let sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(['id','date','type','amount','category','description','synced_at']);
-    sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
+    sh.appendRow(['id','date','type','amount','category','description','synced_at','line_items']);
+    sh.getRange(1,1,1,8).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   return sh;
 }
@@ -4422,7 +4460,7 @@ async function pullFromSheets(){
           const byLabel = allC.find(function(c){ return c.label.toLowerCase()===cat.toLowerCase(); });
           cat = byLabel ? byLabel.id : (t.type==='income'?'other_inc':'other');
         }
-        return {id:String(t.id||Date.now()),type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat:cat,date:normDate(t.date)};
+        return {id:String(t.id||Date.now()),type:String(t.type||'expense'),amount:Number(t.amount)||0,desc:String(t.desc||''),cat:cat,date:normDate(t.date),lineItems:(Array.isArray(t.lineItems)&&t.lineItems.length)?t.lineItems:undefined};
       } catch(e){ return null; }
     }).filter(Boolean);
 
@@ -5544,12 +5582,14 @@ function checkDueRecurring() {
     var nextDt = new Date(nextDate+'T00:00:00');
     var todayDt = new Date(today+'T00:00:00');
     var diffDays = Math.ceil((todayDt - nextDt) / 86400000);
-    // Due today or up to 2 days overdue, and not already added today
+    // Due today or up to 2 days overdue, and not already added (by deterministic id OR desc+date+type,
+    // in case it was added by an older version of this app before ids were deterministic)
+    var thisRecurId = recurTxId(r, today);
     var alreadyAdded = txns.some(function(t){
-      return t.desc === r.name && t.date === today && t.type === r.type;
+      return t.id === thisRecurId || (t.desc === r.name && t.date === today && t.type === r.type);
     });
     if(diffDays >= 0 && diffDays <= 2 && !alreadyAdded) {
-      due.push({idx:i, recur:r, nextDate:nextDate, daysOverdue:diffDays});
+      due.push({idx:i, recur:r, nextDate:nextDate, daysOverdue:diffDays, id:thisRecurId});
     }
   });
 
@@ -5578,18 +5618,22 @@ function checkDueRecurring() {
   var addAllBtn = document.getElementById('addAllDueBtn');
   if(addAllBtn) {
     addAllBtn.onclick = function() {
+      var existingIds = new Set(txns.map(function(t){ return t.id; }));
+      var addedCount = 0;
       due.forEach(function(d) {
+        if(existingIds.has(d.id)) return; // already present -- avoid double-add
         txns.push({
-          id: Date.now().toString()+'_'+d.idx,
+          id: d.id,
           type: d.recur.type,
           amount: Number(d.recur.amount),
           desc: d.recur.name,
           cat: d.recur.cat,
           date: today
         });
+        addedCount++;
       });
       save(); render(); closeOv('dueRecurOv');
-      showToast('Added '+due.length+' recurring transaction'+(due.length>1?'s':''), 'ok');
+      showToast('Added '+addedCount+' recurring transaction'+(addedCount!==1?'s':''), 'ok');
       if(gasUrl && autoSync==='add') setTimeout(function(){ doSync(true); }, 600);
     };
   }
@@ -5599,7 +5643,10 @@ function checkDueRecurring() {
 
 function addRecurAsTx(idx) {
   var r = recurringTxns[idx]; if(!r) return;
-  txns.push({id:Date.now().toString(),type:r.type,amount:r.amount,desc:r.name,cat:r.cat,date:new Date().toISOString().slice(0,10)});
+  var today = new Date().toISOString().slice(0,10);
+  var id = recurTxId(r, today);
+  if(txns.some(function(t){ return t.id===id; })){ showToast('"'+r.name+'" already added today','info'); return; }
+  txns.push({id:id,type:r.type,amount:r.amount,desc:r.name,cat:r.cat,date:today});
   save(); render(); showToast('"'+r.name+'" added as transaction','ok');
 }
 
