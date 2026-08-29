@@ -847,6 +847,21 @@ input[type="file"]{display:none;}
       <div class="sec-lbl" style="margin-bottom:6px">6-month trend</div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="trendLegend"></div>
       <div style="position:relative;height:160px"><canvas id="trendChart" role="img" aria-label="Income vs expenses over 6 months">Line chart of income and expenses.</canvas></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;display:flex;align-items:center;gap:6px" id="savingsSummary"></div>
+    </div>
+
+    <!-- Savings over time -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;" id="savingsOverTime">
+      <div class="sec-lbl" style="margin-bottom:6px">Savings over time</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px" id="savRngBtns">
+        <button class="chip active" data-rng="all" onclick="setSavgRng('all',this)">All time</button>
+        <button class="chip" data-rng="1y" onclick="setSavgRng('1y',this)">1 year</button>
+        <button class="chip" data-rng="2y" onclick="setSavgRng('2y',this)">2 years</button>
+        <button class="chip" data-rng="5y" onclick="setSavgRng('5y',this)">5 years</button>
+      </div>
+      <div style="position:relative;height:170px;margin-bottom:14px"><canvas id="savingsCurve" role="img" aria-label="Cumulative savings over time">Cumulative savings line chart.</canvas></div>
+      <div class="sec-lbl" style="margin-bottom:6px">Net saved per year</div>
+      <div style="position:relative;height:150px"><canvas id="yearlyBars" role="img" aria-label="Net saved per year">Yearly savings bars.</canvas></div>
     </div>
 
     <!-- Expense donut + bars -->
@@ -3707,6 +3722,83 @@ function buildDonutWithBars(canvasId, legendId, barsId, labels, values, colors) 
   }
 }
 var _analyticsCache = null;
+var _savgRng = 'all';
+function setSavgRng(r, btn) {
+  _savgRng = r;
+  var btns = document.querySelectorAll('#savRngBtns .chip');
+  btns.forEach(function(b){ b.classList.toggle('active', b === btn); });
+  renderSavingsTrend();
+}
+function renderSavingsTrend() {
+  if(curView !== 'analytics') return;
+  var savingsEl = document.getElementById('savingsOverTime');
+  if(!savingsEl) return;
+  var now = new Date();
+  now.setDate(1);
+  var cutoff = new Date(now);
+  if(_savgRng === '1y') cutoff.setFullYear(cutoff.getFullYear()-1);
+  if(_savgRng === '2y') cutoff.setFullYear(cutoff.getFullYear()-2);
+  if(_savgRng === '5y') cutoff.setFullYear(cutoff.getFullYear()-5);
+  var months = {}, min = null, max = null, yearSum = {};
+  txns.forEach(function(t){
+    var d = parseDate(t.date); if(!d) return;
+    d.setDate(1);
+    if(d < cutoff) return;
+    var k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    var yk = d.getFullYear();
+    var amt = t.amountAUD || t.amount || 0;
+    var net = t.type === 'income' ? amt : -amt;
+    if(!months[k]) months[k] = { net: 0, label: '' };
+    months[k].net += net;
+    if(!yearSum[yk]) yearSum[yk] = 0;
+    yearSum[yk] += net;
+    if(min === null || k < min) min = k;
+    if(max === null || k > max) max = k;
+  });
+  if(!min){ savingsEl.style.display = 'none'; return; }
+  savingsEl.style.display = 'block';
+  // build ordered month list
+  var cursor = new Date(parseInt(min.slice(0,4)), parseInt(min.slice(5,7))-1, 1);
+  var end = new Date(parseInt(max.slice(0,4)), parseInt(max.slice(5,7))-1, 1);
+  var labels = [], cum = [], running = 0;
+  while(cursor <= end){
+    var ck = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0');
+    var cm = months[ck]; if(!cm) cm = { net: 0 };
+    running += cm.net;
+    labels.push(cursor.toLocaleString('default',{month:'short'}) + ' ' + String(cursor.getFullYear()).slice(2));
+    cum.push(+running.toFixed(2));
+    cursor.setMonth(cursor.getMonth()+1);
+  }
+  destroyChart('savingsCurve');
+  destroyChart('yearlyBars');
+  var sc = document.getElementById('savingsCurve');
+  if(sc) _chartInstances['savingsCurve'] = new Chart(sc, {
+    type: 'line',
+    data: { labels: labels, datasets: [{ label: 'Cumulative savings', data: cum, borderColor: '#22d3a0', backgroundColor: 'rgba(34,211,160,0.10)', fill: true, tension: .35, pointRadius: 2, pointBackgroundColor: '#22d3a0', borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return ' Saved: $' + c.parsed.y.toLocaleString(undefined,{maximumFractionDigits:0}); } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#6b6b8a', maxTicksLimit: 8 } }, y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 10 }, color: '#6b6b8a', callback: function(v){ return '$' + v.toLocaleString(); } } } } }
+  });
+  var yl = Object.keys(yearSum).sort(), yNet = yl.map(function(k){ return +yearSum[k].toFixed(2); });
+  var yb = document.getElementById('yearlyBars');
+  if(yb && yl.length){
+    var colors = yNet.map(function(v){ return v >= 0 ? '#22d3a0' : 'rgba(244,63,94,0.75)'; });
+    _chartInstances['yearlyBars'] = new Chart(yb, {
+      type: 'bar',
+      data: { labels: yl, datasets: [{ label: 'Net saved', data: yNet, backgroundColor: colors, borderRadius: 6, maxBarThickness: 54 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return (c.parsed.y >= 0 ? '+' : '') + '$' + c.parsed.y.toLocaleString(undefined,{maximumFractionDigits:0}); } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#6b6b8a' } }, y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 10 }, color: '#6b6b8a', callback: function(v){ return '$' + v.toLocaleString(); } } } } }
+    });
+  }
+  // summary line under 6-month trend
+  var sumEl = document.getElementById('savingsSummary');
+  if(sumEl){
+    var totalSaved = cum.length ? cum[cum.length-1] : 0;
+    var firstYear = yl[0], best = null;
+    yNet.forEach(function(v,i){ if(!best || v > best.v) best = { y: yl[i], v: v }; });
+    sumEl.innerHTML = '<i class="ti ti-trending-up" style="color:var(--accent);font-size:16px"></i> Total saved ' +
+      (totalSaved >= 0 ? '$' + totalSaved.toLocaleString(undefined,{maximumFractionDigits:0}) : '-$' + Math.abs(totalSaved).toLocaleString(undefined,{maximumFractionDigits:0})) +
+      ' · best year ' + best.y + ' <span style="color:var(--accent)">+' + Math.round(best.v).toLocaleString() + '</span>' +
+      (yl.length > 1 ? ' · first year ' + yl[0] : '');
+  }
+}
 function renderAnalytics() {
   if(curView !== 'analytics') return; // skip if tab not visible
   var mt = monthTx();
@@ -3762,6 +3854,7 @@ function renderAnalytics() {
     incData.map(function(d){return d.color;})
   );
   renderCatCmp();
+  renderSavingsTrend();
 }
 
 function renderPie(svgId,legendId,data) {
