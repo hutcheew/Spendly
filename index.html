@@ -834,6 +834,10 @@ input[type="file"]{display:none;}
 <div id="view-analytics" style="display:none">
   <div class="analytics-sec">
     <div class="analytics-row">
+      <div class="acard"><div class="acard-label">Net income this month</div><div class="acard-val" id="netIncome" style="color:var(--income)">—</div><div class="acard-sub">income − expenses</div></div>
+      <div class="acard"><div class="acard-label">Net last month</div><div class="acard-val" id="netIncomePrev">—</div><div class="acard-sub">income − expenses</div></div>
+    </div>
+    <div class="analytics-row">
       <div class="acard"><div class="acard-label">vs last month</div><div class="acard-val" id="vsLastMonth">—</div><div class="acard-sub" id="vsLastMonthSub">Expenses</div></div>
       <div class="acard"><div class="acard-label">Savings rate</div><div class="acard-val" id="savingsRate">—</div><div class="acard-sub">of income saved</div></div>
     </div>
@@ -3812,6 +3816,11 @@ function renderAnalytics() {
   if(diffEl){ diffEl.textContent=(diff>=0?"+":"")+fmt(diff); diffEl.className="acard-val "+(diff>0?"trend-up":diff<0?"trend-down":"trend-same"); }
   var subEl = document.getElementById("vsLastMonthSub");
   if(subEl) subEl.textContent = diff===0?"Same as last month":diff>0?"More than last month":"Less than last month";
+  var lastInc = txns.filter(function(t){ return mKey(t.date)===lastKey && t.type==="income"; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var netEl = document.getElementById("netIncome");
+  if(netEl){ var net = income - expense; netEl.textContent=(net>=0?"+":"")+fmt(net); netEl.style.color= net>=0 ? "var(--income)" : "var(--expense)"; }
+  var netPEl = document.getElementById("netIncomePrev");
+  if(netPEl){ var netP = lastInc - lastExp; netPEl.textContent=(netP>=0?"+":"")+fmt(netP); netPEl.style.color= netP>=0 ? "var(--income)" : "var(--expense)"; }
   var sr = income>0 ? Math.round((income-expense)/income*100) : 0;
   var srEl = document.getElementById("savingsRate");
   if(srEl){ srEl.textContent=sr+"%"; srEl.className="acard-val "+(sr>=20?"trend-down":sr<0?"trend-up":""); }
@@ -3827,14 +3836,16 @@ function renderAnalytics() {
   for(var i=5;i>=0;i--){ var dm=new Date(viewMonth); dm.setMonth(dm.getMonth()-i); months6.push({key:dm.getFullYear()+"-"+String(dm.getMonth()+1).padStart(2,"0"),label:dm.toLocaleString("default",{month:"short"})}); }
   var expVals = months6.map(function(m){ return txns.filter(function(t){return mKey(t.date)===m.key&&t.type==="expense";}).reduce(function(s,t){return s+t.amount;},0); });
   var incVals = months6.map(function(m){ return txns.filter(function(t){return mKey(t.date)===m.key&&t.type==="income";}).reduce(function(s,t){return s+t.amount;},0); });
+  var netVals = incVals.map(function(iv,i){ return iv - expVals[i]; });
   var trendLeg = document.getElementById("trendLegend");
-  if(trendLeg) trendLeg.innerHTML = "<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:#60a5fa'></span>Expenses</span><span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;border:2px dashed #22d3a0'></span>Income</span>";
+  if(trendLeg) trendLeg.innerHTML = "<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:#60a5fa'></span>Expenses</span><span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;border:2px dashed #22d3a0'></span>Income</span><span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:#fbbf24'></span>Net</span>";
   destroyChart("trendChart");
   var tc = document.getElementById("trendChart");
   if(tc) _chartInstances["trendChart"] = new Chart(tc, {
     type:"line",
     data:{ labels:months6.map(function(m){return m.label;}), datasets:[
       {label:"Expenses",data:expVals,borderColor:"#60a5fa",backgroundColor:"rgba(96,165,250,0.08)",fill:true,tension:.4,pointRadius:3,pointBackgroundColor:"#60a5fa",borderWidth:2},
+      {label:"Net",data:netVals,borderColor:"#fbbf24",backgroundColor:"rgba(251,191,36,0.08)",fill:false,tension:.4,pointRadius:3,pointBackgroundColor:"#fbbf24",borderWidth:2},
       {label:"Income",data:incVals,borderColor:"#22d3a0",backgroundColor:"rgba(34,211,160,0.05)",fill:true,tension:.4,pointRadius:3,pointBackgroundColor:"#22d3a0",borderWidth:2,borderDash:[5,3]}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return " "+c.dataset.label+": $"+c.parsed.y.toFixed(0);}}}},
