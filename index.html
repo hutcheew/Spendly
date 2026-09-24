@@ -4464,7 +4464,26 @@ function writeAll(txns) {
   if (newRows.length) sh.getRange(sh.getLastRow()+1,1,newRows.length,8).setValues(newRows);
   const fl = sh.getLastRow();
   if (fl > 1) sh.getRange(2,1,fl-1,8).sort({ column: 2, ascending: false });
+  removeDupIdRows(sh);
   return { written: newRows.length, updated };
+}
+
+// Self-heal: if the same transaction id appears on multiple rows (left over from the old
+// non-deterministic recurring-id bug), keep the first row and remove the rest. Runs on every push.
+function removeDupIdRows(sh) {
+  const last = sh.getLastRow();
+  if (last < 2) return;
+  const ids = sh.getRange(2,1,last-1,1).getValues();
+  const seen = {}; const toDelete = [];
+  ids.forEach(function(r,i){
+    const id = String(r[0]||'').trim();
+    if(!id) return;
+    if(seen[id]) toDelete.push(i);
+    else seen[id] = true;
+  });
+  if(!toDelete.length) return;
+  toDelete.sort(function(a,b){ return b-a; });
+  toDelete.forEach(function(i){ sh.deleteRow(i+2); });
 }
 
 function readAll() {
