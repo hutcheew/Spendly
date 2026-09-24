@@ -1046,7 +1046,10 @@ input[type="file"]{display:none;}
   <div style="margin:10px 18px 0;background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);">Asset Allocation</div>
-      <button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="ti ti-refresh" style="font-size:14px;vertical-align:middle"></i> Live Prices</button>
+      <div style="display:flex;gap:6px;">
+        <button id="scanPortfolioBtn" onclick="openEtfScan()" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="ti ti-camera" style="font-size:14px;vertical-align:middle"></i> Scan</button>
+        <button id="refreshPricesBtn" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="ti ti-refresh" style="font-size:14px;vertical-align:middle"></i> Live Prices</button>
+      </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="allocLegend"></div>
     <div style="display:flex;align-items:center;gap:14px;">
@@ -1978,6 +1981,54 @@ input[type="file"]{display:none;}
     </div>
 
     <button class="btn-primary acc-btn" id="pantryScanBtn" onclick="doPantryScan()" style="display:none"><i class="ti ti-sparkles" style="font-size:16px;vertical-align:middle"></i> Scan with AI</button>
+  </div>
+</div>
+
+<!-- ETF PORTFOLIO SCAN -->
+<div class="overlay" id="etfScanOv" onclick="closeOvOutside(event,'etfScanOv')">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2>Scan Portfolio Screenshot</h2>
+    <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:12px">Photo a screenshot of your ETF app (e.g. Betashares Direct, CommSec). AI reads each holding and updates or adds it — great after auto-invest.</p>
+
+    <div class="fg">
+      <label>AI Engine</label>
+      <div class="api-toggle" id="etfApiToggle">
+        <button class="api-toggle-btn" onclick="setEtfApi('claude',this)">Claude</button>
+        <button class="api-toggle-btn active" onclick="setEtfApi('gemini',this)">Gemini</button>
+      </div>
+    </div>
+    <div class="fg" id="etfClaudeKeyGroup" style="display:none">
+      <label>Claude API key</label>
+      <input type="password" id="etfClaudeKey" placeholder="sk-ant-..." autocomplete="off">
+    </div>
+    <div class="fg" id="etfGeminiKeyGroup">
+      <label>Gemini API key</label>
+      <input type="password" id="etfGeminiKey" placeholder="AQ.Ab... or AIza..." autocomplete="off">
+      <small>Get one free at aistudio.google.com — stored locally only</small>
+    </div>
+
+    <!-- Photo area -->
+    <label style="display:block;position:relative;margin-bottom:6px">
+      <div class="receipt-preview" id="etfScanPreview">
+        <div><div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-camera" style="font-size:32px"></i></div><div>Choose from gallery</div></div>
+      </div>
+      <input type="file" id="etfScanIn" accept="image/*" onchange="handleEtfScanPhoto(event)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer">
+    </label>
+    <button onclick="document.getElementById('etfScanCameraIn').click()" style="width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer"><i class="ti ti-camera" style="font-size:15px;vertical-align:middle"></i> Take photo with camera</button>
+    <input type="file" id="etfScanCameraIn" accept="image/*" capture="environment" onchange="handleEtfScanPhoto(event)" style="display:none">
+
+    <div id="etfScanLoading" style="display:none;text-align:center;padding:16px;color:var(--text3);font-size:13px">
+      <div style="font-size:28px;margin-bottom:8px;opacity:.5"><i class="ti ti-sparkles" style="font-size:28px"></i></div>Reading portfolio...
+    </div>
+
+    <div id="etfScanResult" style="display:none">
+      <div id="etfScanHeader" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Holdings found — check and edit before applying:</div>
+      <div id="etfScanList"></div>
+      <button class="btn-primary acc-btn" onclick="applyEtfScan()" style="margin-top:10px"><i class="ti ti-check" style="font-size:16px;vertical-align:middle"></i> Update Portfolio</button>
+    </div>
+
+    <button class="btn-primary acc-btn" id="etfScanBtn" onclick="doEtfScan()" style="display:none"><i class="ti ti-sparkles" style="font-size:16px;vertical-align:middle"></i> Scan with AI</button>
   </div>
 </div>
 
@@ -3160,6 +3211,232 @@ function applyPantryMatches() {
     closeOv('pantryScanOv');
     renderPantry();
   }
+}
+
+// ── ETF PORTFOLIO SCAN ────────────────────────────────────────────────
+var etfScanBase64 = null;
+var etfScanMime = 'image/jpeg';
+var etfScanApiProvider = 'gemini';
+var etfScanRows = [];
+
+function openEtfScan() {
+  var claudeKey = localStorage.getItem('sply_api_key')||'';
+  var geminiKey = localStorage.getItem('sply_gemini_key')||'';
+  if(claudeKey) document.getElementById('etfClaudeKey').value = claudeKey;
+  if(geminiKey) document.getElementById('etfGeminiKey').value = geminiKey;
+  etfScanBase64 = null;
+  etfScanRows = [];
+  setEtfApi(etfScanApiProvider, document.querySelector('#etfApiToggle .api-toggle-btn.active'));
+  document.getElementById('etfScanBtn').style.display='none';
+  document.getElementById('etfScanLoading').style.display='none';
+  document.getElementById('etfScanResult').style.display='none';
+  document.getElementById('etfScanPreview').innerHTML='<div><div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-camera" style="font-size:32px"></i></div><div>Choose from gallery</div></div>';
+  _openOv('etfScanOv');
+}
+
+function setEtfApi(provider, el) {
+  etfScanApiProvider = provider;
+  localStorage.setItem('sply_etf_api', provider);
+  document.querySelectorAll('#etfApiToggle .api-toggle-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('#etfApiToggle .api-toggle-btn').forEach(function(b){
+    if(b.textContent.toLowerCase().indexOf(provider.substring(0,3))>=0) b.classList.add('active');
+  });
+  document.getElementById('etfClaudeKeyGroup').style.display = provider==='claude' ? 'block' : 'none';
+  document.getElementById('etfGeminiKeyGroup').style.display = provider==='gemini' ? 'block' : 'none';
+}
+
+function handleEtfScanPhoto(e) {
+  var file = e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var img = new Image();
+    img.onload = function(){
+      var MAX = 1400;
+      var w = img.width, h = img.height;
+      if(w > MAX || h > MAX){
+        if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = c.toDataURL('image/jpeg', 0.82);
+      var sizeKB = Math.round(dataUrl.length * 3/4 / 1024);
+      if(sizeKB > 900){ dataUrl = c.toDataURL('image/jpeg', 0.65); sizeKB = Math.round(dataUrl.length * 3/4 / 1024); }
+      etfScanBase64 = dataUrl.split(',')[1];
+      etfScanMime = 'image/jpeg';
+      document.getElementById('etfScanPreview').innerHTML =
+        '<img src="'+dataUrl+'" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain">'+
+        '<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px">'+sizeKB+'KB ready to scan</div>';
+      document.getElementById('etfScanBtn').style.display = 'block';
+      document.getElementById('etfScanResult').style.display = 'none';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+
+async function doEtfScan() {
+  if(!etfScanBase64){ showToast('Choose a screenshot first','err'); return; }
+  document.getElementById('etfScanLoading').style.display='block';
+  document.getElementById('etfScanBtn').style.display='none';
+  document.getElementById('etfScanResult').style.display='none';
+  try {
+    var list = null;
+    if(etfScanApiProvider==='claude') list = await scanEtfWithClaude();
+    else list = await scanEtfWithGemini();
+    if(!list || !list.length) throw new Error('No holdings detected. Try Claude for better accuracy.');
+    renderEtfScanResults(list);
+  } catch(e) {
+    showToast('Scan failed: '+e.message,'err');
+    document.getElementById('etfScanBtn').style.display='block';
+  }
+  document.getElementById('etfScanLoading').style.display='none';
+}
+
+var ETF_SCAN_PROMPT = 'This is a screenshot of an ETF portfolio app (e.g. Betashares Direct, CommSec, Stake, CMC). List EVERY holding shown. For each holding return: ticker (short ASX code, uppercase letters only, e.g. DHHF — remove any .AX suffix), name (short, max 6 words), units (number of shares/units you hold), price (current unit price in AUD, number only, no $). If units are not shown but market value and price are, compute units = value / price (round to 2 dp). If price is not shown but units and value are, compute price = value / units. Respond ONLY with JSON: {"holdings":[{"ticker":"DHHF","name":"BetaShares Diversified High Growth","units":1234.56,"price":25.78}]}. No extra text, no markdown.';
+
+async function scanEtfWithGemini() {
+  var key = document.getElementById('etfGeminiKey').value.trim();
+  if(!key){ throw new Error('Enter your Gemini API key'); }
+  localStorage.setItem('sply_gemini_key', key);
+  var isAuthKey = key.startsWith('AQ.');
+  var model = 'gemini-2.5-flash-lite';
+  var url = isAuthKey
+    ? 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent'
+    : 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
+  var headers = {'Content-Type':'application/json'};
+  if(isAuthKey) headers['x-goog-api-key'] = key;
+  var res = await fetch(url,{
+    method:'POST',
+    headers: headers,
+    body:JSON.stringify({contents:[{parts:[
+      {inlineData:{mimeType:etfScanMime,data:etfScanBase64}},
+      {text:ETF_SCAN_PROMPT}
+    ]}]})
+  });
+  if(!res.ok){var e=await res.json();throw new Error(e.error && e.error.message || 'Gemini API error '+res.status);}
+  var data = await res.json();
+  var text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g,'').trim();
+  var parsed = JSON.parse(text);
+  return parsed.holdings || parsed || [];
+}
+
+async function scanEtfWithClaude() {
+  var key = document.getElementById('etfClaudeKey').value.trim();
+  if(!key){ throw new Error('Enter your Claude API key'); }
+  localStorage.setItem('sply_api_key', key);
+  var res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:etfScanMime,data:etfScanBase64}},
+      {type:'text',text:ETF_SCAN_PROMPT}
+    ]}]})
+  });
+  if(!res.ok){var e=await res.json();throw new Error(e.error && e.error.message || 'Claude API error '+res.status);}
+  var data = await res.json();
+  var text = data.content[0].text.trim().replace(/```json|```/g,'').trim();
+  var parsed = JSON.parse(text);
+  return parsed.holdings || parsed || [];
+}
+
+function normalizeTicker(t){ return String(t||'').toUpperCase().trim().replace(/\.AX$/i,'').replace(/[^A-Z0-9]/g,''); }
+
+function renderEtfScanResults(list) {
+  var existingIdx = {};
+  holdings.forEach(function(h,i){ existingIdx[normalizeTicker(h.ticker)] = i; });
+  etfScanRows = list.map(function(row,ri){
+    var tick = normalizeTicker(row.ticker) || 'ETF'+(ri+1);
+    var idx = (existingIdx[tick] !== undefined) ? existingIdx[tick] : -1;
+    return {
+      ticker: tick,
+      name: String(row.name||'').trim(),
+      units: parseFloat(String(row.units).replace(/[^0-9.]/g,''))||0,
+      price: parseFloat(String(row.price).replace(/[^0-9.]/g,''))||0,
+      existingIdx: idx
+    };
+  }).filter(function(r){ return r.ticker; });
+  var rowsHtml = etfScanRows.map(function(r,ri){
+    var isUpd = r.existingIdx >= 0;
+    var badge = isUpd
+      ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.25)">UPDATE</span>'
+      : '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(34,211,160,.12);color:#22d3a0;border:1px solid rgba(34,211,160,.25)">NEW</span>';
+    var val = r.units * r.price;
+    return '<div style="background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<input type="checkbox" data-inc="'+ri+'" checked style="width:17px;height:17px;accent-color:var(--accent);flex-shrink:0">'+
+          '<div><div style="font-weight:800;font-size:15px;letter-spacing:.5px">'+escH(r.ticker)+'</div>'+
+          '<div style="font-size:11px;color:var(--text3)">'+escH(isUpd ? (holdings[r.existingIdx].name||r.name) : (r.name||'New holding'))+'</div></div>'+
+        '</div>'+
+        badge+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Units</div>'+
+          '<input type="number" step="0.001" data-units="'+ri+'" value="'+r.units+'" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 8px;color:var(--text);font-size:13px;font-family:inherit;outline:none"></div>'+
+        '<div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Price ($)</div>'+
+          '<input type="number" step="0.01" data-price="'+ri+'" value="'+r.price+'" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 8px;color:var(--text);font-size:13px;font-family:inherit;outline:none"></div>'+
+        '<div style="width:80px;flex-shrink:0"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Value</div>'+
+          '<div data-val="'+ri+'" style="padding:7px 8px;font-size:13px;font-weight:700;color:var(--income);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">$'+val.toFixed(0)+'</div></div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('etfScanList').innerHTML = rowsHtml;
+  // live value recalc
+  document.querySelectorAll('#etfScanList input[data-units]').forEach(function(inp){
+    inp.addEventListener('input', function(){ recalcEtfRowValue(parseInt(this.dataset.units)); });
+  });
+  document.querySelectorAll('#etfScanList input[data-price]').forEach(function(inp){
+    inp.addEventListener('input', function(){ recalcEtfRowValue(parseInt(this.dataset.price)); });
+  });
+  document.getElementById('etfScanResult').style.display = 'block';
+  var updCnt = etfScanRows.filter(function(r){ return r.existingIdx >= 0; }).length;
+  var newCnt = etfScanRows.length - updCnt;
+  document.getElementById('etfScanHeader').textContent =
+    etfScanRows.length+' holdings found ('+updCnt+' existing to update, '+newCnt+' new to add) — review and edit:';
+  document.getElementById('etfScanBtn').style.display = 'none';
+}
+
+function recalcEtfRowValue(ri) {
+  var units = parseFloat(document.querySelector('input[data-units="'+ri+'"]').value)||0;
+  var price = parseFloat(document.querySelector('input[data-price="'+ri+'"]').value)||0;
+  var v = document.querySelector('[data-val="'+ri+'"]');
+  if(v) v.textContent = '$'+(units*price).toFixed(0);
+}
+
+function applyEtfScan() {
+  var updated = 0, added = 0;
+  etfScanRows.forEach(function(r,ri){
+    var inc = document.querySelector('input[data-inc="'+ri+'"]');
+    if(inc && !inc.checked) return;
+    var tick = r.ticker;
+    var units = parseFloat(document.querySelector('input[data-units="'+ri+'"]').value)||0;
+    var price = parseFloat(document.querySelector('input[data-price="'+ri+'"]').value)||0;
+    var name = r.name;
+    if(r.existingIdx >= 0){
+      var h = holdings[r.existingIdx];
+      if(units > 0) h.units = units;
+      if(price > 0) h.currentPrice = price;
+      if(!h.name && name) h.name = name;
+      h.ticker = tick;
+      updated++;
+    } else {
+      var color = '#818cf8';
+      var known = BETASHARES_ETFS.filter(function(e){ return normalizeTicker(e.ticker)===tick; });
+      if(known.length) color = known[0].color;
+      else color = COLORS[holdings.length % COLORS.length];
+      holdings.push({ticker:tick, name:name, units:units, avgPrice:price||0, currentPrice:price||0, color:color});
+      added++;
+    }
+  });
+  if(!updated && !added){ showToast('No holdings selected to apply','err'); return; }
+  save(); renderPortfolio();
+  showToast('Portfolio updated: '+updated+' changed, '+added+' added','ok');
+  closeOv('etfScanOv');
+  if(typeof gasUrl!=='undefined'&&gasUrl) setTimeout(function(){ pushToSheets(); },800);
 }
 
 // SVG icon paths for each category
