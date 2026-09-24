@@ -777,6 +777,30 @@ input[type="file"]{display:none;}
     </div>
   </div>
 
+  <!-- Cash flow -->
+  <div style="margin:8px 18px 0;">
+    <div style="background:linear-gradient(145deg,var(--s2),var(--s3));border:1px solid var(--border);border-radius:var(--card-r);padding:14px 18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);">Cash flow · year to date</div>
+        <div style="font-size:10px;" id="homeCfVs"></div>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Income</div>
+          <div style="font-size:18px;font-weight:600;color:var(--income)" id="homeCfInc">$0.00</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Expenses</div>
+          <div style="font-size:18px;font-weight:600;color:var(--expense)" id="homeCfExp">$0.00</div>
+        </div>
+        <div style="text-align:right;flex:1">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Net</div>
+          <div style="font-family:'Instrument Serif',serif;font-size:28px;letter-spacing:-1px;line-height:1.1;" id="homeCfNet">$0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bill reminders -->
   <div id="homeBillReminders" style="display:none;margin:8px 18px 0;"></div>
 
@@ -852,6 +876,14 @@ input[type="file"]{display:none;}
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="trendLegend"></div>
       <div style="position:relative;height:160px"><canvas id="trendChart" role="img" aria-label="Income vs expenses over 6 months">Line chart of income and expenses.</canvas></div>
       <div style="font-size:12px;color:var(--text3);margin-top:8px;display:flex;align-items:center;gap:6px" id="savingsSummary"></div>
+    </div>
+
+    <!-- Net cash flow -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;margin-bottom:10px;">
+      <div class="sec-lbl" style="margin-bottom:6px">Net cash flow <span style="font-weight:400;color:var(--text3)">· last 12 months</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text3);" id="netFlowLegend"></div>
+      <div style="position:relative;height:160px"><canvas id="netFlowChart" role="img" aria-label="Net cash flow over the last 12 months">Net cash flow bar chart.</canvas></div>
+      <div style="font-size:12px;color:var(--text2);margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap" id="netFlowSummary"></div>
     </div>
 
     <!-- Savings over time -->
@@ -3800,8 +3832,44 @@ function render() {
 
 function renderHomeWidgets() {
   renderHomeNetWorth();
+  renderHomeCashFlow();
   renderBillReminders();
   renderHomeGoals();
+}
+
+function renderHomeCashFlow() {
+  var year = viewMonth.getFullYear();
+  var prefix = String(year) + '-';
+  var inc = 0, exp = 0;
+  for (var i = 0; i < txns.length; i++) {
+    var t = txns[i];
+    if (mKey(t.date).indexOf(prefix) !== 0) continue;
+    if (t.type === 'income') inc += t.amount; else if (t.type === 'expense') exp += t.amount;
+  }
+  var net = inc - exp;
+  var py = String(year - 1) + '-';
+  var linc = 0, lexp = 0;
+  for (var j = 0; j < txns.length; j++) {
+    var tt = txns[j];
+    if (mKey(tt.date).indexOf(py) !== 0) continue;
+    if (tt.type === 'income') linc += tt.amount; else if (tt.type === 'expense') lexp += tt.amount;
+  }
+  var lnet = linc - lexp;
+  var incEl = document.getElementById('homeCfInc');
+  if (incEl) incEl.textContent = fmt(inc);
+  var expEl = document.getElementById('homeCfExp');
+  if (expEl) expEl.textContent = fmt(exp);
+  var netEl = document.getElementById('homeCfNet');
+  if (netEl) { netEl.textContent = (net >= 0 ? '+' : '') + fmt(net); netEl.style.color = net >= 0 ? 'var(--income)' : 'var(--expense)'; }
+  var vs = document.getElementById('homeCfVs');
+  if (vs) {
+    if (!inc && !exp && !linc && !lexp) { vs.textContent = 'No data this year'; vs.style.color = 'var(--text3)'; }
+    else {
+      var delta = net - lnet;
+      vs.textContent = delta === 0 ? 'Same as last year' : (delta >= 0 ? '+' : '−') + fmt(delta) + ' vs last year';
+      vs.style.color = delta === 0 ? 'var(--text3)' : delta > 0 ? 'var(--income)' : 'var(--expense)';
+    }
+  }
 }
 
 function renderHomeNetWorth() {
@@ -4143,6 +4211,74 @@ function renderAnalytics() {
   );
   renderCatCmp();
   renderSavingsTrend();
+  renderNetFlow();
+}
+
+function renderNetFlow() {
+  destroyChart('netFlowChart');
+  var canvas = document.getElementById('netFlowChart');
+  if (!canvas) return;
+  var months = [];
+  for (var i = 11; i >= 0; i--) {
+    var dm = new Date(viewMonth); dm.setMonth(dm.getMonth() - i);
+    var label = dm.toLocaleString('default', { month: 'short' });
+    if (dm.getMonth() === 0 || i === 0) label += " '" + String(dm.getFullYear()).slice(2);
+    months.push({ key: dm.getFullYear() + '-' + String(dm.getMonth() + 1).padStart(2, '0'), label: label });
+  }
+  var vals = months.map(function (m) {
+    var v = 0;
+    for (var k = 0; k < txns.length; k++) {
+      var t = txns[k];
+      if (mKey(t.date) !== m.key) continue;
+      if (t.type === 'income') v += t.amount; else if (t.type === 'expense') v -= t.amount;
+    }
+    return Math.round(v * 100) / 100;
+  });
+  var colors = vals.map(function (v) { return v > 0 ? '#22d3a0' : v < 0 ? '#f87171' : '#5b5b78'; });
+  var ytdStart = viewMonth.getFullYear() + '-01';
+  var ytd = 0;
+  for (var m2 = 0; m2 < months.length; m2++) {
+    if (months[m2].key < ytdStart) continue;
+    ytd += vals[m2];
+  }
+  _chartInstances['netFlowChart'] = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: months.map(function (m) { return m.label; }), datasets: [{ data: vals, backgroundColor: colors, borderRadius: 4, maxBarThickness: 26 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function (c) { return ' Net: ' + (c.parsed.y >= 0 ? '+' : '−') + fmt(Math.abs(c.parsed.y)); } } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#6b6b8a', maxRotation: 0, autoSkip: false } },
+        y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, color: '#6b6b8a', callback: function (v) { return '$' + Number(v).toLocaleString(); } } }
+      }
+    }
+  });
+  var legEl = document.getElementById('netFlowLegend');
+  if (legEl) legEl.innerHTML = "<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:#22d3a0'></span>Positive month</span><span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;border-radius:2px;background:#f87171'></span>Negative month</span>";
+  var sumEl = document.getElementById('netFlowSummary');
+  if (!sumEl) return;
+  if (!vals.some(function (v) { return v !== 0; })) { sumEl.textContent = 'Add income and expenses to see your cash flow.'; sumEl.style.color = 'var(--text3)'; return; }
+  var prevY = 0, hasPrev = false;
+  var pyPrefix = String(viewMonth.getFullYear() - 1) + '-';
+  var cmPad = String(viewMonth.getMonth() + 1).padStart(2, '0');
+  for (var p = 0; p < txns.length; p++) {
+    var tt2 = txns[p];
+    var pk2 = mKey(tt2.date);
+    if (pk2.indexOf(pyPrefix) !== 0 || pk2 > pyPrefix + cmPad) continue;
+    hasPrev = true;
+    if (tt2.type === 'income') prevY += tt2.amount; else if (tt2.type === 'expense') prevY -= tt2.amount;
+  }
+  var pos = vals.filter(function (v) { return v > 0; }).length;
+  sumEl.style.color = 'var(--text2)';
+  sumEl.innerHTML =
+    '<span>YTD: <span style="color:' + (ytd >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (ytd >= 0 ? '+' : '−') + fmt(Math.abs(ytd)) + '</span></span>' +
+    '<span style="color:var(--text3)">·</span>' +
+    '<span>Same period last year: <span style="color:' + (!hasPrev ? 'var(--text3)' : prevY >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (!hasPrev ? '—' : (prevY >= 0 ? '+' : '−') + fmt(Math.abs(prevY))) + '</span></span>' +
+    '<span style="color:var(--text3)">·</span>' +
+    '<span>Positive months: <span style="color:var(--income)">' + pos + '/' + vals.length + '</span></span>';
 }
 
 function renderPie(svgId,legendId,data) {
