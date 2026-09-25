@@ -31,8 +31,8 @@ function getSheet() {
   let sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(['id','date','type','amount','category','description','synced_at']);
-    sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
+    sh.appendRow(['id','date','type','amount','category','description','synced_at','line_items']);
+    sh.getRange(1,1,1,8).setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
   }
   return sh;
 }
@@ -52,17 +52,26 @@ function writeAll(txns) {
   const sh = getSheet(); const last = sh.getLastRow();
   const ts = new Date().toLocaleString();
   const existingIds = {};
-  if (last > 1) sh.getRange(2,1,last-1,1).getValues().forEach((r,i) => { if (r[0]) existingIds[String(r[0])] = i+2; });
+  const existingLineItems = {};
+  if (last > 1) {
+    sh.getRange(2,1,last-1,8).getValues().forEach((r,i) => {
+      if (r[0]) { existingIds[String(r[0])] = i+2; existingLineItems[String(r[0])] = r[7] || ''; }
+    });
+  }
   const newRows = []; let updated = 0;
   txns.forEach(t => {
     if (!t.id || !t.amount) return;
-    const row = [String(t.id), (t.date||'').slice(0,10), t.type||'expense', Number(t.amount)||0, t.cat||'other', t.desc||'', ts];
-    if (existingIds[String(t.id)]) { sh.getRange(existingIds[String(t.id)],1,1,7).setValues([row]); updated++; }
+    let lineItemsJson = t.lineItems && t.lineItems.length ? JSON.stringify(t.lineItems) : '';
+    // If this push doesn't carry line items for a row that already has them saved (e.g. another
+    // device hasn't pulled them down yet), keep what's already in the sheet -- never blank it out.
+    if (!lineItemsJson && existingLineItems[String(t.id)]) lineItemsJson = existingLineItems[String(t.id)];
+    const row = [String(t.id), (t.date||'').slice(0,10), t.type||'expense', Number(t.amount)||0, t.cat||'other', t.desc||'', ts, lineItemsJson];
+    if (existingIds[String(t.id)]) { sh.getRange(existingIds[String(t.id)],1,1,8).setValues([row]); updated++; }
     else newRows.push(row);
   });
-  if (newRows.length) sh.getRange(sh.getLastRow()+1,1,newRows.length,7).setValues(newRows);
+  if (newRows.length) sh.getRange(sh.getLastRow()+1,1,newRows.length,8).setValues(newRows);
   const fl = sh.getLastRow();
-  if (fl > 1) sh.getRange(2,1,fl-1,7).sort({ column: 2, ascending: false });
+  if (fl > 1) sh.getRange(2,1,fl-1,8).sort({ column: 2, ascending: false });
   removeDupIdRows(sh);
   return { written: newRows.length, updated };
 }
@@ -88,10 +97,14 @@ function removeDupIdRows(sh) {
 function readAll() {
   const sh = getSheet(); const last = sh.getLastRow();
   if (last < 2) return [];
-  return sh.getRange(2,1,last-1,7).getValues().filter(r => r[0]).map(r => {
+  return sh.getRange(2,1,last-1,8).getValues().filter(r => r[0]).map(r => {
     let d = r[1];
     if (d instanceof Date) { d = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-    return { id: String(r[0]), date: String(d), type: r[2], amount: Number(r[3]), cat: r[4], desc: r[5] };
+    var lineItems = [];
+    try { if(r[7]) lineItems = JSON.parse(r[7]); } catch(e){}
+    var tx = { id: String(r[0]), date: String(d), type: r[2], amount: Number(r[3]), cat: r[4], desc: r[5] };
+    if(lineItems.length) tx.lineItems = lineItems;
+    return tx;
   });
 }
 
