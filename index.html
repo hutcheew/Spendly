@@ -2928,7 +2928,7 @@ async function scanWithClaude() {
   var key = document.getElementById('pantryClaudeKey').value.trim();
   if(!key){ throw new Error('Enter your Claude API key'); }
   localStorage.setItem('sply_api_key', key);
-  var prompt = 'List every grocery/household item on this receipt. For each item return: name (short, common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Also extract the store name, total amount, receipt date (YYYY-MM-DD), and best category (food/transport/health/shopping/entertainment/bills/dining/travel/other). Respond ONLY with JSON: {"store":"Coles","total":47.85,"date":"2026-07-07","category":"food","items":[{"name":"Rice","qty":1,"unit":"kg"},...]}. No extra text.';
+  var prompt = 'List every grocery/household item on this receipt. For each item return: name (short, common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can), and price (unit price for ONE item in AUD, e.g. 3.99). Also extract the store name, total amount, receipt date (YYYY-MM-DD), and best category (food/transport/health/shopping/entertainment/bills/dining/travel/other). Respond ONLY with JSON: {"store":"Coles","total":47.85,"date":"2026-07-07","category":"food","items":[{"name":"Apples","qty":1,"unit":"kg","price":3.99},...]}. No extra text.';
   var res = await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
@@ -2953,7 +2953,7 @@ async function scanWithGemini() {
   var key = document.getElementById('pantryGeminiKey').value.trim();
   if(!key){ throw new Error('Enter your Gemini API key'); }
   localStorage.setItem('sply_gemini_key', key);
-  var prompt = 'List every grocery/household item on this receipt. For each item return name (short common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can). Also extract the store name, total amount, receipt date (YYYY-MM-DD), and best category (food/transport/health/shopping/entertainment/bills/dining/travel/other). Respond ONLY with JSON: {"store":"Coles","total":47.85,"date":"2026-07-07","category":"food","items":[{"name":"Rice","qty":1,"unit":"kg"},...]}. No extra text.';
+  var prompt = 'List every grocery/household item on this receipt. For each item return name (short common name), qty (number bought, default 1), unit (pcs/kg/g/L/bottle/box/pack/can), and price (unit price for ONE item in AUD, e.g. 3.99). Also extract the store name, total amount, receipt date (YYYY-MM-DD), and best category (food/transport/health/shopping/entertainment/bills/dining/travel/other). Respond ONLY with JSON: {"store":"Coles","total":47.85,"date":"2026-07-07","category":"food","items":[{"name":"Apples","qty":2,"unit":"kg","price":3.99},...]}. No extra text.';
   // Support both new AQ. auth keys and legacy AIza keys
   var isAuthKey = key.startsWith('AQ.');
   var model = isAuthKey ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash-lite';
@@ -3012,7 +3012,11 @@ function parseOCRText(text) {
     if(name.length < 3) return;
     var qtyMatch = qtyRegex.exec(line);
     var qty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
-    items.push({name: name, qty: qty, unit:'pcs'});
+    // Unit price = last price on the line, divided by qty when it's a total
+    var prices = line.match(/\$?\d+([.,]\d{2})/g) || [];
+    var price = prices.length ? parseFloat(prices[prices.length-1].replace(/[$,]/g,'')) : 0;
+    if(qty > 1 && price) price = Math.round(price/qty*100)/100;
+    items.push({name: name, qty: qty, unit:'pcs', price: price});
   });
   if(!items.length) throw new Error('Could not parse items from receipt text. Try Claude or Gemini for better accuracy.');
   return items;
@@ -3052,11 +3056,14 @@ function renderPantryMatches(items, meta) {
       '<div class="scan-match-check">'+ti('check',14)+'</div>'+
       '<div style="flex:1;min-width:0">'+
         '<div style="font-weight:500;font-size:13px">'+escH(item.name)+matchNote+'</div>'+
-        '<div style="font-size:11px;color:var(--text3)">Bought: '+item.qty+' '+escH(item.unit)+(existing?' · current stock: '+existing.qty+' '+existing.unit:'')+'</div>'+
+        '<div style="font-size:11px;color:var(--text3)">Bought: '+item.qty+' '+escH(item.unit)+(item.price?' @ $'+Number(item.price).toFixed(2):'')+(existing?' · current stock: '+existing.qty+' '+existing.unit:'')+'</div>'+
       '</div>'+
-      '<div style="display:flex;align-items:center;gap:4px">'+
-        '<input type="number" value="'+item.qty+'" min="0" step="0.1" data-idx="'+i+'" class="pmatch-qty" onclick="event.stopPropagation()" style="width:48px;background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 6px;font-size:12px;text-align:center">'+
-        '<span style="font-size:11px;color:var(--text3)">'+escH(item.unit)+'</span>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">'+
+        (item.price?'<span style="font-size:11px;font-weight:700;color:var(--income)">$'+Number(item.price).toFixed(2)+'</span>':'')+
+        '<div style="display:flex;align-items:center;gap:4px">'+
+          '<input type="number" value="'+item.qty+'" min="0" step="0.1" data-idx="'+i+'" class="pmatch-qty" onclick="event.stopPropagation()" style="width:48px;background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 6px;font-size:12px;text-align:center">'+
+          '<span style="font-size:11px;color:var(--text3)">'+escH(item.unit)+'</span>'+
+        '</div>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -3082,7 +3089,7 @@ function renderReceiptLineItems(lineItems, total, storeName) {
       return '<div class="receipt-line-item">'+
         '<span class="receipt-line-name">'+(item.emoji||'')+' '+escH(item.name)+'</span>'+
         '<span class="receipt-line-qty">×'+item.qty+' '+escH(item.unit||'pcs')+'</span>'+
-        '<span class="receipt-line-price">'+(item.price?'$'+item.price.toFixed(2):'—')+'</span>'+
+        '<span class="receipt-line-price">'+(item.price?'$'+item.price.toFixed(2)+' <span style="font-size:9px;color:var(--text3)">ea</span>':'—')+'</span>'+
       '</div>';
     }).join('')+
     '<div class="receipt-line-total">'+
