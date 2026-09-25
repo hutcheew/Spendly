@@ -5,7 +5,7 @@
 //    Execute as: Me | Who has access: Anyone
 // 4. Copy the /exec URL into Spendly
 
-const SPREADSHEET_ID = '1IUfA7f4o8QoZ6LZqwaLpLfj16v39psGY3oQp04OKcVA';
+const SPREADSHEET_ID = 'SPREADSHEET_ID';
 const SHEET_NAME = 'Spendly';
 
 function doGet(e) { return handleRequest(e); }
